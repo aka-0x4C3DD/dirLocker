@@ -377,3 +377,322 @@ fn test_vault_metadata_protection() {
     assert_eq!(files[0].1.mode, mode);
     assert_eq!(files[0].1.mtime, mtime);
 }
+
+#[test]
+fn test_file_chunking_and_streaming() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::Aes256Gcm).unwrap();
+
+    // Create test data larger than default chunk size (4MB)
+    let chunk_size = 4 * 1024 * 1024; // 4MB
+    let test_data_size = chunk_size + (chunk_size / 2); // 6MB total
+    let mut test_data = Vec::with_capacity(test_data_size);
+    
+    // Fill with predictable pattern for verification
+    for i in 0..test_data_size {
+        test_data.push((i % 256) as u8);
+    }
+
+    // Write file using chunking
+    vault.write_file("large_file.bin", &test_data).unwrap();
+
+    // Verify file was stored correctly
+    let files = vault.list_files().unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].0, "large_file.bin");
+    assert_eq!(files[0].1.size, test_data_size as u64);
+    
+    // Should have 2 chunks (4MB + 2MB)
+    assert_eq!(files[0].1.chunks.len(), 2);
+
+    // Read entire file back
+    let read_data = vault.read_file("large_file.bin").unwrap();
+    assert_eq!(read_data.len(), test_data_size);
+    assert_eq!(read_data, test_data);
+
+    // Test range reading
+    let range_data = vault.read_file_range("large_file.bin", 1000, 2000).unwrap();
+    assert_eq!(range_data.len(), 2000);
+    assert_eq!(range_data, test_data[1000..3000]);
+
+    // Test cross-chunk range reading
+    let cross_chunk_start = chunk_size - 1000;
+    let cross_chunk_data = vault.read_file_range("large_file.bin", cross_chunk_start as u64, 2000).unwrap();
+    assert_eq!(cross_chunk_data.len(), 2000);
+    assert_eq!(cross_chunk_data, test_data[cross_chunk_start..cross_chunk_start + 2000]);
+}
+
+#[test]
+fn test_file_streaming_api() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::XChaCha20Poly1305).unwrap();
+
+    // Create test data
+    let test_data: Vec<u8> = (0..10000).map(|i| (i % 256) as u8).collect();
+    vault.write_file("stream_test.dat", &test_data).unwrap();
+
+    // Create file stream
+    let mut stream = vault.create_file_stream("stream_test.dat").unwrap();
+
+    // Test stream properties
+    assert_eq!(stream.size(), test_data.len() as u64);
+    assert_eq!(stream.position(), 0);
+    assert!(!stream.is_eof());
+
+    // Read first 1000 bytes
+    let chunk1 = stream.read(1000).unwrap();
+    assert_eq!(chunk1.len(), 1000);
+    assert_eq!(chunk1, test_data[0..1000]);
+    assert_eq!(stream.position(), 1000);
+
+    // Seek to middle
+    stream.seek(5000).unwrap();
+    assert_eq!(stream.position(), 5000);
+
+    // Read from middle
+    let chunk2 = stream.read(1000).unwrap();
+    assert_eq!(chunk2.len(), 1000);
+    assert_eq!(chunk2, test_data[5000..6000]);
+    assert_eq!(stream.position(), 6000);
+
+    // Seek near end
+    stream.seek(9500).unwrap();
+    let chunk3 = stream.read(1000).unwrap();
+    assert_eq!(chunk3.len(), 500); // Only 500 bytes left
+    assert_eq!(chunk3, test_data[9500..10000]);
+    assert!(stream.is_eof());
+
+    // Test read_exact
+    stream.seek(0).unwrap();
+    let exact_data = stream.read_exact(100).unwrap();
+    assert_eq!(exact_data.len(), 100);
+    assert_eq!(exact_data, test_data[0..100]);
+
+    // Test read_exact with insufficient data
+    stream.seek(9950).unwrap();
+    assert!(stream.read_exact(100).is_err()); // Only 50 bytes left
+}
+
+#[test]
+fn test_large_file_performance() {
+    use tempfile::tempdir;
+    use std::time::Instant;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::Aes256Gcm).unwrap();
+
+    // Create 16MB test file
+    let file_size = 16 * 1024 * 1024;
+    let test_data: Vec<u8> = (0..file_size).map(|i| (i % 256) as u8).collect();
+
+    // Measure write performance
+    let write_start = Instant::now();
+    vault.write_file("large_file.bin", &test_data).unwrap();
+    let write_duration = write_start.elapsed();
+    println!("Write 16MB in {:?}", write_duration);
+
+    // Verify chunking
+    let files = vault.list_files().unwrap();
+    assert_eq!(files[0].1.chunks.len(), 4); // 16MB / 4MB = 4 chunks
+
+    // Measure full read performance
+    let read_start = Instant::now();
+    let read_data = vault.read_file("large_file.bin").unwrap();
+    let read_duration = read_start.elapsed();
+    println!("Read 16MB in {:?}", read_duration);
+    assert_eq!(read_data, test_data);
+
+    // Measure random access performance
+    let random_start = Instant::now();
+    let _range1 = vault.read_file_range("large_file.bin", 1000000, 1000).unwrap();
+    let _range2 = vault.read_file_range("large_file.bin", 8000000, 1000).unwrap();
+    let _range3 = vault.read_file_range("large_file.bin", 15000000, 1000).unwrap();
+    let random_duration = random_start.elapsed();
+    println!("Random access (3x1KB) in {:?}", random_duration);
+
+    // Performance should be reasonable (these are loose bounds for CI)
+    assert!(write_duration.as_secs() < 10, "Write took too long: {:?}", write_duration);
+    assert!(read_duration.as_secs() < 10, "Read took too long: {:?}", read_duration);
+    assert!(random_duration.as_secs() < 5, "Random access took too long: {:?}", random_duration);
+}
+
+#[test]
+fn test_chunk_encryption_uniqueness() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::Aes256Gcm).unwrap();
+
+    // Create file with repeated data to test nonce uniqueness
+    // Use data larger than the default chunk size (4MB) to ensure multiple chunks
+    let chunk_size = vault.header().chunk_size as usize; // Use vault's chunk size
+    let repeated_data = vec![0x42u8; chunk_size + (chunk_size / 2)]; // 1.5x chunk size to ensure 2 chunks
+
+    vault.write_file("repeated_data.bin", &repeated_data).unwrap();
+
+    // Read raw vault file to verify chunks are encrypted differently
+    let _raw_vault_data = std::fs::read(&path).unwrap();
+    
+    // Find the file entry to get chunk information
+    let files = vault.list_files().unwrap();
+    let file_entry = &files[0].1;
+    
+    // Verify we have multiple chunks
+    assert!(file_entry.chunks.len() >= 2);
+
+    // Read each chunk's encrypted data
+    let mut encrypted_chunks = Vec::new();
+    for chunk in &file_entry.chunks {
+        let (nonce, encrypted_data) = format::VaultFormat::read_chunk_from_vault_with_nonce_size(
+            &path,
+            chunk.offset,
+            chunk.size,
+            12, // AES-GCM nonce size for this test
+        ).unwrap();
+        
+        // Verify nonce is unique (store for comparison)
+        for (existing_nonce, _) in &encrypted_chunks {
+            assert_ne!(nonce, *existing_nonce, "Nonces should be unique for each chunk");
+        }
+        
+        encrypted_chunks.push((nonce, encrypted_data));
+    }
+
+    // Verify encrypted data is different even though plaintext is the same
+    if encrypted_chunks.len() >= 2 {
+        assert_ne!(
+            encrypted_chunks[0].1, 
+            encrypted_chunks[1].1,
+            "Encrypted chunks should be different even with same plaintext"
+        );
+    }
+
+    // Verify we can still decrypt correctly
+    let decrypted_data = vault.read_file("repeated_data.bin").unwrap();
+    assert_eq!(decrypted_data, repeated_data);
+}
+
+#[test]
+fn test_simple_file_write_read() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::Aes256Gcm).unwrap();
+
+    // Test small file (less than chunk size)
+    let small_data = b"Hello, World! This is a small file.";
+    
+    // Write file
+    vault.write_file("small.txt", small_data).unwrap();
+    
+    // Check file was added to file table
+    let files = vault.list_files().unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].0, "small.txt");
+    assert_eq!(files[0].1.size, small_data.len() as u64);
+    
+    // Read file back
+    let read_small = vault.read_file("small.txt").unwrap();
+    assert_eq!(read_small, small_data);
+}
+
+#[test]
+fn test_empty_and_small_files() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::Aes256Gcm).unwrap();
+
+    // Test single byte file first
+    vault.write_file("single.txt", &[42]).unwrap();
+    let single_data = vault.read_file("single.txt").unwrap();
+    assert_eq!(single_data, vec![42]);
+
+    // Test small file (less than chunk size)
+    let small_data = b"Hello, World! This is a small file.";
+    vault.write_file("small.txt", small_data).unwrap();
+    let read_small = vault.read_file("small.txt").unwrap();
+    assert_eq!(read_small, small_data);
+
+    // Test empty file last (most problematic)
+    vault.write_file("empty.txt", &[]).unwrap();
+    let empty_data = vault.read_file("empty.txt").unwrap();
+    assert_eq!(empty_data.len(), 0);
+
+    // Verify all files exist
+    let files = vault.list_files().unwrap();
+    assert_eq!(files.len(), 3);
+    
+    let filenames: Vec<&str> = files.iter().map(|(name, _)| name.as_str()).collect();
+    assert!(filenames.contains(&"empty.txt"));
+    assert!(filenames.contains(&"single.txt"));
+    assert!(filenames.contains(&"small.txt"));
+}
+
+#[test]
+fn test_file_overwrite_and_replacement() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "test_password", CipherType::Aes256Gcm).unwrap();
+
+    // Write initial file
+    let initial_data = b"Initial file content";
+    vault.write_file("test.txt", initial_data).unwrap();
+
+    // Verify initial file
+    let read_data = vault.read_file("test.txt").unwrap();
+    assert_eq!(read_data, initial_data);
+    
+    let files = vault.list_files().unwrap();
+    assert_eq!(files.len(), 1);
+
+    // Overwrite with larger file
+    let new_data = b"This is a much longer file content that should replace the previous content completely";
+    vault.write_file("test.txt", new_data).unwrap();
+
+    // Verify overwrite
+    let read_new_data = vault.read_file("test.txt").unwrap();
+    assert_eq!(read_new_data, new_data);
+    
+    let files = vault.list_files().unwrap();
+    assert_eq!(files.len(), 1); // Still only one file
+    assert_eq!(files[0].1.size, new_data.len() as u64);
+
+    // Overwrite with smaller file
+    let small_data = b"Small";
+    vault.write_file("test.txt", small_data).unwrap();
+
+    // Verify final overwrite
+    let read_small_data = vault.read_file("test.txt").unwrap();
+    assert_eq!(read_small_data, small_data);
+    
+    let files = vault.list_files().unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].1.size, small_data.len() as u64);
+}

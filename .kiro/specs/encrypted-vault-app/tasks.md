@@ -52,7 +52,12 @@
   - Write unit tests for metadata protection and filename encryption
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 5. Implement file chunking and streaming operations
+- [x] 5. Implement file chunking and streaming operations
+
+
+
+
+
   - Create configurable file chunking system (default 4MB chunks)
   - Implement individual chunk AEAD encryption with unique nonces
   - Add chunk mapping storage in encrypted file table

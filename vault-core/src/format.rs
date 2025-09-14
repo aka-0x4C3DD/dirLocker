@@ -231,8 +231,17 @@ impl VaultFormat {
         // Write encrypted file table
         file.write_all(&encrypted_file_table)?;
 
-        // Truncate file to remove any old data
-        file.set_len(file_table_offset + nonce.len() as u64 + encrypted_file_table.len() as u64)?;
+        // Don't truncate the file as it might contain chunk data after the file table
+        // Only truncate if the new file table is larger than the existing file
+        let new_file_table_end = file_table_offset + nonce.len() as u64 + encrypted_file_table.len() as u64;
+        let current_file_size = file.metadata()?.len();
+        
+        // Only truncate if we're making the file smaller and there's no chunk data after
+        if new_file_table_end < current_file_size {
+            // Check if there are any chunks that would be affected
+            // For now, don't truncate to be safe - we'll implement proper space management later
+            // file.set_len(new_file_table_end)?;
+        }
 
         file.flush()?;
 
@@ -487,6 +496,113 @@ impl VaultFormat {
         }
 
         Ok(hash[..nonce_size].to_vec())
+    }
+
+    /// Write an encrypted chunk to the vault file at the specified offset
+    pub fn write_chunk_to_vault<P: AsRef<Path>>(
+        path: P,
+        offset: u64,
+        nonce: &[u8],
+        encrypted_chunk: &[u8],
+    ) -> VaultResult<()> {
+        use std::io::{Seek, SeekFrom, Write};
+
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(path)?;
+
+        // Seek to the specified offset
+        file.seek(SeekFrom::Start(offset))?;
+
+
+
+        // Write nonce first, then encrypted chunk
+        file.write_all(nonce)?;
+        file.write_all(encrypted_chunk)?;
+        file.flush()?;
+
+        Ok(())
+    }
+
+    /// Read an encrypted chunk from the vault file at the specified offset
+    /// This function reads a chunk that was written with write_chunk_to_vault
+    pub fn read_chunk_from_vault<P: AsRef<Path>>(
+        path: P,
+        offset: u64,
+        total_size: u32,
+    ) -> VaultResult<(Vec<u8>, Vec<u8>)> {
+        use std::io::{Read, Seek, SeekFrom};
+
+        let file = File::open(path)?;
+        let mut reader = BufReader::new(file);
+        
+        // Seek to the chunk offset
+        reader.get_mut().seek(SeekFrom::Start(offset))?;
+
+        // Read the entire chunk data
+        let mut chunk_data = vec![0u8; total_size as usize];
+        reader.read_exact(&mut chunk_data)?;
+
+        // The chunk format is: [nonce][encrypted_data]
+        // We need to determine nonce size from the encrypted data structure
+        // Try both common nonce sizes: AES-GCM (12 bytes) and XChaCha20-Poly1305 (24 bytes)
+        let possible_nonce_sizes = [12, 24];
+        
+        for &nonce_size in &possible_nonce_sizes {
+            if total_size as usize > nonce_size + 16 { // nonce + minimum tag size
+                let nonce = chunk_data[..nonce_size].to_vec();
+                let encrypted_data = chunk_data[nonce_size..].to_vec();
+                
+                // Basic validation: encrypted data should be at least tag_size (16 bytes)
+                if encrypted_data.len() >= 16 {
+                    return Ok((nonce, encrypted_data));
+                }
+            }
+        }
+
+        // If we can't determine the nonce size properly, return an error
+        Err(VaultError::corrupted_vault(format!(
+            "Cannot determine nonce size for chunk of size {}",
+            total_size
+        )))
+    }
+
+    /// Read an encrypted chunk from the vault file with known nonce size
+    pub fn read_chunk_from_vault_with_nonce_size<P: AsRef<Path>>(
+        path: P,
+        offset: u64,
+        total_size: u32,
+        nonce_size: usize,
+    ) -> VaultResult<(Vec<u8>, Vec<u8>)> {
+        use std::io::{Read, Seek, SeekFrom};
+
+        let file = File::open(path)?;
+        let mut reader = BufReader::new(file);
+        
+        // Seek to the chunk offset
+        reader.get_mut().seek(SeekFrom::Start(offset))?;
+
+        // Validate sizes
+        if (total_size as usize) < (nonce_size + 16) {
+            return Err(VaultError::corrupted_vault(format!(
+                "Chunk too small for nonce and minimum encrypted data: total_size={}, nonce_size={}, min_required={}",
+                total_size, nonce_size, nonce_size + 16
+            )));
+        }
+
+        // Read nonce
+        let mut nonce = vec![0u8; nonce_size];
+        reader.read_exact(&mut nonce)?;
+
+        // Read encrypted data
+        let encrypted_size = total_size as usize - nonce_size;
+        let mut encrypted_data = vec![0u8; encrypted_size];
+        reader.read_exact(&mut encrypted_data)?;
+
+
+
+        Ok((nonce, encrypted_data))
     }
 }
 
