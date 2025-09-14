@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 use uuid::Uuid;
 
-use crate::crypto::{CipherType, CryptoEngine};
+use crate::crypto::{CipherType, CryptoEngine, derive_key, derive_all_subkeys, SubKeys};
 use crate::error::{VaultError, VaultResult};
 use crate::format::{FileTable, KdfParams, VaultFormat, VaultHeader};
 
@@ -24,6 +24,7 @@ pub struct Vault {
     header: VaultHeader,
     crypto: Box<dyn CryptoEngine>,
     file_table: Option<FileTable>,
+    subkeys: Option<SubKeys>,
     is_open: bool,
 }
 
@@ -96,6 +97,18 @@ impl Vault {
             parallelism: 1,
         };
 
+        // Derive master key from password
+        let master_key = derive_key(
+            password,
+            &kdf_params.salt,
+            kdf_params.memory,
+            kdf_params.operations,
+            kdf_params.parallelism,
+        )?;
+
+        // Derive subkeys from master key
+        let subkeys = derive_all_subkeys(&master_key)?;
+
         // Create vault header
         let header = VaultHeader {
             cipher: cipher_type.to_string(),
@@ -113,12 +126,17 @@ impl Vault {
         // Write vault file to disk
         VaultFormat::create_vault_file(&path, &header)?;
 
+        // Write empty encrypted file table
+        let empty_file_table = FileTable { files: vec![] };
+        VaultFormat::write_encrypted_file_table(&path, &header, &empty_file_table, crypto.as_ref(), &subkeys)?;
+
         let vault = Vault {
             handle: 0, // Will be set by registry
             path,
             header,
             crypto,
-            file_table: Some(FileTable { files: vec![] }),
+            file_table: Some(empty_file_table),
+            subkeys: Some(subkeys),
             is_open: true,
         };
 
@@ -139,7 +157,7 @@ impl Vault {
         }
 
         // Read and parse vault header
-        let (header, _file_table_offset) = VaultFormat::read_vault_header(&path)?;
+        let (header, file_table_offset) = VaultFormat::read_vault_header(&path)?;
 
         // Parse cipher type from header
         let cipher_type: CipherType = header.cipher.parse()?;
@@ -147,8 +165,8 @@ impl Vault {
         // Create crypto engine
         let crypto = crate::crypto::create_crypto_engine(cipher_type)?;
 
-        // Derive key from password to verify it's correct
-        let _derived_key = crate::crypto::derive_key(
+        // Derive master key from password to verify it's correct
+        let master_key = derive_key(
             password,
             &header.kdf_params.salt,
             header.kdf_params.memory,
@@ -156,9 +174,24 @@ impl Vault {
             header.kdf_params.parallelism,
         )?;
 
-        // TODO: Decrypt and parse file table (will be implemented in later tasks)
-        // For now, create empty file table
-        let file_table = Some(FileTable { files: vec![] });
+        // Derive subkeys from master key
+        let subkeys = derive_all_subkeys(&master_key)?;
+
+        // Try to decrypt and parse file table
+        let file_table = match VaultFormat::read_encrypted_file_table(
+            &path,
+            &header,
+            file_table_offset,
+            crypto.as_ref(),
+            &subkeys,
+        ) {
+            Ok(table) => Some(table),
+            Err(VaultError::CryptoError { .. }) => {
+                // Decryption failed - likely wrong password
+                return Err(VaultError::InvalidPassword);
+            }
+            Err(e) => return Err(e),
+        };
 
         let vault = Vault {
             handle: 0, // Will be set by registry
@@ -166,6 +199,7 @@ impl Vault {
             header,
             crypto,
             file_table,
+            subkeys: Some(subkeys),
             is_open: true,
         };
 
@@ -187,9 +221,113 @@ impl Vault {
         &self.header
     }
 
+    /// Get the crypto engine
+    pub fn crypto(&self) -> &dyn CryptoEngine {
+        self.crypto.as_ref()
+    }
+
     /// Check if the vault is open
     pub fn is_open(&self) -> bool {
         self.is_open
+    }
+
+    /// Get the subkeys (if vault is open)
+    pub fn subkeys(&self) -> Option<&SubKeys> {
+        self.subkeys.as_ref()
+    }
+
+    /// Get the file table (if vault is open)
+    pub fn file_table(&self) -> Option<&FileTable> {
+        self.file_table.as_ref()
+    }
+
+    /// Get mutable access to the file table (if vault is open)
+    pub fn file_table_mut(&mut self) -> Option<&mut FileTable> {
+        self.file_table.as_mut()
+    }
+
+    /// Add a file entry to the vault
+    pub fn add_file_entry(&mut self, entry: crate::format::FileEntry) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // Validate the entry
+        entry.validate()?;
+
+        if let Some(ref mut file_table) = self.file_table {
+            file_table.files.push(entry);
+        } else {
+            return Err(VaultError::internal_error("File table not available"));
+        }
+
+        Ok(())
+    }
+
+    /// List all files in the vault (decrypted filenames)
+    pub fn list_files(&self) -> VaultResult<Vec<(String, &crate::format::FileEntry)>> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let file_table = self.file_table.as_ref()
+            .ok_or_else(|| VaultError::internal_error("File table not available"))?;
+
+        let subkeys = self.subkeys.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
+
+        let mut files = Vec::new();
+        for entry in &file_table.files {
+            let filename = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
+            files.push((filename, entry));
+        }
+
+        Ok(files)
+    }
+
+    /// Find a file entry by decrypted filename
+    pub fn find_file(&self, filename: &str) -> VaultResult<Option<&crate::format::FileEntry>> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let file_table = self.file_table.as_ref()
+            .ok_or_else(|| VaultError::internal_error("File table not available"))?;
+
+        let subkeys = self.subkeys.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
+
+        for entry in &file_table.files {
+            let entry_filename = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
+            if entry_filename == filename {
+                return Ok(Some(entry));
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Save the current file table to disk (encrypted)
+    pub fn save_file_table(&self) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let file_table = self.file_table.as_ref()
+            .ok_or_else(|| VaultError::internal_error("File table not available"))?;
+
+        let subkeys = self.subkeys.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
+
+        VaultFormat::write_encrypted_file_table(
+            &self.path,
+            &self.header,
+            file_table,
+            self.crypto.as_ref(),
+            subkeys,
+        )?;
+
+        Ok(())
     }
 
     /// Close the vault
@@ -201,7 +339,10 @@ impl Vault {
         self.is_open = false;
         self.file_table = None;
 
-        // TODO: Implement secure memory clearing
+        // Securely clear subkeys
+        if let Some(mut subkeys) = self.subkeys.take() {
+            subkeys.clear();
+        }
 
         Ok(())
     }
