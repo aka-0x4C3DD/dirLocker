@@ -72,6 +72,13 @@ pub struct CUnlockMaterial {
     pub recovery_key_len: usize,
 }
 
+/// X25519 key pair structure for FFI
+#[repr(C)]
+pub struct CX25519KeyPair {
+    pub public_key: [u8; 32],
+    pub private_key: [u8; 32],
+}
+
 /// Create a new vault container
 ///
 /// # Safety
@@ -235,6 +242,288 @@ impl From<CCipherType> for crate::crypto::CipherType {
         match cipher {
             CCipherType::Aes256Gcm => crate::crypto::CipherType::Aes256Gcm,
             CCipherType::XChaCha20Poly1305 => crate::crypto::CipherType::XChaCha20Poly1305,
+        }
+    }
+}
+
+// Sharing and envelope encryption FFI functions
+
+/// Generate a new X25519 key pair for sharing
+///
+/// # Safety
+/// - `keypair` must point to valid memory for CX25519KeyPair
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_generate_sharing_keypair(keypair: *mut CX25519KeyPair) -> c_int {
+    if keypair.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    match crate::vault::Vault::generate_sharing_keypair() {
+        Ok(kp) => {
+            unsafe {
+                (*keypair).public_key = *kp.public_key_bytes();
+                (*keypair).private_key = *kp.private_key_bytes();
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Add a recipient for secure sharing
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `recipient_public_key` must point to 32 bytes
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_add_sharing_recipient(
+    handle: CVaultHandle,
+    recipient_public_key: *const u8,
+) -> c_int {
+    if handle.is_null() || recipient_public_key.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let public_key_slice = unsafe { std::slice::from_raw_parts(recipient_public_key, 32) };
+    
+    let public_key: [u8; 32] = match public_key_slice.try_into() {
+        Ok(key) => key,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.add_sharing_recipient(public_key) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Remove a recipient from secure sharing
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `recipient_public_key` must point to 32 bytes
+/// - Returns 1 if removed, 0 if not found, negative on error
+#[no_mangle]
+pub extern "C" fn vault_remove_sharing_recipient(
+    handle: CVaultHandle,
+    recipient_public_key: *const u8,
+) -> c_int {
+    if handle.is_null() || recipient_public_key.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let public_key_slice = unsafe { std::slice::from_raw_parts(recipient_public_key, 32) };
+    
+    let public_key: [u8; 32] = match public_key_slice.try_into() {
+        Ok(key) => key,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.remove_sharing_recipient(&public_key) {
+        Ok(removed) => {
+            set_last_error(CErrorCode::Success);
+            if removed { 1 } else { 0 }
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            -(e.code() as c_int)
+        }
+    }
+}
+
+/// Get the number of sharing recipients
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - Returns recipient count on success, negative error code on failure
+#[no_mangle]
+pub extern "C" fn vault_sharing_recipient_count(handle: CVaultHandle) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    match vault.sharing_recipient_count() {
+        Ok(count) => {
+            set_last_error(CErrorCode::Success);
+            count as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            -(e.code() as c_int)
+        }
+    }
+}
+
+/// Export sharing envelopes as JSON string
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `json_out` will be set to allocated string (must be freed with vault_free_string)
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_export_sharing_envelopes(
+    handle: CVaultHandle,
+    json_out: *mut *mut c_char,
+) -> c_int {
+    if handle.is_null() || json_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    match vault.export_sharing_envelopes() {
+        Ok(json) => {
+            let c_string = match std::ffi::CString::new(json) {
+                Ok(s) => s,
+                Err(_) => {
+                    set_last_error(CErrorCode::InternalError);
+                    return CErrorCode::InternalError as c_int;
+                }
+            };
+
+            unsafe {
+                *json_out = c_string.into_raw();
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Import sharing envelopes from JSON string
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `json` must be a valid null-terminated C string
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_import_sharing_envelopes(
+    handle: CVaultHandle,
+    json: *const c_char,
+) -> c_int {
+    if handle.is_null() || json.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let json_str = match unsafe { CStr::from_ptr(json) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.import_sharing_envelopes(json_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Open vault using recipient's private key for shared access
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - `recipient_private_key` must point to 32 bytes
+/// - `envelopes_json` must be a valid null-terminated C string
+/// - Returns null handle on failure, check last error
+#[no_mangle]
+pub extern "C" fn vault_open_with_recipient_key(
+    path: *const c_char,
+    recipient_private_key: *const u8,
+    envelopes_json: *const c_char,
+) -> CVaultHandle {
+    if path.is_null() || recipient_private_key.is_null() || envelopes_json.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return ptr::null_mut();
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return ptr::null_mut();
+        }
+    };
+
+    let json_str = match unsafe { CStr::from_ptr(envelopes_json) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return ptr::null_mut();
+        }
+    };
+
+    let private_key_slice = unsafe { std::slice::from_raw_parts(recipient_private_key, 32) };
+    let private_key: [u8; 32] = match private_key_slice.try_into() {
+        Ok(key) => key,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return ptr::null_mut();
+        }
+    };
+
+    match crate::vault::Vault::open_with_recipient_key(path_str, &private_key, json_str) {
+        Ok(vault) => {
+            set_last_error(CErrorCode::Success);
+            Box::into_raw(Box::new(vault))
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            ptr::null_mut()
+        }
+    }
+}
+
+/// Free a string allocated by the vault library
+///
+/// # Safety
+/// - `string` must be a string previously allocated by vault library functions
+/// - String becomes invalid after this call
+#[no_mangle]
+pub extern "C" fn vault_free_string(string: *mut c_char) {
+    if !string.is_null() {
+        unsafe {
+            let _ = std::ffi::CString::from_raw(string);
         }
     }
 }

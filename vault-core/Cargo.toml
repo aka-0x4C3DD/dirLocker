@@ -17,6 +17,7 @@ aes-gcm = "0.10"
 argon2 = "0.5"
 hkdf = "0.12"
 x25519-dalek = "2.0"
+curve25519-dalek = "4.0"
 
 # Serialization and utilities
 serde = { version = "1.0", features = ["derive"] }
@@ -41,8 +42,10 @@ sha2 = "0.10"
 # Base64 encoding
 base64 = "0.21"
 
-[dev-dependencies]
+# Hex encoding
 hex = "0.4"
+
+[dev-dependencies]
 tempfile = "3.0"
 
 [features]

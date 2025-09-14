@@ -66,7 +66,12 @@
   - Write performance tests for large file handling and streaming
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 6. Implement secure sharing and envelope encryption
+- [x] 6. Implement secure sharing and envelope encryption
+
+
+
+
+
   - Create X25519 key pair generation and management
   - Implement envelope encryption using X25519 + AEAD for per-recipient access
   - Add multi-recipient support with individual envelope storage

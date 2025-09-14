@@ -7,11 +7,13 @@ pub mod crypto;
 pub mod error;
 pub mod ffi;
 pub mod format;
+pub mod sharing;
 pub mod vault;
 
 // Re-export main types for library users
 pub use crypto::CipherType;
 pub use error::{VaultError, VaultResult};
+pub use sharing::{SharingManager, ShareEnvelope, ShareEnvelopeCollection, X25519KeyPair};
 pub use vault::{Vault, VaultHandle};
 
 // FFI exports for C compatibility
@@ -321,6 +323,169 @@ fn test_vault_wrong_password_file_table() {
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].0, "secret.txt");
+}
+
+#[test]
+fn test_vault_sharing_integration() {
+    use tempfile::tempdir;
+    use chrono::Utc;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("shared_test.vault");
+
+    // Create vault with owner
+    let mut owner_vault = Vault::create(&path, "owner_password", CipherType::Aes256Gcm).unwrap();
+
+    // Add some test files
+    let entry = {
+        let subkeys = owner_vault.subkeys().unwrap();
+        format::FileEntry::new(
+            "shared_document.pdf",
+            2048,
+            Utc::now(),
+            0o644,
+            false,
+            owner_vault.crypto(),
+            &subkeys.filename_key,
+        ).unwrap()
+    };
+    owner_vault.add_file_entry(entry).unwrap();
+    owner_vault.save_file_table().unwrap();
+
+    // Generate recipient key pair
+    let recipient_keypair = Vault::generate_sharing_keypair().unwrap();
+
+    // Add recipient to sharing
+    owner_vault.add_sharing_recipient(*recipient_keypair.public_key_bytes()).unwrap();
+
+    // Verify recipient was added
+    assert_eq!(owner_vault.sharing_recipient_count().unwrap(), 1);
+    assert!(owner_vault.has_sharing_recipient(recipient_keypair.public_key_bytes()).unwrap());
+
+    // Export sharing envelopes
+    let envelopes_json = owner_vault.export_sharing_envelopes().unwrap();
+    assert!(!envelopes_json.is_empty());
+
+    // Close owner vault
+    drop(owner_vault);
+
+    // Recipient opens vault using their private key
+    let recipient_vault = Vault::open_with_recipient_key(
+        &path,
+        recipient_keypair.private_key_bytes(),
+        &envelopes_json,
+    ).unwrap();
+
+    // Verify recipient can access files
+    let files = recipient_vault.list_files().unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].0, "shared_document.pdf");
+    assert_eq!(files[0].1.size, 2048);
+
+    // Verify recipient can find specific files
+    let found_file = recipient_vault.find_file("shared_document.pdf").unwrap();
+    assert!(found_file.is_some());
+    assert_eq!(found_file.unwrap().size, 2048);
+}
+
+#[test]
+fn test_vault_sharing_multi_recipient() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("multi_shared_test.vault");
+
+    // Create vault
+    let mut vault = Vault::create(&path, "owner_password", CipherType::XChaCha20Poly1305).unwrap();
+
+    // Generate multiple recipient key pairs
+    let alice_keypair = Vault::generate_sharing_keypair().unwrap();
+    let bob_keypair = Vault::generate_sharing_keypair().unwrap();
+    let charlie_keypair = Vault::generate_sharing_keypair().unwrap();
+
+    // Add all recipients
+    vault.add_sharing_recipient(*alice_keypair.public_key_bytes()).unwrap();
+    vault.add_sharing_recipient(*bob_keypair.public_key_bytes()).unwrap();
+    vault.add_sharing_recipient(*charlie_keypair.public_key_bytes()).unwrap();
+
+    // Verify all recipients were added
+    assert_eq!(vault.sharing_recipient_count().unwrap(), 3);
+    let recipients = vault.list_sharing_recipients().unwrap();
+    assert_eq!(recipients.len(), 3);
+    assert!(recipients.contains(alice_keypair.public_key_bytes()));
+    assert!(recipients.contains(bob_keypair.public_key_bytes()));
+    assert!(recipients.contains(charlie_keypair.public_key_bytes()));
+
+    // Export envelopes
+    let envelopes_json = vault.export_sharing_envelopes().unwrap();
+
+    // Remove Bob from sharing
+    assert!(vault.remove_sharing_recipient(bob_keypair.public_key_bytes()).unwrap());
+    assert_eq!(vault.sharing_recipient_count().unwrap(), 2);
+    assert!(!vault.has_sharing_recipient(bob_keypair.public_key_bytes()).unwrap());
+
+    // Export updated envelopes
+    let updated_envelopes_json = vault.export_sharing_envelopes().unwrap();
+    drop(vault);
+
+    // Alice should still be able to access with original envelopes
+    let alice_vault = Vault::open_with_recipient_key(
+        &path,
+        alice_keypair.private_key_bytes(),
+        &envelopes_json,
+    ).unwrap();
+    assert!(alice_vault.is_open());
+    drop(alice_vault);
+
+    // Bob should fail with updated envelopes (he was removed)
+    let bob_result = Vault::open_with_recipient_key(
+        &path,
+        bob_keypair.private_key_bytes(),
+        &updated_envelopes_json,
+    );
+    assert!(bob_result.is_err());
+
+    // Charlie should still work with updated envelopes
+    let charlie_vault = Vault::open_with_recipient_key(
+        &path,
+        charlie_keypair.private_key_bytes(),
+        &updated_envelopes_json,
+    ).unwrap();
+    assert!(charlie_vault.is_open());
+}
+
+#[test]
+fn test_vault_sharing_envelope_import_export() {
+    use tempfile::tempdir;
+
+    let temp_dir = tempdir().unwrap();
+    let path = temp_dir.path().join("import_export_test.vault");
+
+    // Create first vault instance
+    let mut vault1 = Vault::create(&path, "password", CipherType::Aes256Gcm).unwrap();
+    let recipient_keypair = Vault::generate_sharing_keypair().unwrap();
+    vault1.add_sharing_recipient(*recipient_keypair.public_key_bytes()).unwrap();
+    let exported_envelopes = vault1.export_sharing_envelopes().unwrap();
+    drop(vault1);
+
+    // Create second vault instance and import envelopes
+    let mut vault2 = Vault::open(&path, "password").unwrap();
+    vault2.import_sharing_envelopes(&exported_envelopes).unwrap();
+
+    // Verify import worked
+    assert_eq!(vault2.sharing_recipient_count().unwrap(), 1);
+    assert!(vault2.has_sharing_recipient(recipient_keypair.public_key_bytes()).unwrap());
+
+    // Verify recipient can still access
+    let final_envelopes = vault2.export_sharing_envelopes().unwrap();
+    drop(vault2);
+
+    let recipient_vault = Vault::open_with_recipient_key(
+        &path,
+        recipient_keypair.private_key_bytes(),
+        &final_envelopes,
+    ).unwrap();
+    assert!(recipient_vault.is_open());
 }
 
 #[test]

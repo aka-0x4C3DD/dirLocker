@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::crypto::{CipherType, CryptoEngine, derive_key, derive_all_subkeys, SubKeys, generate_nonce};
 use crate::error::{VaultError, VaultResult};
 use crate::format::{FileTable, KdfParams, VaultFormat, VaultHeader};
+use crate::sharing::{SharingManager, X25519KeyPair};
 
 // Re-export format types for convenience
 pub use crate::format::{ChunkInfo, FileEntry};
@@ -25,6 +26,7 @@ pub struct Vault {
     crypto: Box<dyn CryptoEngine>,
     file_table: Option<FileTable>,
     subkeys: Option<SubKeys>,
+    sharing_manager: Option<SharingManager>,
     is_open: bool,
 }
 
@@ -133,10 +135,11 @@ impl Vault {
         let vault = Vault {
             handle: 0, // Will be set by registry
             path,
-            header,
+            header: header.clone(),
             crypto,
             file_table: Some(empty_file_table),
             subkeys: Some(subkeys),
+            sharing_manager: Some(SharingManager::new(header.vault_uuid)),
             is_open: true,
         };
 
@@ -196,10 +199,11 @@ impl Vault {
         let vault = Vault {
             handle: 0, // Will be set by registry
             path,
-            header,
+            header: header.clone(),
             crypto,
             file_table,
             subkeys: Some(subkeys),
+            sharing_manager: Some(SharingManager::new(header.vault_uuid)),
             is_open: true,
         };
 
@@ -626,6 +630,165 @@ impl Vault {
         Ok(())
     }
 
+    /// Add a recipient for secure sharing
+    pub fn add_sharing_recipient(&mut self, recipient_public_key: [u8; 32]) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let subkeys = self.subkeys.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
+
+        let sharing_manager = self.sharing_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        sharing_manager.add_recipient(recipient_public_key, subkeys, self.crypto.as_ref())
+    }
+
+    /// Remove a recipient from secure sharing
+    pub fn remove_sharing_recipient(&mut self, recipient_public_key: &[u8; 32]) -> VaultResult<bool> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let sharing_manager = self.sharing_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        Ok(sharing_manager.remove_recipient(recipient_public_key))
+    }
+
+    /// List all sharing recipients
+    pub fn list_sharing_recipients(&self) -> VaultResult<Vec<[u8; 32]>> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let sharing_manager = self.sharing_manager.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        Ok(sharing_manager.list_recipients())
+    }
+
+    /// Check if a recipient has sharing access
+    pub fn has_sharing_recipient(&self, recipient_public_key: &[u8; 32]) -> VaultResult<bool> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let sharing_manager = self.sharing_manager.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        Ok(sharing_manager.has_recipient(recipient_public_key))
+    }
+
+    /// Get the number of sharing recipients
+    pub fn sharing_recipient_count(&self) -> VaultResult<usize> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let sharing_manager = self.sharing_manager.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        Ok(sharing_manager.recipient_count())
+    }
+
+    /// Export sharing envelopes for distribution
+    pub fn export_sharing_envelopes(&self) -> VaultResult<String> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let sharing_manager = self.sharing_manager.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        sharing_manager.export_envelopes()
+    }
+
+    /// Import sharing envelopes from external source
+    pub fn import_sharing_envelopes(&mut self, json: &str) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let sharing_manager = self.sharing_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
+
+        sharing_manager.import_envelopes(json)
+    }
+
+    /// Open vault using recipient's private key (for shared access)
+    pub fn open_with_recipient_key<P: AsRef<Path>>(
+        path: P,
+        recipient_private_key: &[u8; 32],
+        envelopes_json: &str,
+    ) -> VaultResult<Self> {
+        let path = path.as_ref().to_path_buf();
+
+        if !path.exists() {
+            return Err(VaultError::file_not_found(path.display().to_string()));
+        }
+
+        // Read and parse vault header
+        let (header, file_table_offset) = VaultFormat::read_vault_header(&path)?;
+
+        // Parse cipher type from header
+        let cipher_type: CipherType = header.cipher.parse()?;
+
+        // Create crypto engine
+        let crypto = crate::crypto::create_crypto_engine(cipher_type)?;
+
+        // Import sharing envelopes
+        let envelope_collection = crate::sharing::ShareEnvelopeCollection::import_json(envelopes_json)?;
+
+        // Verify vault UUID matches
+        if envelope_collection.vault_uuid != header.vault_uuid {
+            return Err(VaultError::crypto_error(
+                "Envelope collection doesn't match vault UUID"
+            ));
+        }
+
+        // Create sharing manager from collection
+        let sharing_manager = SharingManager::from_collection(envelope_collection)?;
+
+        // Decrypt vault subkeys using recipient's private key
+        let subkeys = sharing_manager.decrypt_for_recipient(recipient_private_key, crypto.as_ref())?;
+
+        // Try to decrypt and parse file table
+        let file_table = match VaultFormat::read_encrypted_file_table(
+            &path,
+            &header,
+            file_table_offset,
+            crypto.as_ref(),
+            &subkeys,
+        ) {
+            Ok(table) => Some(table),
+            Err(VaultError::CryptoError { .. }) => {
+                // Decryption failed - likely wrong key or corrupted envelopes
+                return Err(VaultError::InvalidPassword);
+            }
+            Err(e) => return Err(e),
+        };
+
+        let vault = Vault {
+            handle: 0, // Will be set by registry
+            path,
+            header,
+            crypto,
+            file_table,
+            subkeys: Some(subkeys),
+            sharing_manager: Some(sharing_manager),
+            is_open: true,
+        };
+
+        Ok(vault)
+    }
+
+    /// Generate a new X25519 key pair for sharing
+    pub fn generate_sharing_keypair() -> VaultResult<X25519KeyPair> {
+        X25519KeyPair::generate()
+    }
+
     /// Close the vault
     pub fn close(&mut self) -> VaultResult<()> {
         if !self.is_open {
@@ -634,6 +797,7 @@ impl Vault {
 
         self.is_open = false;
         self.file_table = None;
+        self.sharing_manager = None;
 
         // Securely clear subkeys
         if let Some(mut subkeys) = self.subkeys.take() {
