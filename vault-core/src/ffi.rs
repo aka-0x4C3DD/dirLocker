@@ -1,5 +1,5 @@
 //! FFI (Foreign Function Interface) exports for C compatibility
-//! 
+//!
 //! This module provides C-compatible functions that can be called from Go, Swift,
 //! Kotlin, and other languages that support C FFI.
 
@@ -73,7 +73,7 @@ pub struct CUnlockMaterial {
 }
 
 /// Create a new vault container
-/// 
+///
 /// # Safety
 /// - `path` must be a valid null-terminated C string
 /// - `password` must be a valid null-terminated C string
@@ -118,7 +118,7 @@ pub extern "C" fn vault_create(
 }
 
 /// Open an existing vault container
-/// 
+///
 /// # Safety
 /// - `path` must be a valid null-terminated C string
 /// - `unlock_material` must point to valid unlock material
@@ -142,7 +142,7 @@ pub extern "C" fn vault_open(
     };
 
     let unlock = unsafe { &*unlock_material };
-    
+
     // For now, only support password-based unlocking
     if unlock.password.is_null() {
         set_last_error(CErrorCode::InvalidArgument);
@@ -170,7 +170,7 @@ pub extern "C" fn vault_open(
 }
 
 /// Close a vault and free its resources
-/// 
+///
 /// # Safety
 /// - `handle` must be a valid vault handle returned from vault_create or vault_open
 /// - Handle becomes invalid after this call
@@ -197,7 +197,7 @@ pub extern "C" fn vault_get_last_error() -> CErrorCode {
 }
 
 /// Get a human-readable error message for an error code
-/// 
+///
 /// # Safety
 /// - Returns a static string that doesn't need to be freed
 #[no_mangle]
@@ -213,7 +213,7 @@ pub extern "C" fn vault_error_message(error_code: CErrorCode) -> *const c_char {
         CErrorCode::InvalidArgument => "Invalid argument provided\0",
         CErrorCode::InternalError => "Internal error occurred\0",
     };
-    
+
     message.as_ptr() as *const c_char
 }
 
