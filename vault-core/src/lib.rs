@@ -863,6 +863,9 @@ fn test_file_overwrite_and_replacement() {
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].1.size, small_data.len() as u64);
 }
+
+
+
 // Note: Password change integration tests are disabled due to vault file format issues
 // that need to be resolved in the file chunking and streaming task.
 // The password management functionality is implemented and unit tested.

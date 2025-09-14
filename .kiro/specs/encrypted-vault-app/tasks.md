@@ -94,6 +94,17 @@
   - Write unit tests for password change and recovery scenarios
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 15.1, 15.4_
 
+- [ ] 7.1. Fix vault file format and chunk storage architecture
+  - Redesign vault file layout to prevent file table and chunk data conflicts
+  - Implement proper space management with dynamic file table positioning
+  - Fix chunk offset calculation to account for actual file table size and location
+  - Add atomic file operations to prevent corruption during file table updates
+  - Implement proper file table versioning and backward compatibility
+  - Create comprehensive integration tests for file persistence after write operations
+  - Resolve AAD consistency issues in file table encryption/decryption
+  - Add file defragmentation and space reclamation functionality
+  - _Requirements: 6.1, 6.2, 6.3, 3.1, 3.2, 9.1_
+
 - [ ] 8. Implement vault integrity and repair mechanisms
   - Create atomic write operations using temp-file-then-rename pattern
   - Implement chunk integrity validation using AEAD tags
