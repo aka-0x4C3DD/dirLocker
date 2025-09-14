@@ -4,12 +4,15 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
 use crate::crypto::{CipherType, CryptoEngine};
 use crate::error::{VaultError, VaultResult};
+use crate::format::{VaultHeader, VaultFormat, KdfParams, FileTable};
+
+// Re-export format types for convenience
+pub use crate::format::{FileEntry, ChunkInfo};
 
 /// Opaque handle for vault instances
 pub type VaultHandle = usize;
@@ -22,56 +25,6 @@ pub struct Vault {
     crypto: Box<dyn CryptoEngine>,
     file_table: Option<FileTable>,
     is_open: bool,
-}
-
-/// Vault header structure matching the specification
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VaultHeader {
-    pub cipher: String,
-    pub kdf: String,
-    pub kdf_params: KdfParams,
-    pub vault_uuid: Uuid,
-    pub file_table_offset: u64,
-    pub file_table_size: u64,
-    pub chunk_size: u32,
-    pub flags: Vec<String>,
-    pub created_at: DateTime<Utc>,
-    pub platform_hint: String,
-}
-
-/// KDF parameters for Argon2id
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KdfParams {
-    pub salt: Vec<u8>,
-    pub memory: u32,
-    pub operations: u32,
-    pub parallelism: u32,
-}
-
-/// File table structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FileTable {
-    pub files: Vec<FileEntry>,
-}
-
-/// Individual file entry in the vault
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FileEntry {
-    pub name_encrypted: Vec<u8>,
-    pub iv: Vec<u8>,
-    pub size: u64,
-    pub chunks: Vec<ChunkInfo>,
-    pub mtime: DateTime<Utc>,
-    pub mode: u32,
-    pub is_dir: bool,
-}
-
-/// Chunk information for file storage
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChunkInfo {
-    pub offset: u64,
-    pub size: u32,
-    pub iv: Vec<u8>,
 }
 
 /// Global vault registry for handle management
@@ -149,13 +102,16 @@ impl Vault {
             kdf: "argon2id".to_string(),
             kdf_params,
             vault_uuid: Uuid::new_v4(),
-            file_table_offset: 0, // Will be set when writing
-            file_table_size: 0,   // Will be set when writing
+            file_table_offset: 0, // Will be calculated by format module
+            file_table_size: 0,   // Will be calculated by format module
             chunk_size: 4 * 1024 * 1024, // 4MB default
             flags: vec![],
             created_at: Utc::now(),
             platform_hint: std::env::consts::OS.to_string(),
         };
+        
+        // Write vault file to disk
+        VaultFormat::create_vault_file(&path, &header)?;
         
         let vault = Vault {
             handle: 0, // Will be set by registry
@@ -163,10 +119,8 @@ impl Vault {
             header,
             crypto,
             file_table: Some(FileTable { files: vec![] }),
-            is_open: false,
+            is_open: true,
         };
-        
-        // TODO: Write vault file to disk (will be implemented in later tasks)
         
         Ok(vault)
     }
@@ -184,9 +138,38 @@ impl Vault {
             return Err(VaultError::file_not_found(path.display().to_string()));
         }
         
-        // TODO: Read and parse vault file (will be implemented in later tasks)
-        // For now, return a placeholder
-        Err(VaultError::internal_error("Vault opening not yet implemented"))
+        // Read and parse vault header
+        let (header, _file_table_offset) = VaultFormat::read_vault_header(&path)?;
+        
+        // Parse cipher type from header
+        let cipher_type: CipherType = header.cipher.parse()?;
+        
+        // Create crypto engine
+        let crypto = crate::crypto::create_crypto_engine(cipher_type)?;
+        
+        // Derive key from password to verify it's correct
+        let _derived_key = crate::crypto::derive_key(
+            password,
+            &header.kdf_params.salt,
+            header.kdf_params.memory,
+            header.kdf_params.operations,
+            header.kdf_params.parallelism,
+        )?;
+        
+        // TODO: Decrypt and parse file table (will be implemented in later tasks)
+        // For now, create empty file table
+        let file_table = Some(FileTable { files: vec![] });
+        
+        let vault = Vault {
+            handle: 0, // Will be set by registry
+            path,
+            header,
+            crypto,
+            file_table,
+            is_open: true,
+        };
+        
+        Ok(vault)
     }
     
     /// Get the vault handle
