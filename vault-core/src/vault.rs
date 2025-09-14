@@ -16,6 +16,135 @@ use crate::sharing::{SharingManager, X25519KeyPair};
 // Re-export format types for convenience
 pub use crate::format::{ChunkInfo, FileEntry};
 
+/// Vault space usage statistics
+#[derive(Debug, Clone)]
+pub struct VaultSpaceUsage {
+    pub total_file_size: u64,
+    pub used_space: u64,
+    pub free_space: u64,
+    pub fragmentation_count: usize,
+    pub chunk_count: usize,
+    pub file_count: usize,
+}
+
+/// File streaming interface for reading large files efficiently
+pub struct FileStream {
+    path: PathBuf,
+    file_entry: FileEntry,
+    chunk_size: u32,
+    position: u64,
+    crypto: Box<dyn CryptoEngine>,
+    subkeys: SubKeys,
+}
+
+impl FileStream {
+    pub fn new(
+        path: PathBuf,
+        file_entry: FileEntry,
+        chunk_size: u32,
+        crypto: &dyn CryptoEngine,
+        subkeys: &SubKeys,
+    ) -> Self {
+        Self {
+            path,
+            file_entry,
+            chunk_size,
+            position: 0,
+            crypto: crate::crypto::create_crypto_engine(crypto.cipher_type()).unwrap(),
+            subkeys: subkeys.clone(),
+        }
+    }
+
+    pub fn size(&self) -> u64 {
+        self.file_entry.size
+    }
+
+    pub fn position(&self) -> u64 {
+        self.position
+    }
+
+    pub fn is_eof(&self) -> bool {
+        self.position >= self.file_entry.size
+    }
+
+    pub fn seek(&mut self, position: u64) -> VaultResult<()> {
+        self.position = std::cmp::min(position, self.file_entry.size);
+        Ok(())
+    }
+
+    pub fn read(&mut self, length: usize) -> VaultResult<Vec<u8>> {
+        if self.is_eof() {
+            return Ok(Vec::new());
+        }
+
+        let end_position = std::cmp::min(self.position + length as u64, self.file_entry.size);
+        let actual_length = end_position - self.position;
+
+        let chunk_size = self.chunk_size as u64;
+        let start_chunk = (self.position / chunk_size) as usize;
+        let end_chunk = ((end_position - 1) / chunk_size) as usize;
+
+        let mut result = Vec::with_capacity(actual_length as usize);
+
+        // Read relevant chunks
+        for chunk_index in start_chunk..=end_chunk {
+            if chunk_index >= self.file_entry.chunks.len() {
+                break;
+            }
+
+            let chunk = &self.file_entry.chunks[chunk_index];
+            let (nonce, encrypted_chunk) = VaultFormat::read_chunk_from_vault_with_nonce_size(
+                &self.path,
+                chunk.offset,
+                chunk.size,
+                self.crypto.nonce_size(),
+            )?;
+
+            // Decrypt chunk
+            let decrypted_chunk = self.crypto.decrypt(
+                &self.subkeys.file_encryption_key,
+                &nonce,
+                &encrypted_chunk,
+                &[], // No AAD for chunks
+            )?;
+
+            // Calculate the portion of this chunk we need
+            let chunk_start_offset = chunk_index as u64 * chunk_size;
+            let chunk_end_offset = chunk_start_offset + decrypted_chunk.len() as u64;
+
+            let copy_start = if self.position > chunk_start_offset {
+                (self.position - chunk_start_offset) as usize
+            } else {
+                0
+            };
+
+            let copy_end = if end_position < chunk_end_offset {
+                (end_position - chunk_start_offset) as usize
+            } else {
+                decrypted_chunk.len()
+            };
+
+            if copy_start < copy_end {
+                result.extend_from_slice(&decrypted_chunk[copy_start..copy_end]);
+            }
+        }
+
+        self.position = end_position;
+        Ok(result)
+    }
+
+    pub fn read_exact(&mut self, length: usize) -> VaultResult<Vec<u8>> {
+        let data = self.read(length)?;
+        if data.len() != length {
+            return Err(VaultError::internal_error(format!(
+                "Could not read exact amount: requested {}, got {}",
+                length, data.len()
+            )));
+        }
+        Ok(data)
+    }
+}
+
 /// Opaque handle for vault instances
 pub type VaultHandle = usize;
 
@@ -112,25 +241,48 @@ impl Vault {
         // Derive subkeys from master key
         let subkeys = derive_all_subkeys(&master_key)?;
 
-        // Create vault header
-        let header = VaultHeader {
+        // Calculate proper offsets for the new layout
+        let temp_header = VaultHeader {
             cipher: cipher_type.to_string(),
             kdf: "argon2id".to_string(),
-            kdf_params,
+            kdf_params: kdf_params.clone(),
             vault_uuid: Uuid::new_v4(),
-            file_table_offset: 0,        // Will be calculated by format module
-            file_table_size: 0,          // Will be calculated by format module
+            file_table_offset: 0,
+            file_table_size: 0,
+            file_table_reserved_size: 1024 * 1024, // 1MB reserved for file table
+            chunk_data_start_offset: 0,
             chunk_size: 4 * 1024 * 1024, // 4MB default
             flags: vec![],
             created_at: Utc::now(),
             platform_hint: std::env::consts::OS.to_string(),
+            file_table_version: 1,
         };
+
+        // Calculate actual offsets using the same format as the file format
+        // First pass to get approximate size
+        let temp_header_json = serde_json::to_string_pretty(&temp_header)?;
+        let approx_header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
+        let file_table_offset = approx_header_size;
+        let chunk_data_start_offset = file_table_offset + temp_header.file_table_reserved_size;
+
+        // Create header with calculated offsets
+        let mut header = VaultHeader {
+            file_table_offset,
+            chunk_data_start_offset,
+            ..temp_header
+        };
+
+        // Second pass with updated header to get exact size
+        let final_header_json = serde_json::to_string_pretty(&header)?;
+        let final_header_size = 4 + 1 + 4 + final_header_json.len() as u64;
+        header.file_table_offset = final_header_size;
+        header.chunk_data_start_offset = final_header_size + header.file_table_reserved_size;
 
         // Write vault file to disk
         VaultFormat::create_vault_file(&path, &header)?;
 
         // Write empty encrypted file table
-        let empty_file_table = FileTable { files: vec![] };
+        let empty_file_table = FileTable::new();
         VaultFormat::write_encrypted_file_table(&path, &header, &empty_file_table, crypto.as_ref(), &subkeys)?;
 
         let vault = Vault {
@@ -364,7 +516,6 @@ impl Vault {
 
         // Chunk the file data and encrypt each chunk
         let chunk_size = self.header.chunk_size as usize;
-        let mut current_offset = self.calculate_next_chunk_offset()?;
 
         // Handle empty files - still need at least one chunk (even if empty)
         if data.is_empty() {
@@ -379,6 +530,12 @@ impl Vault {
                 &[], // No AAD for chunks
             )?;
 
+            // Calculate total chunk size
+            let total_chunk_size = nonce.len() + encrypted_chunk.len();
+
+            // Find space for this chunk
+            let current_offset = self.calculate_next_chunk_offset(total_chunk_size as u64)?;
+
             // Write encrypted chunk to vault file
             VaultFormat::write_chunk_to_vault(
                 &self.path,
@@ -386,9 +543,6 @@ impl Vault {
                 &nonce,
                 &encrypted_chunk,
             )?;
-
-            // Calculate total chunk size before moving nonce
-            let total_chunk_size = nonce.len() + encrypted_chunk.len();
 
             // Add chunk info to file entry
             file_entry.add_chunk(
@@ -410,6 +564,12 @@ impl Vault {
                     &[], // No AAD for chunks
                 )?;
 
+                // Calculate total chunk size
+                let total_chunk_size = nonce.len() + encrypted_chunk.len();
+
+                // Find space for this chunk
+                let current_offset = self.calculate_next_chunk_offset(total_chunk_size as u64)?;
+
                 // Write encrypted chunk to vault file
                 VaultFormat::write_chunk_to_vault(
                     &self.path,
@@ -418,18 +578,12 @@ impl Vault {
                     &encrypted_chunk,
                 )?;
 
-                // Calculate total chunk size before moving nonce
-                let total_chunk_size = nonce.len() + encrypted_chunk.len();
-
                 // Add chunk info to file entry
                 file_entry.add_chunk(
                     current_offset,
                     total_chunk_size as u32,
                     nonce,
                 );
-
-                // Update offset for next chunk
-                current_offset += total_chunk_size as u64;
             }
         }
 
@@ -566,41 +720,13 @@ impl Vault {
         ))
     }
 
-    /// Calculate the next available offset for chunk storage
-    fn calculate_next_chunk_offset(&self) -> VaultResult<u64> {
-        let file_table = self.file_table.as_ref()
+    /// Calculate the next available offset for chunk storage using space management
+    fn calculate_next_chunk_offset(&mut self, required_size: u64) -> VaultResult<u64> {
+        let file_table = self.file_table.as_mut()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
-        let mut max_offset = 0u64;
-
-        // Find the highest chunk offset + size
-        for file_entry in &file_table.files {
-            for chunk in &file_entry.chunks {
-                let chunk_end = chunk.offset + chunk.size as u64;
-                if chunk_end > max_offset {
-                    max_offset = chunk_end;
-                }
-            }
-        }
-
-        // If no chunks exist, calculate where chunks should start
-        if max_offset == 0 {
-            // Calculate header size
-            let header_json = serde_json::to_string_pretty(&self.header)?;
-            let header_size = 4 + 1 + 4 + header_json.len() as u64; // magic + version + header_len + header
-            
-            // Estimate file table size (we need to be conservative here)
-            let file_table_json = serde_json::to_string(&file_table)?;
-            let estimated_file_table_size = self.crypto.nonce_size() as u64 + 
-                file_table_json.len() as u64 + 
-                self.crypto.tag_size() as u64 + 
-                1024; // Add padding for growth
-            
-            max_offset = header_size + estimated_file_table_size;
-        }
-
-
-        Ok(max_offset)
+        // Use the new space management system
+        VaultFormat::find_next_chunk_offset(&self.path, &self.header, file_table, required_size)
     }
 
     /// Find file index by name
@@ -621,14 +747,96 @@ impl Vault {
         Ok(None)
     }
 
-    /// Remove file by index
+    /// Remove file by index and reclaim its space
     fn remove_file_by_index(&mut self, index: usize) -> VaultResult<()> {
         if let Some(ref mut file_table) = self.file_table {
             if index < file_table.files.len() {
-                file_table.files.remove(index);
+                let removed_file = file_table.files.remove(index);
+                
+                // Reclaim space from deleted chunks
+                VaultFormat::reclaim_deleted_space(
+                    &self.path,
+                    &self.header,
+                    file_table,
+                    &removed_file.chunks,
+                )?;
             }
         }
         Ok(())
+    }
+
+    /// Defragment the vault to consolidate free space
+    pub fn defragment(&mut self) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let file_table = self.file_table.as_mut()
+            .ok_or_else(|| VaultError::internal_error("File table not available"))?;
+
+        let subkeys = self.subkeys.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
+
+        VaultFormat::defragment_vault(
+            &self.path,
+            &self.header,
+            file_table,
+            self.crypto.as_ref(),
+            subkeys,
+        )?;
+
+        // Save the updated file table
+        self.save_file_table()?;
+
+        Ok(())
+    }
+
+    /// Get vault space usage statistics
+    pub fn get_space_usage(&self) -> VaultResult<VaultSpaceUsage> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let file_table = self.file_table.as_ref()
+            .ok_or_else(|| VaultError::internal_error("File table not available"))?;
+
+        let file_metadata = std::fs::metadata(&self.path)?;
+        let total_file_size = file_metadata.len();
+
+        let mut used_space = 0u64;
+        let mut chunk_count = 0usize;
+
+        for file_entry in &file_table.files {
+            for chunk in &file_entry.chunks {
+                used_space += chunk.size as u64;
+                chunk_count += 1;
+            }
+        }
+
+        let free_space = file_table.total_free_space();
+        let fragmentation_count = file_table.free_space_regions.len();
+
+        Ok(VaultSpaceUsage {
+            total_file_size,
+            used_space,
+            free_space,
+            fragmentation_count,
+            chunk_count,
+            file_count: file_table.files.len(),
+        })
+    }
+
+    /// Check if the vault would benefit from defragmentation
+    pub fn needs_defragmentation(&self) -> VaultResult<bool> {
+        let usage = self.get_space_usage()?;
+        
+        // Suggest defragmentation if:
+        // 1. More than 10% free space AND more than 5 fragmented regions
+        // 2. More than 20 fragmented regions regardless of free space
+        let free_space_ratio = usage.free_space as f64 / usage.total_file_size as f64;
+        
+        Ok((free_space_ratio > 0.1 && usage.fragmentation_count > 5) ||
+           usage.fragmentation_count > 20)
     }
 
     /// Add a recipient for secure sharing
@@ -992,132 +1200,4 @@ pub fn remove_vault(handle: VaultHandle) -> Option<Arc<Mutex<Vault>>> {
     registry.as_mut()?.remove_vault(handle)
 }
 
-/// Streaming reader for vault files
-pub struct FileStream {
-    vault_path: PathBuf,
-    file_entry: FileEntry,
-    chunk_size: u32,
-    crypto: Box<dyn CryptoEngine>,
-    subkeys: SubKeys,
-    current_position: u64,
-}
 
-impl FileStream {
-    /// Create a new file stream
-    pub fn new(
-        vault_path: PathBuf,
-        file_entry: FileEntry,
-        chunk_size: u32,
-        crypto: &dyn CryptoEngine,
-        subkeys: &SubKeys,
-    ) -> Self {
-        Self {
-            vault_path,
-            file_entry,
-            chunk_size,
-            crypto: crate::crypto::create_crypto_engine(crypto.cipher_type()).unwrap(),
-            subkeys: subkeys.clone(),
-            current_position: 0,
-        }
-    }
-
-    /// Get the total file size
-    pub fn size(&self) -> u64 {
-        self.file_entry.size
-    }
-
-    /// Get the current position in the stream
-    pub fn position(&self) -> u64 {
-        self.current_position
-    }
-
-    /// Seek to a specific position in the file
-    pub fn seek(&mut self, position: u64) -> VaultResult<()> {
-        if position > self.file_entry.size {
-            return Err(VaultError::invalid_argument("Seek position beyond file size"));
-        }
-        self.current_position = position;
-        Ok(())
-    }
-
-    /// Read up to `length` bytes from the current position
-    pub fn read(&mut self, length: usize) -> VaultResult<Vec<u8>> {
-        if self.current_position >= self.file_entry.size {
-            return Ok(Vec::new()); // EOF
-        }
-
-        let end_position = std::cmp::min(
-            self.current_position + length as u64,
-            self.file_entry.size,
-        );
-        let actual_length = end_position - self.current_position;
-
-        let chunk_size = self.chunk_size as u64;
-        let start_chunk = (self.current_position / chunk_size) as usize;
-        let end_chunk = ((end_position - 1) / chunk_size) as usize;
-
-        let mut result = Vec::with_capacity(actual_length as usize);
-
-        // Read only the relevant chunks
-        for chunk_index in start_chunk..=end_chunk {
-            if chunk_index >= self.file_entry.chunks.len() {
-                break;
-            }
-
-            let chunk = &self.file_entry.chunks[chunk_index];
-            let (nonce, encrypted_chunk) = VaultFormat::read_chunk_from_vault_with_nonce_size(
-                &self.vault_path,
-                chunk.offset,
-                chunk.size,
-                self.crypto.nonce_size(),
-            )?;
-
-            // Decrypt chunk
-            let decrypted_chunk = self.crypto.decrypt(
-                &self.subkeys.file_encryption_key,
-                &nonce,
-                &encrypted_chunk,
-                &[], // No AAD for chunks
-            )?;
-
-            // Calculate the portion of this chunk we need
-            let chunk_start_offset = chunk_index as u64 * chunk_size;
-            let chunk_end_offset = chunk_start_offset + decrypted_chunk.len() as u64;
-
-            let copy_start = if self.current_position > chunk_start_offset {
-                (self.current_position - chunk_start_offset) as usize
-            } else {
-                0
-            };
-
-            let copy_end = if end_position < chunk_end_offset {
-                (end_position - chunk_start_offset) as usize
-            } else {
-                decrypted_chunk.len()
-            };
-
-            if copy_start < copy_end {
-                result.extend_from_slice(&decrypted_chunk[copy_start..copy_end]);
-            }
-        }
-
-        self.current_position = end_position;
-        Ok(result)
-    }
-
-    /// Read exactly `length` bytes or return an error if not enough data
-    pub fn read_exact(&mut self, length: usize) -> VaultResult<Vec<u8>> {
-        let data = self.read(length)?;
-        if data.len() != length {
-            return Err(VaultError::invalid_argument(
-                "Not enough data available to read exact amount",
-            ));
-        }
-        Ok(data)
-    }
-
-    /// Check if we're at the end of the file
-    pub fn is_eof(&self) -> bool {
-        self.current_position >= self.file_entry.size
-    }
-}
