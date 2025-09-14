@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::crypto::{CipherType, CryptoEngine, derive_key, derive_all_subkeys, SubKeys, generate_nonce};
 use crate::error::{VaultError, VaultResult};
 use crate::format::{FileTable, KdfParams, VaultFormat, VaultHeader};
+use crate::password::{PasswordManager, RecoveryKey, WrappedMasterKey, AlgorithmRotationManager};
 use crate::sharing::{SharingManager, X25519KeyPair};
 
 // Re-export format types for convenience
@@ -787,6 +788,156 @@ impl Vault {
     /// Generate a new X25519 key pair for sharing
     pub fn generate_sharing_keypair() -> VaultResult<X25519KeyPair> {
         X25519KeyPair::generate()
+    }
+
+    /// Change the vault password without re-encrypting file chunks
+    pub fn change_password(&self, old_password: &str, new_password: &str) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let password_manager = PasswordManager::new(
+            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
+        );
+
+        password_manager.change_password(&self.path, old_password, new_password, None)
+    }
+
+    /// Change the vault password with custom KDF parameters
+    pub fn change_password_with_params(
+        &self,
+        old_password: &str,
+        new_password: &str,
+        new_kdf_params: KdfParams,
+    ) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let password_manager = PasswordManager::new(
+            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
+        );
+
+        password_manager.change_password(&self.path, old_password, new_password, Some(new_kdf_params))
+    }
+
+    /// Generate a recovery key for this vault
+    pub fn generate_recovery_key(&self, password: &str) -> VaultResult<(RecoveryKey, WrappedMasterKey)> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let password_manager = PasswordManager::new(
+            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
+        );
+
+        password_manager.setup_recovery_key(&self.path, password)
+    }
+
+    /// Recover vault access using a recovery key and set new password
+    pub fn recover_with_key<P: AsRef<Path>>(
+        path: P,
+        recovery_key: &RecoveryKey,
+        wrapped_master_key: &WrappedMasterKey,
+        new_password: &str,
+    ) -> VaultResult<()> {
+        let path = path.as_ref();
+
+        if !path.exists() {
+            return Err(VaultError::file_not_found(path.display().to_string()));
+        }
+
+        // Read header to determine cipher type
+        let (header, _) = VaultFormat::read_vault_header(path)?;
+        let cipher_type: CipherType = header.cipher.parse()?;
+
+        let password_manager = PasswordManager::new(
+            crate::crypto::create_crypto_engine(cipher_type)?
+        );
+
+        password_manager.recover_with_recovery_key(path, recovery_key, wrapped_master_key, new_password, None)
+    }
+
+    /// Recover vault access with custom KDF parameters
+    pub fn recover_with_key_and_params<P: AsRef<Path>>(
+        path: P,
+        recovery_key: &RecoveryKey,
+        wrapped_master_key: &WrappedMasterKey,
+        new_password: &str,
+        new_kdf_params: KdfParams,
+    ) -> VaultResult<()> {
+        let path = path.as_ref();
+
+        if !path.exists() {
+            return Err(VaultError::file_not_found(path.display().to_string()));
+        }
+
+        // Read header to determine cipher type
+        let (header, _) = VaultFormat::read_vault_header(path)?;
+        let cipher_type: CipherType = header.cipher.parse()?;
+
+        let password_manager = PasswordManager::new(
+            crate::crypto::create_crypto_engine(cipher_type)?
+        );
+
+        password_manager.recover_with_recovery_key(
+            path,
+            recovery_key,
+            wrapped_master_key,
+            new_password,
+            Some(new_kdf_params),
+        )
+    }
+
+    /// Rotate the vault to a new encryption algorithm
+    /// This is a background operation that re-encrypts all chunks
+    pub fn rotate_algorithm(
+        &self,
+        password: &str,
+        new_cipher_type: CipherType,
+        progress_callback: Option<Box<dyn Fn(usize, usize) + Send>>,
+    ) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let old_crypto_engine = crate::crypto::create_crypto_engine(self.crypto.cipher_type())?;
+        let new_crypto_engine = crate::crypto::create_crypto_engine(new_cipher_type)?;
+
+        let rotation_manager = AlgorithmRotationManager::new(old_crypto_engine, new_crypto_engine);
+
+        rotation_manager.rotate_algorithm(&self.path, password, progress_callback)
+    }
+
+    /// Get the current master key (for advanced operations)
+    /// WARNING: This exposes the master key - use with extreme caution
+    pub fn get_master_key(&self, password: &str) -> VaultResult<[u8; 32]> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        derive_key(
+            password,
+            &self.header.kdf_params.salt,
+            self.header.kdf_params.memory,
+            self.header.kdf_params.operations,
+            self.header.kdf_params.parallelism,
+        )
+    }
+
+    /// Wrap the current master key with a password (for backup purposes)
+    pub fn wrap_master_key_with_password(&self, current_password: &str, wrapping_password: &str) -> VaultResult<WrappedMasterKey> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let master_key = self.get_master_key(current_password)?;
+        
+        let password_manager = PasswordManager::new(
+            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
+        );
+
+        password_manager.wrap_master_key(&master_key, wrapping_password, &self.header.kdf_params)
     }
 
     /// Close the vault

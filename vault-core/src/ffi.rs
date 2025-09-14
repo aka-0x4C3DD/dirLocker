@@ -527,3 +527,429 @@ pub extern "C" fn vault_free_string(string: *mut c_char) {
         }
     }
 }
+// Password management and recovery FFI functions
+
+/// Recovery key structure for FFI
+#[repr(C)]
+pub struct CRecoveryKey {
+    pub key_data: [u8; 32],
+}
+
+/// Wrapped master key structure for FFI
+#[repr(C)]
+pub struct CWrappedMasterKey {
+    pub encrypted_key: *mut u8,
+    pub encrypted_key_len: usize,
+    pub nonce: *mut u8,
+    pub nonce_len: usize,
+    pub cipher: *mut c_char,
+    pub salt: *mut u8,
+    pub salt_len: usize,
+    pub memory: u32,
+    pub operations: u32,
+    pub parallelism: u32,
+}
+
+/// Change vault password without re-encrypting chunks
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `old_password` and `new_password` must be valid null-terminated C strings
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_change_password(
+    handle: CVaultHandle,
+    old_password: *const c_char,
+    new_password: *const c_char,
+) -> c_int {
+    if handle.is_null() || old_password.is_null() || new_password.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    let old_pass_str = match unsafe { CStr::from_ptr(old_password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let new_pass_str = match unsafe { CStr::from_ptr(new_password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.change_password(old_pass_str, new_pass_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Generate a recovery key for the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `password` must be a valid null-terminated C string
+/// - `recovery_key_out` must point to valid CRecoveryKey memory
+/// - `wrapped_key_out` must point to valid CWrappedMasterKey memory
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_generate_recovery_key(
+    handle: CVaultHandle,
+    password: *const c_char,
+    recovery_key_out: *mut CRecoveryKey,
+    wrapped_key_out: *mut CWrappedMasterKey,
+) -> c_int {
+    if handle.is_null() || password.is_null() || recovery_key_out.is_null() || wrapped_key_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.generate_recovery_key(password_str) {
+        Ok((recovery_key, wrapped_key)) => {
+            unsafe {
+                // Copy recovery key
+                (*recovery_key_out).key_data = *recovery_key.as_bytes();
+
+                // Allocate and copy wrapped key data
+                let encrypted_key_ptr = libc::malloc(wrapped_key.encrypted_key.len()) as *mut u8;
+                if encrypted_key_ptr.is_null() {
+                    set_last_error(CErrorCode::InternalError);
+                    return CErrorCode::InternalError as c_int;
+                }
+                std::ptr::copy_nonoverlapping(
+                    wrapped_key.encrypted_key.as_ptr(),
+                    encrypted_key_ptr,
+                    wrapped_key.encrypted_key.len(),
+                );
+
+                let nonce_ptr = libc::malloc(wrapped_key.nonce.len()) as *mut u8;
+                if nonce_ptr.is_null() {
+                    libc::free(encrypted_key_ptr as *mut libc::c_void);
+                    set_last_error(CErrorCode::InternalError);
+                    return CErrorCode::InternalError as c_int;
+                }
+                std::ptr::copy_nonoverlapping(
+                    wrapped_key.nonce.as_ptr(),
+                    nonce_ptr,
+                    wrapped_key.nonce.len(),
+                );
+
+                let salt_ptr = libc::malloc(wrapped_key.kdf_params.salt.len()) as *mut u8;
+                if salt_ptr.is_null() {
+                    libc::free(encrypted_key_ptr as *mut libc::c_void);
+                    libc::free(nonce_ptr as *mut libc::c_void);
+                    set_last_error(CErrorCode::InternalError);
+                    return CErrorCode::InternalError as c_int;
+                }
+                std::ptr::copy_nonoverlapping(
+                    wrapped_key.kdf_params.salt.as_ptr(),
+                    salt_ptr,
+                    wrapped_key.kdf_params.salt.len(),
+                );
+
+                let cipher_cstring = match std::ffi::CString::new(wrapped_key.cipher) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        libc::free(encrypted_key_ptr as *mut libc::c_void);
+                        libc::free(nonce_ptr as *mut libc::c_void);
+                        libc::free(salt_ptr as *mut libc::c_void);
+                        set_last_error(CErrorCode::InternalError);
+                        return CErrorCode::InternalError as c_int;
+                    }
+                };
+
+                (*wrapped_key_out).encrypted_key = encrypted_key_ptr;
+                (*wrapped_key_out).encrypted_key_len = wrapped_key.encrypted_key.len();
+                (*wrapped_key_out).nonce = nonce_ptr;
+                (*wrapped_key_out).nonce_len = wrapped_key.nonce.len();
+                (*wrapped_key_out).cipher = cipher_cstring.into_raw();
+                (*wrapped_key_out).salt = salt_ptr;
+                (*wrapped_key_out).salt_len = wrapped_key.kdf_params.salt.len();
+                (*wrapped_key_out).memory = wrapped_key.kdf_params.memory;
+                (*wrapped_key_out).operations = wrapped_key.kdf_params.operations;
+                (*wrapped_key_out).parallelism = wrapped_key.kdf_params.parallelism;
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Recover vault access using recovery key
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - `recovery_key` must point to valid CRecoveryKey
+/// - `wrapped_key` must point to valid CWrappedMasterKey
+/// - `new_password` must be a valid null-terminated C string
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_recover_with_key(
+    path: *const c_char,
+    recovery_key: *const CRecoveryKey,
+    wrapped_key: *const CWrappedMasterKey,
+    new_password: *const c_char,
+) -> c_int {
+    if path.is_null() || recovery_key.is_null() || wrapped_key.is_null() || new_password.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let new_password_str = match unsafe { CStr::from_ptr(new_password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    // Convert C structures to Rust structures
+    let rust_recovery_key = match crate::password::RecoveryKey::from_bytes(unsafe {
+        &(*recovery_key).key_data
+    }) {
+        Ok(key) => key,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let wrapped_key_data = unsafe { &*wrapped_key };
+    let encrypted_key = unsafe {
+        std::slice::from_raw_parts(wrapped_key_data.encrypted_key, wrapped_key_data.encrypted_key_len)
+    }.to_vec();
+    let nonce = unsafe {
+        std::slice::from_raw_parts(wrapped_key_data.nonce, wrapped_key_data.nonce_len)
+    }.to_vec();
+    let salt = unsafe {
+        std::slice::from_raw_parts(wrapped_key_data.salt, wrapped_key_data.salt_len)
+    }.to_vec();
+    let cipher = match unsafe { CStr::from_ptr(wrapped_key_data.cipher) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let rust_wrapped_key = crate::password::WrappedMasterKey {
+        encrypted_key,
+        nonce,
+        cipher,
+        kdf_params: crate::format::KdfParams {
+            salt,
+            memory: wrapped_key_data.memory,
+            operations: wrapped_key_data.operations,
+            parallelism: wrapped_key_data.parallelism,
+        },
+    };
+
+    match crate::vault::Vault::recover_with_key(path_str, &rust_recovery_key, &rust_wrapped_key, new_password_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Free a wrapped master key structure
+///
+/// # Safety
+/// - `wrapped_key` must be a CWrappedMasterKey previously allocated by vault functions
+/// - Structure becomes invalid after this call
+#[no_mangle]
+pub extern "C" fn vault_free_wrapped_key(wrapped_key: *mut CWrappedMasterKey) {
+    if wrapped_key.is_null() {
+        return;
+    }
+
+    unsafe {
+        let key_data = &mut *wrapped_key;
+        
+        if !key_data.encrypted_key.is_null() {
+            libc::free(key_data.encrypted_key as *mut libc::c_void);
+        }
+        
+        if !key_data.nonce.is_null() {
+            libc::free(key_data.nonce as *mut libc::c_void);
+        }
+        
+        if !key_data.salt.is_null() {
+            libc::free(key_data.salt as *mut libc::c_void);
+        }
+        
+        if !key_data.cipher.is_null() {
+            let _ = std::ffi::CString::from_raw(key_data.cipher);
+        }
+    }
+}
+
+/// Rotate vault to new encryption algorithm
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `password` must be a valid null-terminated C string
+/// - `progress_callback` can be null or point to valid callback function
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_rotate_algorithm(
+    handle: CVaultHandle,
+    password: *const c_char,
+    new_cipher: CCipherType,
+    progress_callback: Option<extern "C" fn(processed: usize, total: usize)>,
+) -> c_int {
+    if handle.is_null() || password.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let callback: Option<Box<dyn Fn(usize, usize) + Send>> = progress_callback.map(|cb| {
+        Box::new(move |processed, total| {
+            cb(processed, total);
+        }) as Box<dyn Fn(usize, usize) + Send>
+    });
+
+    match vault.rotate_algorithm(password_str, new_cipher.into(), callback) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Convert recovery key to hex string
+///
+/// # Safety
+/// - `recovery_key` must point to valid CRecoveryKey
+/// - `hex_out` will be set to allocated string (must be freed with vault_free_string)
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_recovery_key_to_hex(
+    recovery_key: *const CRecoveryKey,
+    hex_out: *mut *mut c_char,
+) -> c_int {
+    if recovery_key.is_null() || hex_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let rust_recovery_key = match crate::password::RecoveryKey::from_bytes(unsafe {
+        &(*recovery_key).key_data
+    }) {
+        Ok(key) => key,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let hex_string = rust_recovery_key.to_hex();
+    
+    let c_string = match std::ffi::CString::new(hex_string) {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InternalError);
+            return CErrorCode::InternalError as c_int;
+        }
+    };
+
+    unsafe {
+        *hex_out = c_string.into_raw();
+    }
+
+    set_last_error(CErrorCode::Success);
+    CErrorCode::Success as c_int
+}
+
+/// Create recovery key from hex string
+///
+/// # Safety
+/// - `hex_str` must be a valid null-terminated C string
+/// - `recovery_key_out` must point to valid CRecoveryKey memory
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_recovery_key_from_hex(
+    hex_str: *const c_char,
+    recovery_key_out: *mut CRecoveryKey,
+) -> c_int {
+    if hex_str.is_null() || recovery_key_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let hex_string = match unsafe { CStr::from_ptr(hex_str) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::password::RecoveryKey::from_hex(hex_string) {
+        Ok(recovery_key) => {
+            unsafe {
+                (*recovery_key_out).key_data = *recovery_key.as_bytes();
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
