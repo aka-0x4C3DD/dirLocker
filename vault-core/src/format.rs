@@ -357,6 +357,18 @@ impl VaultFormat {
         crypto_engine: &dyn CryptoEngine,
         subkeys: &SubKeys,
     ) -> VaultResult<()> {
+        Self::write_encrypted_file_table_atomic(path, header, file_table, crypto_engine, subkeys, true)
+    }
+
+    /// Write an encrypted file table with optional atomic operations
+    pub fn write_encrypted_file_table_atomic<P: AsRef<Path>>(
+        path: P,
+        header: &VaultHeader,
+        file_table: &FileTable,
+        crypto_engine: &dyn CryptoEngine,
+        subkeys: &SubKeys,
+        use_atomic: bool,
+    ) -> VaultResult<()> {
         let path = path.as_ref();
         
         // Ensure file table has correct AAD hash
@@ -391,6 +403,74 @@ impl VaultFormat {
             aad,
         )?;
 
+        if use_atomic {
+            // Use atomic write operation
+            Self::write_file_table_atomic(path, header, &nonce, &encrypted_file_table)?;
+        } else {
+            // Direct write (for compatibility)
+            Self::write_file_table_direct(path, header, &nonce, &encrypted_file_table)?;
+        }
+
+        Ok(())
+    }
+
+    /// Write file table using atomic temp-file-then-rename pattern
+    fn write_file_table_atomic<P: AsRef<Path>>(
+        path: P,
+        header: &VaultHeader,
+        nonce: &[u8],
+        encrypted_file_table: &[u8],
+    ) -> VaultResult<()> {
+        let path = path.as_ref();
+        
+        // Create temporary file for atomic operation
+        let temp_path = Self::get_temp_path(path)?;
+        
+        // Copy original file to temp
+        std::fs::copy(path, &temp_path)?;
+        
+        // Modify the temp file
+        {
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .open(&temp_path)?;
+
+            // Seek to file table position
+            file.seek(std::io::SeekFrom::Start(header.file_table_offset))?;
+
+            // Write nonce first
+            file.write_all(nonce)?;
+
+            // Write encrypted file table
+            file.write_all(encrypted_file_table)?;
+
+            // Zero out remaining reserved space to prevent data leakage
+            let written_size = nonce.len() + encrypted_file_table.len();
+            let remaining_space = header.file_table_reserved_size as usize - written_size;
+            if remaining_space > 0 {
+                let zeros = vec![0u8; remaining_space];
+                file.write_all(&zeros)?;
+            }
+
+            file.flush()?;
+            file.sync_all()?; // Ensure data is written to disk
+        }
+        
+        // Atomic rename
+        std::fs::rename(&temp_path, path)?;
+        
+        Ok(())
+    }
+
+    /// Write file table directly (non-atomic, for compatibility)
+    fn write_file_table_direct<P: AsRef<Path>>(
+        path: P,
+        header: &VaultHeader,
+        nonce: &[u8],
+        encrypted_file_table: &[u8],
+    ) -> VaultResult<()> {
+        let path = path.as_ref();
+        
         // Open file for writing at file table position
         let mut file = std::fs::OpenOptions::new()
             .write(true)
@@ -400,10 +480,10 @@ impl VaultFormat {
         file.seek(std::io::SeekFrom::Start(header.file_table_offset))?;
 
         // Write nonce first
-        file.write_all(&nonce)?;
+        file.write_all(nonce)?;
 
         // Write encrypted file table
-        file.write_all(&encrypted_file_table)?;
+        file.write_all(encrypted_file_table)?;
 
         // Zero out remaining reserved space to prevent data leakage
         let written_size = nonce.len() + encrypted_file_table.len();

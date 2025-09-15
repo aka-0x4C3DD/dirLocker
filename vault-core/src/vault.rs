@@ -464,8 +464,13 @@ impl Vault {
         Ok(None)
     }
 
-    /// Save the current file table to disk (encrypted)
+    /// Save the current file table to disk (encrypted) using atomic operations
     pub fn save_file_table(&self) -> VaultResult<()> {
+        self.save_file_table_with_atomic(true)
+    }
+
+    /// Save the current file table to disk with optional atomic operations
+    pub fn save_file_table_with_atomic(&self, use_atomic: bool) -> VaultResult<()> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
@@ -476,12 +481,13 @@ impl Vault {
         let subkeys = self.subkeys.as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
-        VaultFormat::write_encrypted_file_table(
+        VaultFormat::write_encrypted_file_table_atomic(
             &self.path,
             &self.header,
             file_table,
             self.crypto.as_ref(),
             subkeys,
+            use_atomic,
         )?;
 
         Ok(())
@@ -837,6 +843,25 @@ impl Vault {
         
         Ok((free_space_ratio > 0.1 && usage.fragmentation_count > 5) ||
            usage.fragmentation_count > 20)
+    }
+
+    /// Validate the integrity of this vault
+    pub fn validate_integrity(&self, password: &str) -> VaultResult<crate::integrity::VaultValidationResult> {
+        crate::integrity::VaultIntegrityChecker::validate_vault(&self.path, password)
+    }
+
+    /// Perform a quick integrity check on this vault
+    pub fn quick_integrity_check(&self) -> VaultResult<bool> {
+        crate::integrity::VaultIntegrityChecker::quick_integrity_check(&self.path)
+    }
+
+    /// Repair this vault if it's corrupted
+    pub fn repair_vault(
+        path: &Path,
+        password: &str,
+        create_backup: bool,
+    ) -> VaultResult<crate::integrity::VaultRepairResult> {
+        crate::integrity::VaultIntegrityChecker::repair_vault(path, password, create_backup)
     }
 
     /// Add a recipient for secure sharing

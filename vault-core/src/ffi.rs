@@ -953,3 +953,306 @@ pub extern "C" fn vault_recovery_key_from_hex(
         }
     }
 }
+
+// Vault integrity and repair FFI functions
+
+/// Vault validation result structure for FFI
+#[repr(C)]
+pub struct CVaultValidationResult {
+    pub is_valid: c_int,
+    pub header_valid: c_int,
+    pub file_table_valid: c_int,
+    pub total_files: usize,
+    pub valid_files: usize,
+    pub recoverable_files: usize,
+}
+
+/// Vault repair result structure for FFI
+#[repr(C)]
+pub struct CVaultRepairResult {
+    pub success: c_int,
+    pub files_recovered: usize,
+    pub files_lost: usize,
+    pub chunks_recovered: usize,
+    pub chunks_lost: usize,
+    pub repair_log: *mut *mut c_char,
+    pub repair_log_count: usize,
+}
+
+/// Validate the integrity of a vault
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - `password` must be a valid null-terminated C string
+/// - `result_out` must point to valid CVaultValidationResult memory
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_validate_integrity(
+    path: *const c_char,
+    password: *const c_char,
+    result_out: *mut CVaultValidationResult,
+) -> c_int {
+    if path.is_null() || password.is_null() || result_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::integrity::VaultIntegrityChecker::validate_vault(path_str, password_str) {
+        Ok(result) => {
+            unsafe {
+                (*result_out).is_valid = if result.is_valid { 1 } else { 0 };
+                (*result_out).header_valid = if result.header_valid { 1 } else { 0 };
+                (*result_out).file_table_valid = if result.file_table_valid { 1 } else { 0 };
+                (*result_out).total_files = result.total_files;
+                (*result_out).valid_files = result.valid_files;
+                (*result_out).recoverable_files = result.recoverable_files;
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Perform a quick integrity check on a vault
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - Returns 1 if valid, 0 if invalid, negative error code on failure
+#[no_mangle]
+pub extern "C" fn vault_quick_integrity_check(path: *const c_char) -> c_int {
+    if path.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::integrity::VaultIntegrityChecker::quick_integrity_check(path_str) {
+        Ok(is_valid) => {
+            set_last_error(CErrorCode::Success);
+            if is_valid { 1 } else { 0 }
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            -(e.code() as c_int)
+        }
+    }
+}
+
+/// Repair a corrupted vault
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - `password` must be a valid null-terminated C string
+/// - `create_backup` should be 1 to create backup, 0 to skip
+/// - `result_out` must point to valid CVaultRepairResult memory
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_repair(
+    path: *const c_char,
+    password: *const c_char,
+    create_backup: c_int,
+    result_out: *mut CVaultRepairResult,
+) -> c_int {
+    if path.is_null() || password.is_null() || result_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::integrity::VaultIntegrityChecker::repair_vault(
+        path_str,
+        password_str,
+        create_backup != 0,
+    ) {
+        Ok(result) => {
+            unsafe {
+                (*result_out).success = if result.success { 1 } else { 0 };
+                (*result_out).files_recovered = result.files_recovered;
+                (*result_out).files_lost = result.files_lost;
+                (*result_out).chunks_recovered = result.chunks_recovered;
+                (*result_out).chunks_lost = result.chunks_lost;
+
+                // Allocate array for repair log strings
+                let log_count = result.repair_log.len();
+                if log_count > 0 {
+                    let log_array = libc::malloc(log_count * std::mem::size_of::<*mut c_char>()) as *mut *mut c_char;
+                    if log_array.is_null() {
+                        set_last_error(CErrorCode::InternalError);
+                        return CErrorCode::InternalError as c_int;
+                    }
+
+                    for (i, log_entry) in result.repair_log.iter().enumerate() {
+                        let c_string = match std::ffi::CString::new(log_entry.as_str()) {
+                            Ok(s) => s,
+                            Err(_) => {
+                                // Clean up previously allocated strings
+                                for j in 0..i {
+                                    let _ = std::ffi::CString::from_raw(*log_array.add(j));
+                                }
+                                libc::free(log_array as *mut libc::c_void);
+                                set_last_error(CErrorCode::InternalError);
+                                return CErrorCode::InternalError as c_int;
+                            }
+                        };
+                        *log_array.add(i) = c_string.into_raw();
+                    }
+
+                    (*result_out).repair_log = log_array;
+                    (*result_out).repair_log_count = log_count;
+                } else {
+                    (*result_out).repair_log = ptr::null_mut();
+                    (*result_out).repair_log_count = 0;
+                }
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Free a vault repair result structure
+///
+/// # Safety
+/// - `result` must be a CVaultRepairResult previously allocated by vault functions
+/// - Structure becomes invalid after this call
+#[no_mangle]
+pub extern "C" fn vault_free_repair_result(result: *mut CVaultRepairResult) {
+    if result.is_null() {
+        return;
+    }
+
+    unsafe {
+        let result_data = &mut *result;
+        
+        if !result_data.repair_log.is_null() && result_data.repair_log_count > 0 {
+            for i in 0..result_data.repair_log_count {
+                let log_entry = *result_data.repair_log.add(i);
+                if !log_entry.is_null() {
+                    let _ = std::ffi::CString::from_raw(log_entry);
+                }
+            }
+            libc::free(result_data.repair_log as *mut libc::c_void);
+        }
+    }
+}
+
+/// Validate integrity of a vault handle
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `password` must be a valid null-terminated C string
+/// - `result_out` must point to valid CVaultValidationResult memory
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_validate_handle_integrity(
+    handle: CVaultHandle,
+    password: *const c_char,
+    result_out: *mut CVaultValidationResult,
+) -> c_int {
+    if handle.is_null() || password.is_null() || result_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.validate_integrity(password_str) {
+        Ok(result) => {
+            unsafe {
+                (*result_out).is_valid = if result.is_valid { 1 } else { 0 };
+                (*result_out).header_valid = if result.header_valid { 1 } else { 0 };
+                (*result_out).file_table_valid = if result.file_table_valid { 1 } else { 0 };
+                (*result_out).total_files = result.total_files;
+                (*result_out).valid_files = result.valid_files;
+                (*result_out).recoverable_files = result.recoverable_files;
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Perform quick integrity check on a vault handle
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - Returns 1 if valid, 0 if invalid, negative error code on failure
+#[no_mangle]
+pub extern "C" fn vault_quick_integrity_check_handle(handle: CVaultHandle) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    match vault.quick_integrity_check() {
+        Ok(is_valid) => {
+            set_last_error(CErrorCode::Success);
+            if is_valid { 1 } else { 0 }
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            -(e.code() as c_int)
+        }
+    }
+}

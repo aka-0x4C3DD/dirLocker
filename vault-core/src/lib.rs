@@ -7,6 +7,7 @@ pub mod crypto;
 pub mod error;
 pub mod ffi;
 pub mod format;
+pub mod integrity;
 pub mod password;
 pub mod sharing;
 pub mod vault;
@@ -14,6 +15,7 @@ pub mod vault;
 // Re-export main types for library users
 pub use crypto::CipherType;
 pub use error::{VaultError, VaultResult};
+pub use integrity::{VaultIntegrityChecker, VaultValidationResult, VaultRepairResult, AtomicFileWriter};
 pub use password::{PasswordManager, RecoveryKey, WrappedMasterKey, AlgorithmRotationManager};
 pub use sharing::{SharingManager, ShareEnvelope, ShareEnvelopeCollection, X25519KeyPair};
 pub use vault::{Vault, VaultHandle};
