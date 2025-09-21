@@ -6,15 +6,34 @@ __pycache__/
 # C extensions
 *.so
 
-# Distribution / packaging
-.Python
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test binary, built with `go test -c`
+*.test
+
+# Go coverage files
+*.out
+
+# Go workspace file
+go.work
+
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Build directories
+bin/
 build/
-develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-.exe
+*.exe
 lib/
 lib64/
 log/
@@ -100,7 +119,7 @@ ipython_config.py
 #   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
 #   commonly ignored for libraries.
-uv.lock
+# uv.lock (moved to tools/ directory)
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
