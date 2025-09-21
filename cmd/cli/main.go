@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"dirLocker/cmd/cli/commands"
 	"dirLocker/pkg/config"
+	"dirLocker/pkg/iconmanager"
 	"dirLocker/pkg/logging"
 	"dirLocker/pkg/vault"
 
@@ -48,6 +50,11 @@ func run() error {
 	vaultManager := vault.NewVaultManager(cfg, logger)
 	defer vaultManager.CloseAllVaults()
 
+	// Initialize icon manager and apply custom icon if available
+	if err := initializeIconManager(logger); err != nil {
+		logger.WithError(err).Warn("Failed to initialize icon manager")
+	}
+
 	// Create root command
 	rootCmd := &cobra.Command{
 		Use:   "dirlocker",
@@ -83,7 +90,44 @@ AES-256-GCM and XChaCha20-Poly1305 encryption with Argon2id key derivation.`,
 	rootCmd.AddCommand(commands.NewPushCommand(vaultManager, logger))
 	rootCmd.AddCommand(commands.NewRepairCommand(vaultManager, logger))
 	rootCmd.AddCommand(commands.NewConfigCommand(cfg, logger))
+	rootCmd.AddCommand(commands.NewIconCommand(logger))
 
 	// Execute root command
 	return rootCmd.Execute()
+}
+
+// initializeIconManager initializes the icon manager and applies custom icons if available
+func initializeIconManager(logger *logging.Logger) error {
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	appDir := filepath.Dir(execPath)
+	config := iconmanager.IconManagerConfig{
+		AppDir:                appDir,
+		EnableChangeDetection: true,
+	}
+
+	iconMgr := iconmanager.NewIconManagerWithCustomLogger(config, logger)
+
+	// Detect and apply custom icon
+	customIcon, err := iconMgr.DetectCustomIcon()
+	if err != nil {
+		logger.WithError(err).Debug("Failed to detect custom icon")
+		return nil // Don't fail startup for icon issues
+	}
+
+	if err := iconMgr.ApplyIcon(customIcon); err != nil {
+		logger.WithError(err).Debug("Failed to apply icon")
+		return nil // Don't fail startup for icon issues
+	}
+
+	if customIcon == "" {
+		logger.Debug("Using default application icon")
+	} else {
+		logger.Infof("Using custom icon: %s", customIcon)
+	}
+
+	return nil
 }
