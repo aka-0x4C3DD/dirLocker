@@ -19,9 +19,10 @@ dirLocker/
 - `cmd/gui/`: Qt-based graphical interface
 
 ### Public Packages (`pkg/`)
-- `pkg/vault/`: High-level vault management API
+- `pkg/vault/`: High-level vault management API with CGO bindings
 - `pkg/config/`: Configuration management
 - `pkg/logging/`: Secure logging system
+- `pkg/filehider/`: Cross-platform file hiding system
 
 ### Internal Packages (`internal/`)
 - `internal/cli/`: CLI-specific implementations
@@ -57,18 +58,58 @@ vault-core/
 - All Go code interfaces with Rust via `pkg/vault/cgo.go`
 
 ### Build Constraints
-- CGO-enabled builds: Full functionality with Rust integration
+- CGO-enabled builds: Full functionality with Rust integration (`pkg/vault/cgo.go`)
 - CGO-disabled builds: Stub implementations for development (`pkg/vault/stub.go`)
+- Platform-specific builds: Windows/Unix implementations for file hiding
 
 ## File Naming Conventions
 - Go files: `snake_case.go`
 - Rust files: `snake_case.rs`
 - Test files: `*_test.go` (Go), `tests.rs` or `#[cfg(test)]` (Rust)
-- CGO files: `cgo.go` with `// +build cgo` constraint
-- Stub files: `stub.go` with `// +build !cgo` constraint
+- CGO files: `cgo.go` with `//go:build cgo` constraint
+- Stub files: `stub.go` with `//go:build !cgo` constraint
+- Platform files: `*_windows.go`, `*_unix.go` with build constraints
 
 ## Configuration Files
 - `.kiro/`: IDE-specific configuration and steering rules
 - `go.mod`/`go.sum`: Go module dependencies
 - `Cargo.toml`/`Cargo.lock`: Rust dependencies
 - `pyproject.toml`/`uv.lock`: Python tooling dependencies
+
+## Implementation Status
+
+### ✅ Completed Components
+- **Rust Core Library**: Full cryptographic implementation with FFI
+- **CGO Integration**: Working Windows MinGW + Linux/macOS support
+- **File Hiding System**: Cross-platform implementation with encryption
+- **CLI Application**: Basic vault operations and file hiding
+- **Testing Suite**: Comprehensive tests for all components
+
+### 🚧 In Progress
+- **GUI Application**: Qt-based interface (compilation issues)
+- **Advanced Features**: Mount operations, repair functionality
+
+### 📁 Key Directories
+```
+dirLocker/
+├── vault-core/
+│   ├── src/
+│   │   ├── crypto.rs          # Encryption engines
+│   │   ├── ffi.rs             # C FFI exports
+│   │   ├── vault.rs           # Core vault logic
+│   │   └── lib.rs             # Library entry point
+│   └── target/
+│       └── x86_64-pc-windows-gnu/release/  # MinGW build
+├── pkg/
+│   ├── vault/
+│   │   ├── cgo.go             # CGO bindings (working)
+│   │   └── stub.go            # Development stubs
+│   └── filehider/
+│       ├── interface.go       # File hiding interface
+│       ├── registry.go        # Encrypted metadata
+│       ├── windows.go         # Windows implementation
+│       └── unix.go            # Unix implementation
+└── cmd/
+    ├── cli/                   # Working CLI application
+    └── gui/                   # Qt GUI (needs fixes)
+```

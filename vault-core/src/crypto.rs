@@ -169,7 +169,7 @@ impl CryptoEngine for Aes256GcmEngine {
     }
 }
 
-/// XChaCha20-Poly1305 implementation using libsodium
+/// XChaCha20-Poly1305 implementation using pure Rust
 pub struct XChaCha20Poly1305Engine;
 
 impl CryptoEngine for XChaCha20Poly1305Engine {
@@ -180,6 +180,8 @@ impl CryptoEngine for XChaCha20Poly1305Engine {
         plaintext: &[u8],
         aad: &[u8],
     ) -> VaultResult<Vec<u8>> {
+        use chacha20poly1305::{aead::Aead, XChaCha20Poly1305, KeyInit, XNonce};
+
         if key.len() != 32 {
             return Err(VaultError::crypto_error(
                 "Invalid key size for XChaCha20-Poly1305",
@@ -192,38 +194,20 @@ impl CryptoEngine for XChaCha20Poly1305Engine {
             ));
         }
 
-        // Initialize libsodium if not already done
-        unsafe {
-            if libsodium_sys::sodium_init() < 0 {
-                return Err(VaultError::crypto_error("Failed to initialize libsodium"));
-            }
-        }
+        let cipher = XChaCha20Poly1305::new_from_slice(key).map_err(|e| {
+            VaultError::crypto_error(format!("Failed to create XChaCha20-Poly1305 cipher: {}", e))
+        })?;
 
-        let mut ciphertext = vec![0u8; plaintext.len() + 16]; // +16 for auth tag
-        let mut ciphertext_len = 0u64;
+        let nonce = XNonce::from_slice(nonce);
 
-        let result = unsafe {
-            libsodium_sys::crypto_aead_xchacha20poly1305_ietf_encrypt(
-                ciphertext.as_mut_ptr(),
-                &mut ciphertext_len,
-                plaintext.as_ptr(),
-                plaintext.len() as u64,
-                aad.as_ptr(),
-                aad.len() as u64,
-                std::ptr::null(),
-                nonce.as_ptr(),
-                key.as_ptr(),
-            )
+        let payload = chacha20poly1305::aead::Payload {
+            msg: plaintext,
+            aad,
         };
 
-        if result != 0 {
-            return Err(VaultError::crypto_error(
-                "XChaCha20-Poly1305 encryption failed",
-            ));
-        }
-
-        ciphertext.truncate(ciphertext_len as usize);
-        Ok(ciphertext)
+        cipher.encrypt(nonce, payload).map_err(|e| {
+            VaultError::crypto_error(format!("XChaCha20-Poly1305 encryption failed: {}", e))
+        })
     }
 
     fn decrypt(
@@ -233,6 +217,8 @@ impl CryptoEngine for XChaCha20Poly1305Engine {
         ciphertext: &[u8],
         aad: &[u8],
     ) -> VaultResult<Vec<u8>> {
+        use chacha20poly1305::{aead::Aead, XChaCha20Poly1305, KeyInit, XNonce};
+
         if key.len() != 32 {
             return Err(VaultError::crypto_error(
                 "Invalid key size for XChaCha20-Poly1305",
@@ -251,38 +237,20 @@ impl CryptoEngine for XChaCha20Poly1305Engine {
             ));
         }
 
-        // Initialize libsodium if not already done
-        unsafe {
-            if libsodium_sys::sodium_init() < 0 {
-                return Err(VaultError::crypto_error("Failed to initialize libsodium"));
-            }
-        }
+        let cipher = XChaCha20Poly1305::new_from_slice(key).map_err(|e| {
+            VaultError::crypto_error(format!("Failed to create XChaCha20-Poly1305 cipher: {}", e))
+        })?;
 
-        let mut plaintext = vec![0u8; ciphertext.len() - 16]; // -16 for auth tag
-        let mut plaintext_len = 0u64;
+        let nonce = XNonce::from_slice(nonce);
 
-        let result = unsafe {
-            libsodium_sys::crypto_aead_xchacha20poly1305_ietf_decrypt(
-                plaintext.as_mut_ptr(),
-                &mut plaintext_len,
-                std::ptr::null_mut(),
-                ciphertext.as_ptr(),
-                ciphertext.len() as u64,
-                aad.as_ptr(),
-                aad.len() as u64,
-                nonce.as_ptr(),
-                key.as_ptr(),
-            )
+        let payload = chacha20poly1305::aead::Payload {
+            msg: ciphertext,
+            aad,
         };
 
-        if result != 0 {
-            return Err(VaultError::crypto_error(
-                "XChaCha20-Poly1305 decryption failed",
-            ));
-        }
-
-        plaintext.truncate(plaintext_len as usize);
-        Ok(plaintext)
+        cipher.decrypt(nonce, payload).map_err(|e| {
+            VaultError::crypto_error(format!("XChaCha20-Poly1305 decryption failed: {}", e))
+        })
     }
 
     fn key_size(&self) -> usize {

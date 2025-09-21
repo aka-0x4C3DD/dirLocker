@@ -85,6 +85,13 @@ type WrappedMasterKey struct {
 	Parallelism  uint32
 }
 
+// Envelope represents a sharing envelope for secure key sharing
+type Envelope struct {
+	RecipientPublicKey [32]byte
+	EncryptedKey       []byte
+	Nonce              [24]byte
+}
+
 // Stub implementations that return "not implemented" errors
 
 // CreateVault creates a new vault container (stub)

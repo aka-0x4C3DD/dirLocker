@@ -72,6 +72,12 @@
 
 
 
+
+
+
+
+
+
   - Create X25519 key pair generation and management
   - Implement envelope encryption using X25519 + AEAD for per-recipient access
   - Add multi-recipient support with individual envelope storage
@@ -86,6 +92,8 @@
 
 
 
+
+
   - Create master key wrapping/unwrapping system for password changes
   - Implement recovery key generation (32-byte random data) and master key unwrapping
   - Add password change functionality that re-wraps master key without re-encrypting chunks
@@ -93,6 +101,26 @@
   - Implement secure key storage and memory management
   - Write unit tests for password change and recovery scenarios
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 15.1, 15.4_
+
+- [x] 7.2. Complete C FFI interface and header file integration
+
+
+
+
+
+
+
+  - Update vault_core.h header file with missing recovery key structures (CRecoveryKey, CWrappedMasterKey)
+  - Add missing recovery key FFI functions (vault_generate_recovery_key, vault_recovery_key_to_hex, vault_recovery_key_from_hex, vault_recover_with_key)
+  - Update header file with missing sharing structures (CX25519KeyPair, CEnvelope)
+  - Add missing sharing FFI functions (vault_generate_sharing_keypair, vault_add_sharing_recipient, vault_remove_sharing_recipient, vault_sharing_recipient_count, vault_export_sharing_envelopes, vault_import_sharing_envelopes, vault_open_with_recipient_key)
+  - Add missing password management functions (vault_change_password)
+  - Add missing utility functions (vault_free_string, vault_free_wrapped_key, vault_free_envelope)
+  - Export all FFI functions from Rust library with proper C ABI
+  - Update Go CGO bindings to use new FFI functions
+  - Test CGO integration to ensure it builds and links correctly
+  - Write integration tests for all new FFI functions
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 8.1, 8.2, 8.3, 8.4, 8.5_
 
 - [x] 7.1. Fix vault file format and chunk storage architecture
 
@@ -160,7 +188,13 @@
   - Write CLI integration tests and help documentation
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
-- [ ] 11. Implement file hiding system for Windows and Unix platforms
+- [x] 11. Implement file hiding system for Windows and Unix platforms
+
+
+
+
+
+
   - Create FileHider interface with Hide, Unhide, List, and IsHidden methods
   - Implement WindowsFileHider using %APPDATA%\dirLocker hidden directory and Windows file attributes
   - Implement UnixFileHider using ~/.dirlocker hidden directory and extended attributes

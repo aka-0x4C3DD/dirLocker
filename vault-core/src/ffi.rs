@@ -79,6 +79,15 @@ pub struct CX25519KeyPair {
     pub private_key: [u8; 32],
 }
 
+/// Envelope structure for FFI
+#[repr(C)]
+pub struct CEnvelope {
+    pub recipient_public_key: [u8; 32],
+    pub encrypted_key: *mut u8,
+    pub encrypted_key_len: usize,
+    pub nonce: [u8; 24],
+}
+
 /// Create a new vault container
 ///
 /// # Safety
@@ -1253,6 +1262,26 @@ pub extern "C" fn vault_quick_integrity_check_handle(handle: CVaultHandle) -> c_
         Err(e) => {
             set_last_error(e.code().into());
             -(e.code() as c_int)
+        }
+    }
+}
+
+/// Free an envelope structure
+///
+/// # Safety
+/// - `envelope` must be a CEnvelope previously allocated by vault functions
+/// - Structure becomes invalid after this call
+#[no_mangle]
+pub extern "C" fn vault_free_envelope(envelope: *mut CEnvelope) {
+    if envelope.is_null() {
+        return;
+    }
+
+    unsafe {
+        let envelope_data = &mut *envelope;
+        
+        if !envelope_data.encrypted_key.is_null() {
+            libc::free(envelope_data.encrypted_key as *mut libc::c_void);
         }
     }
 }

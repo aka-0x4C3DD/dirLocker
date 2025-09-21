@@ -5,7 +5,7 @@ package vault
 
 /*
 #cgo CFLAGS: -I../../vault-core
-#cgo windows LDFLAGS: -L../../vault-core/target/release -lvault_core -lws2_32 -ladvapi32 -luserenv -lbcrypt
+#cgo windows LDFLAGS: -L../../vault-core/target/x86_64-pc-windows-gnu/release -l:libvault_core.a -lws2_32 -ladvapi32 -luserenv -lbcrypt -lntdll
 #cgo linux LDFLAGS: -L../../vault-core/target/release -lvault_core -ldl -lm
 #cgo darwin LDFLAGS: -L../../vault-core/target/release -lvault_core -framework Security -framework CoreFoundation
 
@@ -92,6 +92,13 @@ type WrappedMasterKey struct {
 	Memory       uint32
 	Operations   uint32
 	Parallelism  uint32
+}
+
+// Envelope represents a sharing envelope for secure key sharing
+type Envelope struct {
+	RecipientPublicKey [32]byte
+	EncryptedKey       []byte
+	Nonce              [24]byte
 }
 
 // getLastError retrieves the last error from the core library
@@ -245,8 +252,12 @@ func (v *VaultHandle) GenerateRecoveryKey(password string) (*RecoveryKey, *Wrapp
 	}
 
 	// Convert C structures to Go structures
+	var keyData [32]byte
+	for i := 0; i < 32; i++ {
+		keyData[i] = byte(cRecoveryKey.key_data[i])
+	}
 	recoveryKey := &RecoveryKey{
-		KeyData: cRecoveryKey.key_data,
+		KeyData: keyData,
 	}
 
 	encryptedKey := C.GoBytes(unsafe.Pointer(cWrappedKey.encrypted_key), C.int(cWrappedKey.encrypted_key_len))
@@ -282,9 +293,14 @@ func GenerateSharingKeyPair() (*X25519KeyPair, error) {
 		return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to generate sharing key pair"}
 	}
 
+	var publicKey, privateKey [32]byte
+	for i := 0; i < 32; i++ {
+		publicKey[i] = byte(cKeyPair.public_key[i])
+		privateKey[i] = byte(cKeyPair.private_key[i])
+	}
 	keyPair := &X25519KeyPair{
-		PublicKey:  cKeyPair.public_key,
-		PrivateKey: cKeyPair.private_key,
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
 	}
 
 	return keyPair, nil
@@ -434,7 +450,11 @@ func RecoveryKeyFromHex(hexStr string) (*RecoveryKey, error) {
 		return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to create recovery key from hex"}
 	}
 
-	return &RecoveryKey{KeyData: cRecoveryKey.key_data}, nil
+	var keyData [32]byte
+	for i := 0; i < 32; i++ {
+		keyData[i] = byte(cRecoveryKey.key_data[i])
+	}
+	return &RecoveryKey{KeyData: keyData}, nil
 }
 
 // RecoverWithKey recovers vault access using recovery key
