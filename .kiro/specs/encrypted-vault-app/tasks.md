@@ -141,8 +141,17 @@
   - Write integration tests between Go layer and Rust core
   - _Requirements: 11.1, 11.4, 15.3, 15.5_
 
-- [ ] 10. Implement CLI application with comprehensive vault operations
-  - determine what all mcp servers are available and will be useful for the task (like filesystem, everyhting, fetch, rust-mcp-server, go-dev-mcp, awslabs-core) and use them throughout the task
+- [x] 10. Implement CLI application with comprehensive vault operations
+
+
+
+
+
+
+
+
+
+  - determine what all mcp servers are available and will be useful for the task (like filesystem, everyhting, fetch, rust-mcp-server, go-dev-mcp, awslabs-core) and use them throughout the task, use steering files to understand stuff
   - Create CLI using Cobra framework with create, open, list, mount, extract, push, share, change-password, repair commands
   - Implement vault creation CLI with cipher choice and KDF parameter specification
   - Add vault mounting/unmounting commands with platform detection

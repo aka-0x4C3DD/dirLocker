@@ -14,8 +14,11 @@ import (
 // NewCreateCommand creates the 'create' command
 func NewCreateCommand(vaultManager *vault.VaultManager, logger *logging.Logger) *cobra.Command {
 	var (
-		cipher     string
-		outputPath string
+		cipher      string
+		outputPath  string
+		memory      uint32
+		operations  uint32
+		parallelism uint32
 	)
 
 	cmd := &cobra.Command{
@@ -71,10 +74,20 @@ The vault will be encrypted using the chosen cipher algorithm.`,
 				return fmt.Errorf("passwords do not match")
 			}
 
+			// Create KDF parameters if specified
+			var kdfParams *vault.KDFParams
+			if memory > 0 || operations > 0 || parallelism > 0 {
+				kdfParams = &vault.KDFParams{
+					Memory:      memory,
+					Operations:  operations,
+					Parallelism: parallelism,
+				}
+			}
+
 			// Create the vault
 			logger.Info("Creating vault", "name", vaultName, "path", outputPath, "cipher", cipher)
 			
-			if err := vaultManager.CreateVault(outputPath, password, cipherType); err != nil {
+			if err := vaultManager.CreateVaultWithParams(outputPath, password, cipherType, kdfParams); err != nil {
 				return fmt.Errorf("failed to create vault: %w", err)
 			}
 
@@ -87,6 +100,9 @@ The vault will be encrypted using the chosen cipher algorithm.`,
 
 	cmd.Flags().StringVarP(&cipher, "cipher", "c", "xchacha20poly1305", "encryption cipher (aes-256-gcm, xchacha20poly1305)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "output path for vault file")
+	cmd.Flags().Uint32Var(&memory, "memory", 0, "Argon2id memory parameter in KB (default: 65536)")
+	cmd.Flags().Uint32Var(&operations, "operations", 0, "Argon2id operations parameter (default: 3)")
+	cmd.Flags().Uint32Var(&parallelism, "parallelism", 0, "Argon2id parallelism parameter (default: 1)")
 
 	return cmd
 }

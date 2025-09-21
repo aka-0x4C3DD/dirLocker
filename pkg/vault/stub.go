@@ -92,6 +92,11 @@ func CreateVault(path, password string, cipher CipherType) (*VaultHandle, error)
 	return nil, errors.New("CGO not available - vault operations require Rust core library")
 }
 
+// CreateVaultWithKDF creates a new vault container with custom KDF parameters (stub)
+func CreateVaultWithKDF(path, password string, cipher CipherType, kdfParams *KDFParams) (*VaultHandle, error) {
+	return nil, errors.New("CGO not available - vault operations require Rust core library")
+}
+
 // OpenVault opens an existing vault container (stub)
 func OpenVault(path string, unlockMaterial *UnlockMaterial) (*VaultHandle, error) {
 	return nil, errors.New("CGO not available - vault operations require Rust core library")

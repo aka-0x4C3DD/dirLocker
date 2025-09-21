@@ -79,6 +79,8 @@ AES-256-GCM and XChaCha20-Poly1305 encryption with Argon2id key derivation.`,
 	rootCmd.AddCommand(commands.NewRecoveryCommand(vaultManager, logger))
 	rootCmd.AddCommand(commands.NewShareCommand(vaultManager, logger))
 	rootCmd.AddCommand(commands.NewMountCommand(vaultManager, logger))
+	rootCmd.AddCommand(commands.NewExtractCommand(vaultManager, logger))
+	rootCmd.AddCommand(commands.NewPushCommand(vaultManager, logger))
 	rootCmd.AddCommand(commands.NewRepairCommand(vaultManager, logger))
 	rootCmd.AddCommand(commands.NewConfigCommand(cfg, logger))
 

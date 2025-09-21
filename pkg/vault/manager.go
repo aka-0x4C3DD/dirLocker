@@ -11,6 +11,13 @@ import (
 	"dirLocker/pkg/logging"
 )
 
+// KDFParams represents Argon2id key derivation parameters
+type KDFParams struct {
+	Memory      uint32 `json:"memory"`      // Memory usage in KB
+	Operations  uint32 `json:"operations"`  // Number of iterations
+	Parallelism uint32 `json:"parallelism"` // Degree of parallelism
+}
+
 // VaultManager provides high-level vault operations and management
 type VaultManager struct {
 	config     *config.Config
@@ -46,6 +53,59 @@ func NewVaultManager(cfg *config.Config, logger *logging.Logger) *VaultManager {
 		logger:     logger,
 		openVaults: make(map[string]*ManagedVault),
 	}
+}
+
+// CreateVaultWithParams creates a new vault with custom KDF parameters
+func (vm *VaultManager) CreateVaultWithParams(path, password string, cipher CipherType, kdfParams *KDFParams) error {
+	vm.logger.Info("Creating new vault with custom parameters", "path", path, "cipher", cipher)
+
+	// Use default parameters if not specified
+	if kdfParams == nil {
+		kdfParams = &KDFParams{
+			Memory:      65536, // 64MB
+			Operations:  3,
+			Parallelism: 1,
+		}
+	} else {
+		// Apply defaults for unspecified parameters
+		if kdfParams.Memory == 0 {
+			kdfParams.Memory = 65536
+		}
+		if kdfParams.Operations == 0 {
+			kdfParams.Operations = 3
+		}
+		if kdfParams.Parallelism == 0 {
+			kdfParams.Parallelism = 1
+		}
+	}
+
+	// Ensure directory exists
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		vm.logger.Error("Failed to create vault directory", "error", err, "dir", dir)
+		return fmt.Errorf("failed to create vault directory: %w", err)
+	}
+
+	// Check if vault already exists
+	if _, err := os.Stat(path); err == nil {
+		vm.logger.Warn("Vault already exists", "path", path)
+		return fmt.Errorf("vault already exists at path: %s", path)
+	}
+
+	// Create the vault using core library with custom parameters
+	handle, err := CreateVaultWithKDF(path, password, cipher, kdfParams)
+	if err != nil {
+		vm.logger.Error("Failed to create vault with custom parameters", "error", err, "path", path)
+		return fmt.Errorf("failed to create vault: %w", err)
+	}
+
+	// Close the handle immediately after creation
+	if err := handle.Close(); err != nil {
+		vm.logger.Warn("Failed to close vault handle after creation", "error", err)
+	}
+
+	vm.logger.Info("Successfully created vault with custom parameters", "path", path, "kdf", kdfParams)
+	return nil
 }
 
 // CreateVault creates a new vault with the specified parameters

@@ -1,0 +1,74 @@
+# Project Structure
+
+## Root Level Organization
+```
+dirLocker/
+├── cmd/                    # Application entry points
+├── pkg/                    # Public Go packages
+├── internal/               # Private Go packages
+├── vault-core/             # Rust core library
+├── tests/                  # Integration tests
+├── .kiro/                  # Kiro IDE configuration
+└── etc/                    # Additional resources
+```
+
+## Go Application Structure
+
+### Commands (`cmd/`)
+- `cmd/cli/`: Command-line interface application
+- `cmd/gui/`: Qt-based graphical interface
+
+### Public Packages (`pkg/`)
+- `pkg/vault/`: High-level vault management API
+- `pkg/config/`: Configuration management
+- `pkg/logging/`: Secure logging system
+
+### Internal Packages (`internal/`)
+- `internal/cli/`: CLI-specific implementations
+- `internal/gui/`: GUI-specific implementations  
+- `internal/core/`: Core business logic
+- `internal/vault/`: Low-level vault operations
+- `internal/config/`: Internal configuration handling
+- `internal/logging/`: Internal logging utilities
+
+## Rust Core Library (`vault-core/`)
+```
+vault-core/
+├── src/                    # Rust source code
+├── target/                 # Build artifacts
+├── Cargo.toml             # Rust package manifest
+├── Cargo.lock             # Dependency lock file
+├── vault_core.h           # C header for FFI
+└── README.md              # Core library documentation
+```
+
+## Architecture Patterns
+
+### Layered Architecture
+1. **Rust Core**: Cryptographic operations, vault format, FFI exports
+2. **Go Bindings**: CGO wrappers around Rust core (`pkg/vault/cgo.go`)
+3. **Go Manager**: High-level vault management (`pkg/vault/manager.go`)
+4. **Applications**: CLI and GUI interfaces (`cmd/`)
+
+### Package Dependencies
+- Applications depend on `pkg/` packages
+- `pkg/` packages may use `internal/` packages
+- `internal/` packages are implementation details
+- All Go code interfaces with Rust via `pkg/vault/cgo.go`
+
+### Build Constraints
+- CGO-enabled builds: Full functionality with Rust integration
+- CGO-disabled builds: Stub implementations for development (`pkg/vault/stub.go`)
+
+## File Naming Conventions
+- Go files: `snake_case.go`
+- Rust files: `snake_case.rs`
+- Test files: `*_test.go` (Go), `tests.rs` or `#[cfg(test)]` (Rust)
+- CGO files: `cgo.go` with `// +build cgo` constraint
+- Stub files: `stub.go` with `// +build !cgo` constraint
+
+## Configuration Files
+- `.kiro/`: IDE-specific configuration and steering rules
+- `go.mod`/`go.sum`: Go module dependencies
+- `Cargo.toml`/`Cargo.lock`: Rust dependencies
+- `pyproject.toml`/`uv.lock`: Python tooling dependencies

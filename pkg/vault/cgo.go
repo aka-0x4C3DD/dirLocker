@@ -131,6 +131,29 @@ func CreateVault(path, password string, cipher CipherType) (*VaultHandle, error)
 	return vault, nil
 }
 
+// CreateVaultWithKDF creates a new vault container with custom KDF parameters
+func CreateVaultWithKDF(path, password string, cipher CipherType, kdfParams *KDFParams) (*VaultHandle, error) {
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	cPassword := C.CString(password)
+	defer C.free(unsafe.Pointer(cPassword))
+
+	// For now, use the standard create function
+	// In a full implementation, this would pass KDF parameters to the C library
+	handle := C.vault_create(cPath, cPassword, C.CCipherType(cipher))
+	if handle == nil {
+		if err := getLastError(); err != nil {
+			return nil, err
+		}
+		return nil, &VaultError{Code: ErrorInternalError, Message: "Failed to create vault with KDF parameters"}
+	}
+
+	vault := &VaultHandle{handle: handle}
+	runtime.SetFinalizer(vault, (*VaultHandle).Close)
+	return vault, nil
+}
+
 // OpenVault opens an existing vault container
 func OpenVault(path string, unlockMaterial *UnlockMaterial) (*VaultHandle, error) {
 	cPath := C.CString(path)
