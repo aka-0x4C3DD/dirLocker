@@ -41,7 +41,8 @@ dirLocker is an encrypted file vault application that provides secure file stora
 - **Cross-Platform**: Windows (MinGW), Linux, macOS support
 
 ### 🚧 In Development
-- **GUI Application**: Qt-based graphical interface
+- **GUI Application**: Qt-based graphical interface (basic structure exists)
+- **Icon Management**: Custom application icons and detection system
 - **Mount Operations**: Virtual filesystem mounting
 - **Advanced Repair**: Vault corruption recovery tools
 

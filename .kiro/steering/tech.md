@@ -3,7 +3,7 @@
 ## Core Architecture
 - **Rust Core Library** (`vault-core/`): Cryptographic operations and vault management with C FFI
 - **Go Application Layer** (`cmd/`, `pkg/`, `internal/`): CLI/GUI applications with full CGO integration
-- **Python Tooling** (`main.py`, `pyproject.toml`): Development tools and MCP integration
+- **Python Tooling** (`tools/`): Development tools and MCP integration
 
 ## Languages & Frameworks
 - **Rust**: Core cryptographic library with C FFI exports (MinGW compatible on Windows)
@@ -20,10 +20,10 @@
 
 ### Go
 - **CLI Framework**: github.com/spf13/cobra, github.com/spf13/viper
-- **GUI Framework**: github.com/therecipe/qt
 - **Logging**: github.com/sirupsen/logrus
 - **Testing**: github.com/stretchr/testify
 - **File Hiding**: github.com/google/uuid, golang.org/x/crypto
+- **Terminal**: golang.org/x/term
 
 ### Python
 - **MCP Integration**: fastmcp, mcp[cli]
@@ -40,7 +40,6 @@ cargo build --release --target x86_64-pc-windows-gnu
 cd ..
 set CGO_ENABLED=1
 go build -o dirlocker-cli.exe ./cmd/cli
-go build -o dirlocker-gui.exe ./cmd/gui
 
 # Linux/macOS
 cd vault-core
@@ -49,14 +48,12 @@ cargo build --release
 cd ..
 export CGO_ENABLED=1
 go build -o dirlocker ./cmd/cli
-go build -o dirlocker-gui ./cmd/gui
 ```
 
 ### Development Build (CGO Disabled - Stub Mode)
 ```bash
 export CGO_ENABLED=0
 go build -o dirlocker ./cmd/cli
-go build -o dirlocker-gui ./cmd/gui
 ```
 
 ### Testing
@@ -75,6 +72,7 @@ cargo test
 go test ./tests/ffi_integration_test.go
 
 # Python development
+cd tools
 uv sync
 uv run python main.py
 ```

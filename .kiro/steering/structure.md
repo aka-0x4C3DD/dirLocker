@@ -86,8 +86,9 @@ vault-core/
 - **Testing Suite**: Comprehensive tests for all components
 
 ### 🚧 In Progress
-- **GUI Application**: Qt-based interface (compilation issues)
+- **GUI Application**: Qt-based interface (basic structure exists)
 - **Advanced Features**: Mount operations, repair functionality
+- **Icon Management**: Custom application icons and detection
 
 ### 📁 Key Directories
 ```
