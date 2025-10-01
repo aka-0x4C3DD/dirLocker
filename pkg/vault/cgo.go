@@ -497,3 +497,127 @@ func RecoverWithKey(path string, recoveryKey *RecoveryKey, wrappedKey *WrappedMa
 
 	return nil
 }
+
+// ListFiles lists all files and directories in the vault
+func (v *VaultHandle) ListFiles() ([]FileEntry, error) {
+	if v.handle == nil {
+		return nil, &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
+	}
+
+	// For now, return empty list as the C function is not implemented yet
+	// TODO: Implement vault_list_files in Rust core and uncomment below
+	/*
+		var cEntries *C.CFileEntry
+		var count C.size_t
+
+		result := C.vault_list_files(v.handle, &cEntries, &count)
+		if result != C.ERROR_SUCCESS {
+			if err := getLastError(); err != nil {
+				return nil, err
+			}
+			return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to list files"}
+		}
+
+		// Convert C array to Go slice
+		entries := make([]FileEntry, count)
+		cEntriesSlice := (*[1 << 30]C.CFileEntry)(unsafe.Pointer(cEntries))[:count:count]
+
+		for i, cEntry := range cEntriesSlice {
+			entries[i] = FileEntry{
+				Name:  C.GoString(cEntry.name),
+				Size:  uint64(cEntry.size),
+				IsDir: cEntry.is_dir != 0,
+				MTime: int64(cEntry.mtime),
+				Mode:  uint32(cEntry.mode),
+			}
+		}
+
+		// Free C allocated memory
+		C.free(unsafe.Pointer(cEntries))
+	*/
+
+	return []FileEntry{}, nil
+}
+
+// AddFile adds a file to the vault
+func (v *VaultHandle) AddFile(vaultPath string, data []byte) error {
+	if v.handle == nil {
+		return &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
+	}
+
+	// For now, return not implemented error as the C function is not implemented yet
+	// TODO: Implement vault_write_file in Rust core and uncomment below
+	/*
+		cPath := C.CString(vaultPath)
+		defer C.free(unsafe.Pointer(cPath))
+
+		result := C.vault_write_file(v.handle, cPath, (*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
+		if result != C.ERROR_SUCCESS {
+			if err := getLastError(); err != nil {
+				return err
+			}
+			return &VaultError{Code: ErrorCode(result), Message: "Failed to add file"}
+		}
+	*/
+
+	return &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+}
+
+// ExtractFile extracts a file from the vault
+func (v *VaultHandle) ExtractFile(vaultPath string) ([]byte, error) {
+	if v.handle == nil {
+		return nil, &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
+	}
+
+	// For now, return not implemented error as the C function is not implemented yet
+	// TODO: Implement vault_read_file in Rust core and uncomment below
+	/*
+		cPath := C.CString(vaultPath)
+		defer C.free(unsafe.Pointer(cPath))
+
+		var cData *C.uchar
+		var size C.size_t
+
+		result := C.vault_read_file(v.handle, cPath, &cData, &size)
+		if result != C.ERROR_SUCCESS {
+			if err := getLastError(); err != nil {
+				return nil, err
+			}
+			return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to extract file"}
+		}
+
+		data := C.GoBytes(unsafe.Pointer(cData), C.int(size))
+		C.free(unsafe.Pointer(cData))
+
+		return data, nil
+	*/
+
+	return nil, &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+}
+
+// DeleteFile deletes a file from the vault
+func (v *VaultHandle) DeleteFile(vaultPath string) error {
+	if v.handle == nil {
+		return &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
+	}
+
+	// For now, return not implemented error as the C function is not implemented yet
+	// TODO: Implement vault_delete_file in Rust core
+	return &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+}
+
+// CreateDirectory creates a directory in the vault
+func (v *VaultHandle) CreateDirectory(vaultPath string) error {
+	if v.handle == nil {
+		return &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
+	}
+
+	// For now, return not implemented error as the C function is not implemented yet
+	// TODO: Implement vault_create_directory in Rust core
+	return &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+}
+
+// IsCGOEnabled returns true if CGO is enabled and vault operations are available
+func IsCGOEnabled() bool {
+	return true
+}

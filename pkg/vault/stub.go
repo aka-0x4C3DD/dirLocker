@@ -173,3 +173,33 @@ func RecoveryKeyFromHex(hexStr string) (*RecoveryKey, error) {
 func RecoverWithKey(path string, recoveryKey *RecoveryKey, wrappedKey *WrappedMasterKey, newPassword string) error {
 	return errors.New("CGO not available - vault operations require Rust core library")
 }
+
+// ListFiles lists all files and directories in the vault (stub)
+func (v *VaultHandle) ListFiles() ([]FileEntry, error) {
+	return nil, errors.New("CGO not available - vault operations require Rust core library")
+}
+
+// AddFile adds a file to the vault (stub)
+func (v *VaultHandle) AddFile(vaultPath string, data []byte) error {
+	return errors.New("CGO not available - vault operations require Rust core library")
+}
+
+// ExtractFile extracts a file from the vault (stub)
+func (v *VaultHandle) ExtractFile(vaultPath string) ([]byte, error) {
+	return nil, errors.New("CGO not available - vault operations require Rust core library")
+}
+
+// DeleteFile deletes a file from the vault (stub)
+func (v *VaultHandle) DeleteFile(vaultPath string) error {
+	return errors.New("CGO not available - vault operations require Rust core library")
+}
+
+// CreateDirectory creates a directory in the vault (stub)
+func (v *VaultHandle) CreateDirectory(vaultPath string) error {
+	return errors.New("CGO not available - vault operations require Rust core library")
+}
+
+// IsCGOEnabled returns true if CGO is enabled and vault operations are available
+func IsCGOEnabled() bool {
+	return false
+}

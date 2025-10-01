@@ -488,3 +488,43 @@ func (mv *ManagedVault) GetInfo() (path string, openedAt, lastUsed time.Time, is
 	defer mv.mutex.RUnlock()
 	return mv.Path, mv.OpenedAt, mv.LastUsed, mv.IsShared
 }
+
+// ListFiles lists all files and directories in the managed vault
+func (mv *ManagedVault) ListFiles() ([]FileEntry, error) {
+	mv.mutex.Lock()
+	defer mv.mutex.Unlock()
+	mv.LastUsed = time.Now()
+	return mv.Handle.ListFiles()
+}
+
+// AddFile adds a file to the managed vault
+func (mv *ManagedVault) AddFile(vaultPath string, data []byte) error {
+	mv.mutex.Lock()
+	defer mv.mutex.Unlock()
+	mv.LastUsed = time.Now()
+	return mv.Handle.AddFile(vaultPath, data)
+}
+
+// ExtractFile extracts a file from the managed vault
+func (mv *ManagedVault) ExtractFile(vaultPath string) ([]byte, error) {
+	mv.mutex.Lock()
+	defer mv.mutex.Unlock()
+	mv.LastUsed = time.Now()
+	return mv.Handle.ExtractFile(vaultPath)
+}
+
+// DeleteFile deletes a file from the managed vault
+func (mv *ManagedVault) DeleteFile(vaultPath string) error {
+	mv.mutex.Lock()
+	defer mv.mutex.Unlock()
+	mv.LastUsed = time.Now()
+	return mv.Handle.DeleteFile(vaultPath)
+}
+
+// CreateDirectory creates a directory in the managed vault
+func (mv *ManagedVault) CreateDirectory(vaultPath string) error {
+	mv.mutex.Lock()
+	defer mv.mutex.Unlock()
+	mv.LastUsed = time.Now()
+	return mv.Handle.CreateDirectory(vaultPath)
+}
