@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -111,6 +112,12 @@ func (vm *VaultManager) CreateVaultWithParams(path, password string, cipher Ciph
 // CreateVault creates a new vault with the specified parameters
 func (vm *VaultManager) CreateVault(path, password string, cipher CipherType) error {
 	vm.logger.Info("Creating new vault", "path", path, "cipher", cipher)
+
+	// Validate path for invalid characters
+	if strings.Contains(path, "\x00") {
+		vm.logger.Error("Invalid vault path contains null bytes", "path", path)
+		return fmt.Errorf("invalid vault path: contains null bytes")
+	}
 
 	// Ensure directory exists
 	dir := filepath.Dir(path)

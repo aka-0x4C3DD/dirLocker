@@ -16,6 +16,7 @@ import (
 type Logger struct {
 	*logrus.Logger
 	sensitivePatterns []*regexp.Regexp
+	logFile           *os.File // Store file handle for proper cleanup
 }
 
 // LogConfig represents logging configuration
@@ -69,6 +70,7 @@ func NewLogger(config *LogConfig) (*Logger, error) {
 			return nil, fmt.Errorf("failed to open log file: %w", err)
 		}
 
+		logger.logFile = file // Store file handle for cleanup
 		writers = append(writers, file)
 	}
 
@@ -319,9 +321,11 @@ func (l *Logger) GetLevel() string {
 
 // Close closes any file handles (if applicable)
 func (l *Logger) Close() error {
-	// If we're writing to a file, we should close it
-	// This is a simplified implementation - in a real scenario,
-	// you might want to track file handles and close them properly
+	if l.logFile != nil {
+		err := l.logFile.Close()
+		l.logFile = nil
+		return err
+	}
 	return nil
 }
 

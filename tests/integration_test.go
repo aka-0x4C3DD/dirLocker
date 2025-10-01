@@ -304,9 +304,9 @@ func TestConfigurationIntegration(t *testing.T) {
 // TestLoggingIntegration tests secure logging functionality
 func TestLoggingIntegration(t *testing.T) {
 	tempDir := t.TempDir()
-	logFile := filepath.Join(tempDir, "test.log")
 
 	t.Run("SecureLogging", func(t *testing.T) {
+		logFile := filepath.Join(tempDir, "secure_test.log")
 		logConfig := &logging.LogConfig{
 			Level:   "debug",
 			File:    logFile,
@@ -315,12 +315,14 @@ func TestLoggingIntegration(t *testing.T) {
 
 		logger, err := logging.NewLogger(logConfig)
 		require.NoError(t, err)
-		defer logger.Close()
 
 		// Test logging with sensitive data
 		logger.Info("User login", "username", "testuser", "password", "secret123")
 		logger.Debug("Vault operation", "path", "/test/vault.vault", "key", "deadbeef1234567890abcdef")
 		logger.Error("Authentication failed", "token", "abc123def456", "error", "invalid credentials")
+
+		// Close logger before reading file to ensure all data is flushed
+		logger.Close()
 
 		// Verify log file exists
 		assert.FileExists(t, logFile)
