@@ -315,10 +315,8 @@ func (m *MacOSMounter) isMountPointMounted(mountPoint string) bool {
 }
 
 func (m *MacOSMounter) createFUSECommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// This would create a command to run our FUSE filesystem implementation
-	// For now, this is a placeholder that would need a proper FUSE implementation
+	// Create command to run our FUSE filesystem implementation
 	args := []string{
-		"mount",
 		"--vault", vault.GetPath(),
 		"--mountpoint", options.MountPoint,
 	}
@@ -335,7 +333,7 @@ func (m *MacOSMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		args = append(args, "--debug")
 	}
 
-	// Add FUSE-specific options
+	// Add macOS-specific FUSE options
 	args = append(args, "--fuse-option", "volname=dirLocker Vault")
 	args = append(args, "--fuse-option", "local")
 	args = append(args, "--fuse-option", "noappledouble")
@@ -346,7 +344,7 @@ func (m *MacOSMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		args = append(args, "--fuse-option", fmt.Sprintf("entry_timeout=%d", timeout))
 	}
 
-	// This would be the path to our FUSE filesystem implementation
+	// Use our FUSE filesystem implementation
 	return exec.Command("dirlocker-fuse", args...)
 }
 

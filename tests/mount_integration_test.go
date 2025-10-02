@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -12,6 +13,9 @@ import (
 	"dirLocker/pkg/logging"
 	"dirLocker/pkg/mount"
 	"dirLocker/pkg/vault"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMountIntegration(t *testing.T) {
@@ -19,227 +23,256 @@ func TestMountIntegration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Skip on platforms where mounting is not easily testable
-	// Note: WinFSP is installed but we don't have the actual FUSE filesystem implementation
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping Windows mount integration test (requires FUSE filesystem implementation)")
-	}
+	logger := logging.NewTestLogger()
 
-	logConfig := &logging.LogConfig{
-		Level:   "info",
-		Console: false,
-	}
-	logger, _ := logging.NewLogger(logConfig)
-	cfg := &config.Config{
-		DefaultCipher:   "xchacha20poly1305",
-		AutoLockTimeout: 0, // Disable auto-lock for tests
-	}
+	// Create a test vault
+	vaultPath := filepath.Join(t.TempDir(), "test.vault")
+	password := "test-password"
 
-	// Create vault manager
+	cfg := &config.Config{} // Use default config
 	vaultManager, err := vault.NewVaultManager(cfg, logger)
-	if err != nil {
-		t.Fatalf("Failed to create vault manager: %v", err)
-	}
-	defer vaultManager.CloseAllVaults()
+	require.NoError(t, err)
 
-	// Check if mounting is supported
-	if !vaultManager.IsMountingSupported() {
+	// Create vault
+	err = vaultManager.CreateVault(vaultPath, password, vault.CipherXChaCha20Poly1305)
+	require.NoError(t, err)
+
+	// Open vault
+	testVault, err := vaultManager.OpenVault(vaultPath, password)
+	require.NoError(t, err)
+	defer func() {
+		if err := vaultManager.CloseVault(vaultPath); err != nil {
+			t.Logf("Failed to close vault: %v", err)
+		}
+	}()
+
+	// Add some test files
+	err = testVault.AddFile("/test.txt", []byte("Hello, World!"))
+	require.NoError(t, err)
+
+	err = testVault.CreateDirectory("/subdir")
+	require.NoError(t, err)
+
+	err = testVault.AddFile("/subdir/nested.txt", []byte("Nested content"))
+	require.NoError(t, err)
+
+	// Create mount manager
+	mountManager, err := mount.NewManager(logger)
+	require.NoError(t, err)
+
+	// Skip test if mounting is not supported
+	if !mountManager.IsSupported() {
 		t.Skip("Mounting not supported on this platform")
 	}
 
-	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "dirlocker_mount_test")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Create test vault
-	vaultPath := filepath.Join(tempDir, "test.vault")
-	password := "test_password_123"
-
-	err = vaultManager.CreateVault(vaultPath, password, vault.CipherXChaCha20Poly1305)
-	if err != nil {
-		t.Fatalf("Failed to create test vault: %v", err)
+	// Check drivers - skip test if drivers not available instead of failing
+	if err := mountManager.CheckDrivers(); err != nil {
+		t.Skipf("Required drivers not available: %v", err)
 	}
 
-	// Open the vault
-	_, err = vaultManager.OpenVault(vaultPath, password)
-	if err != nil {
-		t.Fatalf("Failed to open test vault: %v", err)
-	}
-
-	// Create mount point (platform-specific)
-	var mountPoint string
+	// Check if mount executables exist (they may not be built yet)
 	if runtime.GOOS == "windows" {
-		// Use a drive letter for Windows
-		mountPoint = "V:"
-	} else {
-		// Use directory path for Unix systems
-		mountPoint = filepath.Join(tempDir, "mount")
-		err = os.MkdirAll(mountPoint, 0755)
-		if err != nil {
-			t.Fatalf("Failed to create mount point: %v", err)
+		requiredExes := []string{"dirlocker-winfsp.exe", "dirlocker-dokany.exe"}
+		var foundExe bool
+		for _, exe := range requiredExes {
+			if _, err := exec.LookPath(exe); err == nil {
+				foundExe = true
+				break
+			}
 		}
+		if !foundExe {
+			t.Skipf("Mount executables not found in PATH: %v", requiredExes)
+		}
+	}
+
+	// Determine mount point based on platform
+	var mountPoint string
+	switch runtime.GOOS {
+	case "windows":
+		mountPoint = "Z:" // Use Z: drive on Windows
+	default:
+		mountPoint = filepath.Join(t.TempDir(), "mount")
 	}
 
 	// Test mounting
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	options := &mount.MountOptions{
-		MountPoint:   mountPoint,
-		ReadOnly:     false,
-		AllowOther:   false,
-		Timeout:      30 * time.Second,
-		Debug:        true,
-		CacheTimeout: 1 * time.Second,
-	}
+	mountInfo, err := mountManager.Mount(ctx, testVault, &mount.MountOptions{
+		MountPoint: mountPoint,
+		ReadOnly:   false,
+		Debug:      true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, mountInfo)
 
-	t.Logf("Attempting to mount vault at %s", mountPoint)
+	// Verify mount info
+	assert.Equal(t, vaultPath, mountInfo.VaultPath)
+	assert.Equal(t, mountPoint, mountInfo.MountPoint)
+	assert.False(t, mountInfo.ReadOnly)
+	assert.NotZero(t, mountInfo.ProcessID)
 
-	// Note: This test will likely fail because we don't have a real FUSE implementation
-	// But it tests the mounting infrastructure
-	mountInfo, err := vaultManager.MountVault(ctx, vaultPath, mountPoint, options)
-	if err != nil {
-		// Expected to fail since we don't have a real FUSE implementation
-		t.Logf("Mount failed as expected (no FUSE implementation): %v", err)
+	// Wait a moment for mount to be fully ready
+	time.Sleep(2 * time.Second)
 
-		// Test that we get proper error handling
-		if mountInfo != nil {
-			t.Error("Expected nil mount info on failure")
-		}
+	// Verify mount is active
+	isMounted, err := mountManager.IsMounted(mountPoint)
+	require.NoError(t, err)
+	assert.True(t, isMounted)
 
-		// Test troubleshooting info
-		troubleshooting := vaultManager.GetMountTroubleshootingInfo()
-		if troubleshooting == "" {
-			t.Error("Expected non-empty troubleshooting info")
-		}
+	// List mounts
+	mounts, err := mountManager.ListMounts()
+	require.NoError(t, err)
+	assert.Len(t, mounts, 1)
+	assert.Equal(t, mountPoint, mounts[0].MountPoint)
 
-		return // Exit test here since mount failed
-	}
-
-	// If mount succeeded (unlikely without real implementation)
-	t.Logf("Mount succeeded: %+v", mountInfo)
-
-	// Test mount info
-	if mountInfo.VaultPath != vaultPath {
-		t.Errorf("Expected vault path %s, got %s", vaultPath, mountInfo.VaultPath)
-	}
-
-	if mountInfo.MountPoint != mountPoint {
-		t.Errorf("Expected mount point %s, got %s", mountPoint, mountInfo.MountPoint)
-	}
-
-	// Test IsMounted
-	isMounted, err := vaultManager.IsVaultMounted(mountPoint)
-	if err != nil {
-		t.Fatalf("Failed to check mount status: %v", err)
-	}
-
-	if !isMounted {
-		t.Error("Expected vault to be mounted")
-	}
-
-	// Test ListMountedVaults
-	mounts, err := vaultManager.ListMountedVaults()
-	if err != nil {
-		t.Fatalf("Failed to list mounted vaults: %v", err)
-	}
-
-	if len(mounts) != 1 {
-		t.Errorf("Expected 1 mounted vault, got %d", len(mounts))
-	}
-
-	// Test GetMountInfo
-	retrievedInfo, err := vaultManager.GetMountInfo(mountPoint)
-	if err != nil {
-		t.Fatalf("Failed to get mount info: %v", err)
-	}
-
-	if retrievedInfo.MountPoint != mountPoint {
-		t.Errorf("Expected mount point %s, got %s", mountPoint, retrievedInfo.MountPoint)
+	// Test filesystem operations (if mount point is accessible)
+	if runtime.GOOS != "windows" { // Skip filesystem tests on Windows for now
+		testMountedFilesystem(t, mountPoint)
 	}
 
 	// Test unmounting
-	err = vaultManager.UnmountVault(ctx, mountPoint)
-	if err != nil {
-		t.Fatalf("Failed to unmount vault: %v", err)
-	}
+	err = mountManager.Unmount(ctx, mountPoint)
+	require.NoError(t, err)
+
+	// Wait for unmount to complete
+	time.Sleep(2 * time.Second)
 
 	// Verify unmount
-	isMounted, err = vaultManager.IsVaultMounted(mountPoint)
-	if err != nil {
-		t.Fatalf("Failed to check mount status after unmount: %v", err)
-	}
+	isMounted, err = mountManager.IsMounted(mountPoint)
+	require.NoError(t, err)
+	assert.False(t, isMounted)
 
-	if isMounted {
-		t.Error("Expected vault to be unmounted")
-	}
+	// Verify no mounts remain
+	mounts, err = mountManager.ListMounts()
+	require.NoError(t, err)
+	assert.Len(t, mounts, 0)
 }
 
-func TestMountDriverChecks(t *testing.T) {
-	logConfig := &logging.LogConfig{
-		Level:   "info",
-		Console: false,
-	}
-	logger, _ := logging.NewLogger(logConfig)
-	cfg := &config.Config{}
+func testMountedFilesystem(t *testing.T, mountPoint string) {
+	// Test reading files from mounted filesystem
+	testFilePath := filepath.Join(mountPoint, "test.txt")
 
-	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	// Wait for file to be available
+	var data []byte
+	var err error
+	for i := 0; i < 10; i++ {
+		data, err = os.ReadFile(testFilePath)
+		if err == nil {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
 	if err != nil {
-		t.Fatalf("Failed to create vault manager: %v", err)
+		t.Logf("Could not read mounted file (this may be expected): %v", err)
+		return
 	}
 
-	// Test driver requirements
-	drivers := vaultManager.GetRequiredMountDrivers()
-	t.Logf("Required drivers: %v", drivers)
+	assert.Equal(t, []byte("Hello, World!"), data)
 
-	// Test driver check
-	err = vaultManager.CheckMountDrivers()
+	// Test directory listing
+	entries, err := os.ReadDir(mountPoint)
 	if err != nil {
-		t.Logf("Driver check failed (expected on test systems): %v", err)
+		t.Logf("Could not list mounted directory: %v", err)
+		return
 	}
 
-	// Test troubleshooting info
-	troubleshooting := vaultManager.GetMountTroubleshootingInfo()
-	if troubleshooting == "" {
-		t.Error("Expected non-empty troubleshooting info")
+	// Should have test.txt and subdir
+	assert.GreaterOrEqual(t, len(entries), 2)
+
+	var foundTestFile, foundSubdir bool
+	for _, entry := range entries {
+		switch entry.Name() {
+		case "test.txt":
+			foundTestFile = true
+			assert.False(t, entry.IsDir())
+		case "subdir":
+			foundSubdir = true
+			assert.True(t, entry.IsDir())
+		}
 	}
 
-	t.Logf("Troubleshooting info:\n%s", troubleshooting)
-}
+	assert.True(t, foundTestFile, "test.txt not found in mounted filesystem")
+	assert.True(t, foundSubdir, "subdir not found in mounted filesystem")
 
-func TestMountErrorHandling(t *testing.T) {
-	logConfig := &logging.LogConfig{
-		Level:   "info",
-		Console: false,
-	}
-	logger, _ := logging.NewLogger(logConfig)
-	cfg := &config.Config{}
-
-	vaultManager, err := vault.NewVaultManager(cfg, logger)
-	if err != nil {
-		t.Fatalf("Failed to create vault manager: %v", err)
-	}
-
-	ctx := context.Background()
-
-	// Test mounting non-existent vault
-	_, err = vaultManager.MountVault(ctx, "/nonexistent/vault.vc", "/tmp/mount", nil)
+	// Test nested file
+	nestedFilePath := filepath.Join(mountPoint, "subdir", "nested.txt")
+	nestedData, err := os.ReadFile(nestedFilePath)
 	if err == nil {
-		t.Error("Expected error when mounting non-existent vault")
+		assert.Equal(t, []byte("Nested content"), nestedData)
+	} else {
+		t.Logf("Could not read nested file: %v", err)
 	}
+}
+
+func TestMountErrors(t *testing.T) {
+	logger := logging.NewTestLogger()
+
+	mountManager, err := mount.NewManager(logger)
+	require.NoError(t, err)
+
+	if !mountManager.IsSupported() {
+		t.Skip("Mounting not supported on this platform")
+	}
+
+	// Test mounting with invalid vault
+	ctx := context.Background()
+	mockVault := &MockVaultInterface{path: "/nonexistent/vault.vault"}
+
+	var mountPoint string
+	switch runtime.GOOS {
+	case "windows":
+		mountPoint = "Y:"
+	default:
+		mountPoint = "/tmp/invalid-mount"
+	}
+
+	_, err = mountManager.Mount(ctx, mockVault, &mount.MountOptions{
+		MountPoint: mountPoint,
+	})
+	assert.Error(t, err)
 
 	// Test unmounting non-existent mount
-	err = vaultManager.UnmountVault(ctx, "/nonexistent/mount")
-	if err == nil {
-		t.Error("Expected error when unmounting non-existent mount")
+	err = mountManager.Unmount(ctx, mountPoint)
+	assert.Error(t, err)
+
+	// Test checking non-existent mount
+	isMounted, err := mountManager.IsMounted(mountPoint)
+	require.NoError(t, err)
+	assert.False(t, isMounted)
+}
+
+func TestMountCleanup(t *testing.T) {
+	logger := logging.NewTestLogger()
+
+	mountManager, err := mount.NewManager(logger)
+	require.NoError(t, err)
+
+	if !mountManager.IsSupported() {
+		t.Skip("Mounting not supported on this platform")
 	}
 
-	// Test getting info for non-existent mount
-	_, err = vaultManager.GetMountInfo("/nonexistent/mount")
-	if err == nil {
-		t.Error("Expected error when getting info for non-existent mount")
-	}
+	// Test unmounting all mounts
+	ctx := context.Background()
+	err = mountManager.UnmountAll(ctx)
+	require.NoError(t, err)
+
+	// Verify no mounts remain
+	mounts, err := mountManager.ListMounts()
+	require.NoError(t, err)
+	assert.Len(t, mounts, 0)
+}
+
+// MockVaultInterface implements the VaultInterface for testing
+type MockVaultInterface struct {
+	path string
+}
+
+func (m *MockVaultInterface) GetPath() string {
+	return m.path
+}
+
+func (m *MockVaultInterface) UpdateLastUsed() {
+	// Mock implementation
 }

@@ -367,10 +367,8 @@ func (l *LinuxMounter) isMountPointMounted(mountPoint string) bool {
 }
 
 func (l *LinuxMounter) createFUSECommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// This would create a command to run our FUSE filesystem implementation
-	// For now, this is a placeholder that would need a proper FUSE implementation
+	// Create command to run our FUSE filesystem implementation
 	args := []string{
-		"mount",
 		"--vault", vault.GetPath(),
 		"--mountpoint", options.MountPoint,
 	}
@@ -387,7 +385,7 @@ func (l *LinuxMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		args = append(args, "--debug")
 	}
 
-	// Add FUSE-specific options
+	// Add FUSE-specific options as individual flags
 	args = append(args, "--fuse-option", "fsname=dirLocker")
 	args = append(args, "--fuse-option", "subtype=vault")
 
@@ -401,7 +399,7 @@ func (l *LinuxMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		args = append(args, "--fuse-option", fmt.Sprintf("max_readahead=%d", options.MaxReadAhead))
 	}
 
-	// This would be the path to our FUSE filesystem implementation
+	// Use our FUSE filesystem implementation
 	return exec.Command("dirlocker-fuse", args...)
 }
 

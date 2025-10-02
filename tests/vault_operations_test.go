@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dirLocker/internal/gui"
+	"dirLocker/internal/types"
 	"dirLocker/pkg/config"
 	"dirLocker/pkg/logging"
 	"dirLocker/pkg/vault"
@@ -338,10 +338,10 @@ func TestRecoveryKeyOperations(t *testing.T) {
 func TestNotificationSystem(t *testing.T) {
 	t.Run("NotificationTypes", func(t *testing.T) {
 		// Test that notification types are defined correctly
-		assert.Equal(t, 0, int(gui.NotificationInfo))
-		assert.Equal(t, 1, int(gui.NotificationSuccess))
-		assert.Equal(t, 2, int(gui.NotificationWarning))
-		assert.Equal(t, 3, int(gui.NotificationError))
+		assert.Equal(t, 0, int(types.NotificationInfo))
+		assert.Equal(t, 1, int(types.NotificationSuccess))
+		assert.Equal(t, 2, int(types.NotificationWarning))
+		assert.Equal(t, 3, int(types.NotificationError))
 	})
 
 	// Note: GUI widget tests are skipped as they require a Fyne app to be initialized

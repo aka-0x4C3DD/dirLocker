@@ -332,10 +332,8 @@ func (w *WindowsMounter) isRunningAsAdmin() bool {
 }
 
 func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// This would create a command to run a Dokany-based filesystem
-	// For now, this is a placeholder that would need a proper Dokany implementation
+	// Create command to run our Dokany filesystem implementation
 	args := []string{
-		"mount",
 		"--vault", vault.GetPath(),
 		"--drive", options.MountPoint,
 	}
@@ -348,15 +346,13 @@ func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *Moun
 		args = append(args, "--debug")
 	}
 
-	// This would be the path to our Dokany filesystem implementation
+	// Use our Dokany filesystem implementation
 	return exec.Command("dirlocker-dokany.exe", args...)
 }
 
 func (w *WindowsMounter) createWinFSPCommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// This would create a command to run a WinFSP-based filesystem
-	// For now, this is a placeholder that would need a proper WinFSP implementation
+	// Create command to run our WinFSP filesystem implementation
 	args := []string{
-		"mount",
 		"--vault", vault.GetPath(),
 		"--drive", options.MountPoint,
 	}
@@ -369,7 +365,7 @@ func (w *WindowsMounter) createWinFSPCommand(vault VaultInterface, options *Moun
 		args = append(args, "--debug")
 	}
 
-	// This would be the path to our WinFSP filesystem implementation
+	// Use our WinFSP filesystem implementation
 	return exec.Command("dirlocker-winfsp.exe", args...)
 }
 

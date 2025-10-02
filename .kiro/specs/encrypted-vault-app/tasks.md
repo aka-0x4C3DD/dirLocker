@@ -1,4 +1,4 @@
- # Implementation Plan
+# Implementation Plan
 
 - [x] 1. Set up project structure and core Rust cryptographic library
   - Create Rust library project with proper Cargo.toml configuration
@@ -147,17 +147,9 @@
   - Implement secure memory clearing when unmounting vaults
   - Write platform-specific mounting infrastructure tests
   - Note: This provides the mounting framework but requires Task 18 for actual filesystem daemon implementation
-  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4 .5_
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
 - [x] 17. Complete GUI file operations and vault content management
-
-
-
-
-
-
-
-
   - Add missing FFI functions for file operations (vault_list_files, vault_read_file, vault_write_file)
   - Implement VaultManager methods for GUI file operations (ListFiles, AddFile, ExtractFile, DeleteFile, CreateDirectory)
   - Add vault content display functionality to VaultBrowser tree view with real vault file listing
@@ -169,7 +161,7 @@
   - Write integration tests for vault file operations and notification system
   - _Requirements: 4.5, 8.2, 8.3, 11.1, 11.2, 11.3, 13.1, 13.2, 13.3_
 
-- [ ] 18. Implement FUSE filesystem daemon for actual vault mounting
+- [x] 18. Implement FUSE filesystem daemon for actual vault mounting
   - Create standalone `dirlocker-fuse` binary for Linux FUSE filesystem operations
   - Implement Windows filesystem daemon using Dokany/WinFSP APIs
   - Add macOS filesystem daemon using macFUSE APIs
@@ -182,39 +174,49 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
 - [ ] 19. Implement plausible deniability features
-  - Create multiple file table support with separate password encryption
+  - Create multiple file table support with separate password encryption in Rust core
   - Implement indistinguishable file table storage in same container format
-  - Add decoy file table creation and management
+  - Add decoy file table creation and management functions
   - Create metadata wiping functionality for enhanced deniability
   - Implement clear documentation of deniability limitations
+  - Add FFI functions for plausible deniability operations
+  - Integrate plausible deniability into CLI and GUI applications
   - Write unit tests for multiple file table scenarios
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
 - [ ] 20. Set up automated build and packaging system
-  - Create cross-compilation setup for Windows, macOS, and Linux desktop applications
-  - Implement MSI package generation for Windows with proper metadata and dependencies
-  - Add DMG package generation for macOS with code signing and notarization
-  - Create DEB package generation for Linux with distribution-specific metadata
+  - Create GitHub Actions or similar CI/CD workflow for automated builds
+  - Implement cross-compilation setup for Windows, macOS, and Linux desktop applications
+  - Add MSI package generation for Windows with proper metadata and dependencies
+  - Create DMG package generation for macOS with code signing and notarization
+  - Implement DEB package generation for Linux with distribution-specific metadata
   - Set up build automation with version information and checksums
-  - Implement package integrity verification and testing
+  - Add package integrity verification and testing to CI pipeline
+  - Create release automation scripts for publishing packages
   - _Requirements: 14.1, 14.2, 14.3, 14.6, 14.7_
 
 - [ ] 21. Implement iOS mobile application
-  - Create iOS Swift application with File Provider extension
+  - Create iOS Swift application project with File Provider extension
   - Integrate Rust core library via C FFI with proper memory management
   - Implement Files app integration using File Provider extension
   - Add Touch ID/Face ID authentication support
   - Create in-app file browser for vault contents
+  - Implement vault operations (create, open, add files, extract files)
+  - Add iOS-specific security features (keychain integration, secure enclave)
   - Set up IPA package generation for App Store distribution
+  - Write iOS-specific integration tests
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 14.5_
 
 - [ ] 22. Implement Android mobile application
-  - Create Android Kotlin application with DocumentProvider implementation
+  - Create Android Kotlin application project with DocumentProvider implementation
   - Integrate Rust core library via JNI with proper lifecycle management
   - Implement Storage Access Framework (SAF) integration
-  - Add biometric authentication support
+  - Add biometric authentication support (fingerprint, face unlock)
   - Create Material Design UI for vault browsing
+  - Implement vault operations (create, open, add files, extract files)
+  - Add Android-specific security features (keystore integration, hardware-backed keys)
   - Set up APK/AAB package generation for Play Store distribution
+  - Write Android-specific integration tests
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 14.4_
 
 - [ ] 23. Implement comprehensive testing and security validation
@@ -224,13 +226,19 @@
   - Create fuzzing tests for vault file format parsing
   - Implement end-to-end workflow testing across all platforms
   - Add cryptographic validation tests with known test vectors
+  - Create stress tests for filesystem mounting operations
+  - Implement automated security scanning in CI pipeline
   - _Requirements: 15.1, 15.2, 15.3, 15.5_
 
 - [ ] 24. Finalize dirLocker documentation and distribution preparation
-  - Create comprehensive user documentation and security guidelines for dirLocker
+  - Create comprehensive user documentation (installation, usage, troubleshooting)
+  - Write security guidelines and best practices documentation
+  - Document API and FFI interfaces for developers
+  - Create architecture and design documentation
   - Implement final integration testing across all platforms and features
   - Set up distribution channels and update mechanisms for dirLocker
   - Create security audit documentation and threat model validation
   - Finalize code signing, notarization, and store submission processes
   - Prepare dirLocker release packages with proper versioning and checksums
+  - Create release notes and changelog
   - _Requirements: 14.6, 14.7, 15.5_

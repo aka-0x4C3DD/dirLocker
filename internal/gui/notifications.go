@@ -8,22 +8,13 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"dirLocker/internal/types"
 	"dirLocker/pkg/logging"
-)
-
-// NotificationType represents the type of notification
-type NotificationType int
-
-const (
-	NotificationInfo NotificationType = iota
-	NotificationSuccess
-	NotificationWarning
-	NotificationError
 )
 
 // Notification represents a system notification
 type Notification struct {
-	Type    NotificationType
+	Type    types.NotificationType
 	Title   string
 	Message string
 }
@@ -108,7 +99,7 @@ func (nm *NotificationManager) sendInAppNotification(notification *Notification)
 // SendInfo sends an info notification
 func (nm *NotificationManager) SendInfo(title, message string) {
 	nm.SendNotification(&Notification{
-		Type:    NotificationInfo,
+		Type:    types.NotificationInfo,
 		Title:   title,
 		Message: message,
 	})
@@ -117,7 +108,7 @@ func (nm *NotificationManager) SendInfo(title, message string) {
 // SendSuccess sends a success notification
 func (nm *NotificationManager) SendSuccess(title, message string) {
 	nm.SendNotification(&Notification{
-		Type:    NotificationSuccess,
+		Type:    types.NotificationSuccess,
 		Title:   title,
 		Message: message,
 	})
@@ -126,7 +117,7 @@ func (nm *NotificationManager) SendSuccess(title, message string) {
 // SendWarning sends a warning notification
 func (nm *NotificationManager) SendWarning(title, message string) {
 	nm.SendNotification(&Notification{
-		Type:    NotificationWarning,
+		Type:    types.NotificationWarning,
 		Title:   title,
 		Message: message,
 	})
@@ -135,7 +126,7 @@ func (nm *NotificationManager) SendWarning(title, message string) {
 // SendError sends an error notification
 func (nm *NotificationManager) SendError(title, message string) {
 	nm.SendNotification(&Notification{
-		Type:    NotificationError,
+		Type:    types.NotificationError,
 		Title:   title,
 		Message: message,
 	})
