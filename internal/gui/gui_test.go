@@ -38,7 +38,8 @@ func TestMainWindow(t *testing.T) {
 	defer logger.Close()
 
 	// Create vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create main window
@@ -70,7 +71,8 @@ func TestVaultBrowser(t *testing.T) {
 	}
 
 	// Create vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create notification manager and vault browser
@@ -106,7 +108,8 @@ func TestFileHidingInterface(t *testing.T) {
 	}
 
 	// Create vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create file hiding interface
@@ -144,7 +147,8 @@ func TestSystemTray(t *testing.T) {
 	defer logger.Close()
 
 	// Create vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create main window
@@ -191,7 +195,8 @@ func TestVaultOperations(t *testing.T) {
 	defer logger.Close()
 
 	// Create vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create main window
@@ -248,7 +253,8 @@ func TestDialogCreation(t *testing.T) {
 	defer logger.Close()
 
 	// Create vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create main window

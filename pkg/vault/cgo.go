@@ -504,22 +504,20 @@ func (v *VaultHandle) ListFiles() ([]FileEntry, error) {
 		return nil, &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
 	}
 
-	// For now, return empty list as the C function is not implemented yet
-	// TODO: Implement vault_list_files in Rust core and uncomment below
-	/*
-		var cEntries *C.CFileEntry
-		var count C.size_t
+	var cEntries *C.CFileEntry
+	var count C.size_t
 
-		result := C.vault_list_files(v.handle, &cEntries, &count)
-		if result != C.ERROR_SUCCESS {
-			if err := getLastError(); err != nil {
-				return nil, err
-			}
-			return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to list files"}
+	result := C.vault_list_files(v.handle, &cEntries, &count)
+	if result != C.ERROR_SUCCESS {
+		if err := getLastError(); err != nil {
+			return nil, err
 		}
+		return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to list files"}
+	}
 
-		// Convert C array to Go slice
-		entries := make([]FileEntry, count)
+	// Convert C array to Go slice
+	entries := make([]FileEntry, count)
+	if count > 0 {
 		cEntriesSlice := (*[1 << 30]C.CFileEntry)(unsafe.Pointer(cEntries))[:count:count]
 
 		for i, cEntry := range cEntriesSlice {
@@ -533,10 +531,10 @@ func (v *VaultHandle) ListFiles() ([]FileEntry, error) {
 		}
 
 		// Free C allocated memory
-		C.free(unsafe.Pointer(cEntries))
-	*/
+		C.vault_free_file_entries(cEntries, count)
+	}
 
-	return []FileEntry{}, nil
+	return entries, nil
 }
 
 // AddFile adds a file to the vault
@@ -545,22 +543,23 @@ func (v *VaultHandle) AddFile(vaultPath string, data []byte) error {
 		return &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
 	}
 
-	// For now, return not implemented error as the C function is not implemented yet
-	// TODO: Implement vault_write_file in Rust core and uncomment below
-	/*
-		cPath := C.CString(vaultPath)
-		defer C.free(unsafe.Pointer(cPath))
+	cPath := C.CString(vaultPath)
+	defer C.free(unsafe.Pointer(cPath))
 
-		result := C.vault_write_file(v.handle, cPath, (*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
-		if result != C.ERROR_SUCCESS {
-			if err := getLastError(); err != nil {
-				return err
-			}
-			return &VaultError{Code: ErrorCode(result), Message: "Failed to add file"}
+	var dataPtr *C.uint8_t
+	if len(data) > 0 {
+		dataPtr = (*C.uint8_t)(unsafe.Pointer(&data[0]))
+	}
+
+	result := C.vault_write_file(v.handle, cPath, dataPtr, C.size_t(len(data)))
+	if result != C.ERROR_SUCCESS {
+		if err := getLastError(); err != nil {
+			return err
 		}
-	*/
+		return &VaultError{Code: ErrorCode(result), Message: "Failed to add file"}
+	}
 
-	return &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+	return nil
 }
 
 // ExtractFile extracts a file from the vault
@@ -569,30 +568,24 @@ func (v *VaultHandle) ExtractFile(vaultPath string) ([]byte, error) {
 		return nil, &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
 	}
 
-	// For now, return not implemented error as the C function is not implemented yet
-	// TODO: Implement vault_read_file in Rust core and uncomment below
-	/*
-		cPath := C.CString(vaultPath)
-		defer C.free(unsafe.Pointer(cPath))
+	cPath := C.CString(vaultPath)
+	defer C.free(unsafe.Pointer(cPath))
 
-		var cData *C.uchar
-		var size C.size_t
+	var cData *C.uint8_t
+	var size C.size_t
 
-		result := C.vault_read_file(v.handle, cPath, &cData, &size)
-		if result != C.ERROR_SUCCESS {
-			if err := getLastError(); err != nil {
-				return nil, err
-			}
-			return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to extract file"}
+	result := C.vault_read_file(v.handle, cPath, &cData, &size)
+	if result != C.ERROR_SUCCESS {
+		if err := getLastError(); err != nil {
+			return nil, err
 		}
+		return nil, &VaultError{Code: ErrorCode(result), Message: "Failed to extract file"}
+	}
 
-		data := C.GoBytes(unsafe.Pointer(cData), C.int(size))
-		C.free(unsafe.Pointer(cData))
+	data := C.GoBytes(unsafe.Pointer(cData), C.int(size))
+	C.vault_free_file_data(cData)
 
-		return data, nil
-	*/
-
-	return nil, &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+	return data, nil
 }
 
 // DeleteFile deletes a file from the vault
@@ -601,9 +594,18 @@ func (v *VaultHandle) DeleteFile(vaultPath string) error {
 		return &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
 	}
 
-	// For now, return not implemented error as the C function is not implemented yet
-	// TODO: Implement vault_delete_file in Rust core
-	return &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+	cPath := C.CString(vaultPath)
+	defer C.free(unsafe.Pointer(cPath))
+
+	result := C.vault_delete_file(v.handle, cPath)
+	if result != C.ERROR_SUCCESS {
+		if err := getLastError(); err != nil {
+			return err
+		}
+		return &VaultError{Code: ErrorCode(result), Message: "Failed to delete file"}
+	}
+
+	return nil
 }
 
 // CreateDirectory creates a directory in the vault
@@ -612,9 +614,18 @@ func (v *VaultHandle) CreateDirectory(vaultPath string) error {
 		return &VaultError{Code: ErrorInvalidArgument, Message: "Vault handle is null"}
 	}
 
-	// For now, return not implemented error as the C function is not implemented yet
-	// TODO: Implement vault_create_directory in Rust core
-	return &VaultError{Code: ErrorInternalError, Message: "File operations not yet implemented in core library"}
+	cPath := C.CString(vaultPath)
+	defer C.free(unsafe.Pointer(cPath))
+
+	result := C.vault_create_directory(v.handle, cPath)
+	if result != C.ERROR_SUCCESS {
+		if err := getLastError(); err != nil {
+			return err
+		}
+		return &VaultError{Code: ErrorCode(result), Message: "Failed to create directory"}
+	}
+
+	return nil
 }
 
 // IsCGOEnabled returns true if CGO is enabled and vault operations are available

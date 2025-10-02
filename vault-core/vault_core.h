@@ -118,10 +118,16 @@ void vault_free_string(char* string);
 void vault_free_wrapped_key(CWrappedMasterKey* wrapped_key);
 void vault_free_envelope(CEnvelope* envelope);
 
-// Future functions (to be implemented in later tasks)
-// int vault_list_files(CVaultHandle handle, CFileEntry** entries, size_t* count);
-// int vault_read_file(CVaultHandle handle, const char* path, uint8_t** data, size_t* size);
-// int vault_write_file(CVaultHandle handle, const char* path, const uint8_t* data, size_t size);
+// File operations
+int vault_list_files(CVaultHandle handle, CFileEntry** entries, size_t* count);
+int vault_read_file(CVaultHandle handle, const char* path, uint8_t** data, size_t* size);
+int vault_write_file(CVaultHandle handle, const char* path, const uint8_t* data, size_t size);
+int vault_delete_file(CVaultHandle handle, const char* path);
+int vault_create_directory(CVaultHandle handle, const char* path);
+void vault_free_file_entries(CFileEntry* entries, size_t count);
+void vault_free_file_data(uint8_t* data);
+
+// Streaming operations (for future implementation)
 // CStreamHandle vault_open_stream(CVaultHandle handle, const char* path);
 // int vault_read_chunk(CStreamHandle stream, uint64_t offset, size_t size, uint8_t* data);
 

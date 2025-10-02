@@ -47,7 +47,10 @@ func run() error {
 	defer logger.Close()
 
 	// Initialize vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize vault manager: %w", err)
+	}
 	defer vaultManager.CloseAllVaults()
 
 	// Initialize icon manager and apply custom icon if available

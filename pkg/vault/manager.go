@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 
 	"dirLocker/pkg/config"
 	"dirLocker/pkg/logging"
+	"dirLocker/pkg/mount"
 )
 
 // KDFParams represents Argon2id key derivation parameters
@@ -24,6 +26,7 @@ type VaultManager struct {
 	config     *config.Config
 	logger     *logging.Logger
 	openVaults map[string]*ManagedVault
+	mountMgr   *mount.Manager
 	mutex      sync.RWMutex
 }
 
@@ -48,12 +51,28 @@ type VaultInfo struct {
 }
 
 // NewVaultManager creates a new vault manager instance
-func NewVaultManager(cfg *config.Config, logger *logging.Logger) *VaultManager {
-	return &VaultManager{
+func NewVaultManager(cfg *config.Config, logger *logging.Logger) (*VaultManager, error) {
+	// Initialize mount manager
+	mountMgr, err := mount.NewManager(logger)
+	if err != nil {
+		logger.Warn("Failed to initialize mount manager", "error", err)
+		// Continue without mounting support
+		mountMgr = nil
+	}
+
+	vm := &VaultManager{
 		config:     cfg,
 		logger:     logger,
 		openVaults: make(map[string]*ManagedVault),
+		mountMgr:   mountMgr,
 	}
+
+	// Start cleanup timer for mount manager if available
+	if mountMgr != nil {
+		mountMgr.StartCleanupTimer()
+	}
+
+	return vm, nil
 }
 
 // CreateVaultWithParams creates a new vault with custom KDF parameters
@@ -262,12 +281,22 @@ func (vm *VaultManager) CloseVault(path string) error {
 	return nil
 }
 
-// CloseAllVaults closes all open vaults
+// CloseAllVaults closes all open vaults and unmounts any mounted filesystems
 func (vm *VaultManager) CloseAllVaults() error {
 	vm.mutex.Lock()
 	defer vm.mutex.Unlock()
 
 	vm.logger.Info("Closing all open vaults", "count", len(vm.openVaults))
+
+	// First, unmount all mounted vaults
+	if vm.mountMgr != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := vm.mountMgr.UnmountAll(ctx); err != nil {
+			vm.logger.Warn("Failed to unmount all vaults during close", "error", err)
+		}
+	}
 
 	var errors []error
 	for path, vault := range vm.openVaults {
@@ -496,6 +525,13 @@ func (mv *ManagedVault) GetInfo() (path string, openedAt, lastUsed time.Time, is
 	return mv.Path, mv.OpenedAt, mv.LastUsed, mv.IsShared
 }
 
+// GetPath returns the vault path (implements mount.VaultInterface)
+func (mv *ManagedVault) GetPath() string {
+	mv.mutex.RLock()
+	defer mv.mutex.RUnlock()
+	return mv.Path
+}
+
 // ListFiles lists all files and directories in the managed vault
 func (mv *ManagedVault) ListFiles() ([]FileEntry, error) {
 	mv.mutex.Lock()
@@ -534,4 +570,173 @@ func (mv *ManagedVault) CreateDirectory(vaultPath string) error {
 	defer mv.mutex.Unlock()
 	mv.LastUsed = time.Now()
 	return mv.Handle.CreateDirectory(vaultPath)
+}
+
+// VaultManager methods for GUI file operations
+
+// ListFiles lists all files and directories in a vault
+func (vm *VaultManager) ListFiles(vaultPath string) ([]FileEntry, error) {
+	vault, exists := vm.GetVault(vaultPath)
+	if !exists {
+		return nil, fmt.Errorf("vault is not open: %s", vaultPath)
+	}
+
+	return vault.ListFiles()
+}
+
+// AddFile adds a file to a vault
+func (vm *VaultManager) AddFile(vaultPath, filePath string, data []byte) error {
+	vault, exists := vm.GetVault(vaultPath)
+	if !exists {
+		return fmt.Errorf("vault is not open: %s", vaultPath)
+	}
+
+	return vault.AddFile(filePath, data)
+}
+
+// ExtractFile extracts a file from a vault
+func (vm *VaultManager) ExtractFile(vaultPath, filePath string) ([]byte, error) {
+	vault, exists := vm.GetVault(vaultPath)
+	if !exists {
+		return nil, fmt.Errorf("vault is not open: %s", vaultPath)
+	}
+
+	return vault.ExtractFile(filePath)
+}
+
+// DeleteFile deletes a file from a vault
+func (vm *VaultManager) DeleteFile(vaultPath, filePath string) error {
+	vault, exists := vm.GetVault(vaultPath)
+	if !exists {
+		return fmt.Errorf("vault is not open: %s", vaultPath)
+	}
+
+	return vault.DeleteFile(filePath)
+}
+
+// CreateDirectory creates a directory in a vault
+func (vm *VaultManager) CreateDirectory(vaultPath, dirPath string) error {
+	vault, exists := vm.GetVault(vaultPath)
+	if !exists {
+		return fmt.Errorf("vault is not open: %s", vaultPath)
+	}
+
+	return vault.CreateDirectory(dirPath)
+}
+
+// MountVault mounts a vault at the specified mount point
+func (vm *VaultManager) MountVault(ctx context.Context, vaultPath, mountPoint string, options *mount.MountOptions) (*mount.MountInfo, error) {
+	if vm.mountMgr == nil {
+		return nil, fmt.Errorf("mounting not supported on this platform")
+	}
+
+	// Get the managed vault
+	vault, exists := vm.GetVault(vaultPath)
+	if !exists {
+		return nil, fmt.Errorf("vault is not open: %s", vaultPath)
+	}
+
+	vm.logger.Info("Mounting vault", "vault_path", vaultPath, "mount_point", mountPoint)
+
+	// Use default options if none provided
+	if options == nil {
+		options = mount.DefaultMountOptions()
+		options.MountPoint = mountPoint
+	}
+
+	// Perform the mount
+	mountInfo, err := vm.mountMgr.Mount(ctx, vault, options)
+	if err != nil {
+		vm.logger.Error("Failed to mount vault", "error", err, "vault_path", vaultPath)
+		return nil, fmt.Errorf("failed to mount vault: %w", err)
+	}
+
+	vm.logger.Info("Successfully mounted vault", "vault_path", vaultPath, "mount_point", mountPoint)
+	return mountInfo, nil
+}
+
+// UnmountVault unmounts a vault from the specified mount point
+func (vm *VaultManager) UnmountVault(ctx context.Context, mountPoint string) error {
+	if vm.mountMgr == nil {
+		return fmt.Errorf("mounting not supported on this platform")
+	}
+
+	vm.logger.Info("Unmounting vault", "mount_point", mountPoint)
+
+	if err := vm.mountMgr.Unmount(ctx, mountPoint); err != nil {
+		vm.logger.Error("Failed to unmount vault", "error", err, "mount_point", mountPoint)
+		return fmt.Errorf("failed to unmount vault: %w", err)
+	}
+
+	vm.logger.Info("Successfully unmounted vault", "mount_point", mountPoint)
+	return nil
+}
+
+// UnmountAllVaults unmounts all currently mounted vaults
+func (vm *VaultManager) UnmountAllVaults(ctx context.Context) error {
+	if vm.mountMgr == nil {
+		return nil // No mounts to unmount
+	}
+
+	vm.logger.Info("Unmounting all vaults")
+	return vm.mountMgr.UnmountAll(ctx)
+}
+
+// IsVaultMounted checks if a vault is currently mounted at the given path
+func (vm *VaultManager) IsVaultMounted(mountPoint string) (bool, error) {
+	if vm.mountMgr == nil {
+		return false, nil
+	}
+
+	return vm.mountMgr.IsMounted(mountPoint)
+}
+
+// ListMountedVaults returns all currently mounted vaults
+func (vm *VaultManager) ListMountedVaults() ([]*mount.MountInfo, error) {
+	if vm.mountMgr == nil {
+		return []*mount.MountInfo{}, nil
+	}
+
+	return vm.mountMgr.ListMounts()
+}
+
+// GetMountInfo returns information about a specific mount
+func (vm *VaultManager) GetMountInfo(mountPoint string) (*mount.MountInfo, error) {
+	if vm.mountMgr == nil {
+		return nil, fmt.Errorf("mounting not supported on this platform")
+	}
+
+	return vm.mountMgr.GetMountInfo(mountPoint)
+}
+
+// IsMountingSupported returns true if mounting is supported on this platform
+func (vm *VaultManager) IsMountingSupported() bool {
+	return vm.mountMgr != nil && vm.mountMgr.IsSupported()
+}
+
+// GetRequiredMountDrivers returns a list of required drivers for mounting
+func (vm *VaultManager) GetRequiredMountDrivers() []string {
+	if vm.mountMgr == nil {
+		return []string{}
+	}
+
+	return vm.mountMgr.GetRequiredDrivers()
+}
+
+// CheckMountDrivers verifies that required drivers are installed
+func (vm *VaultManager) CheckMountDrivers() error {
+	if vm.mountMgr == nil {
+		return fmt.Errorf("mounting not supported on this platform")
+	}
+
+	return vm.mountMgr.CheckDrivers()
+}
+
+// GetMountTroubleshootingInfo returns platform-specific troubleshooting information
+func (vm *VaultManager) GetMountTroubleshootingInfo() string {
+	if vm.mountMgr == nil {
+		return "Mounting is not supported on this platform"
+	}
+
+	return vm.mountMgr.GetTroubleshootingInfo()
 }

@@ -193,9 +193,9 @@ fn test_vault_file_operations() {
     // List files
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].0, "test_document.pdf");
-    assert_eq!(files[0].1.size, 1024 * 1024);
-    assert!(!files[0].1.is_dir);
+    assert_eq!(files[0].name, "test_document.pdf");
+    assert_eq!(files[0].size, 1024 * 1024);
+    assert!(!files[0].is_dir);
 
     // Find specific file
     let found = vault.find_file("test_document.pdf").unwrap();
@@ -255,27 +255,27 @@ fn test_vault_encrypted_file_table_persistence() {
         assert_eq!(files.len(), 3);
 
         // Verify file details
-        let file_names: Vec<&str> = files.iter().map(|(name, _)| name.as_str()).collect();
+        let file_names: Vec<&str> = files.iter().map(|file_info| file_info.name.as_str()).collect();
         assert!(file_names.contains(&"document.pdf"));
         assert!(file_names.contains(&"image.jpg"));
         assert!(file_names.contains(&"folder"));
 
         // Check specific file properties
-        for (name, entry) in &files {
-            match name.as_str() {
+        for file_info in &files {
+            match file_info.name.as_str() {
                 "document.pdf" => {
-                    assert_eq!(entry.size, 1024 * 1024);
-                    assert!(!entry.is_dir);
+                    assert_eq!(file_info.size, 1024 * 1024);
+                    assert!(!file_info.is_dir);
                 }
                 "image.jpg" => {
-                    assert_eq!(entry.size, 2 * 1024 * 1024);
-                    assert!(!entry.is_dir);
+                    assert_eq!(file_info.size, 2 * 1024 * 1024);
+                    assert!(!file_info.is_dir);
                 }
                 "folder" => {
-                    assert_eq!(entry.size, 0);
-                    assert!(entry.is_dir);
+                    assert_eq!(file_info.size, 0);
+                    assert!(file_info.is_dir);
                 }
-                _ => panic!("Unexpected file: {}", name),
+                _ => panic!("Unexpected file: {}", file_info.name),
             }
         }
     }
@@ -326,7 +326,7 @@ fn test_vault_wrong_password_file_table() {
     let vault = Vault::open(&path, correct_password).expect("Failed to open vault with correct password");
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].0, "secret.txt");
+    assert_eq!(files[0].name, "secret.txt");
 }
 
 #[test]
@@ -383,8 +383,8 @@ fn test_vault_sharing_integration() {
     // Verify recipient can access files
     let files = recipient_vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].0, "shared_document.pdf");
-    assert_eq!(files[0].1.size, 2048);
+    assert_eq!(files[0].name, "shared_document.pdf");
+    assert_eq!(files[0].size, 2048);
 
     // Verify recipient can find specific files
     let found_file = recipient_vault.find_file("shared_document.pdf").unwrap();
@@ -541,10 +541,10 @@ fn test_vault_metadata_protection() {
     // But we should be able to decrypt and access the metadata
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].0, filename);
-    assert_eq!(files[0].1.size, size);
-    assert_eq!(files[0].1.mode, mode);
-    assert_eq!(files[0].1.mtime, mtime);
+    assert_eq!(files[0].name, filename);
+    assert_eq!(files[0].size, size);
+    assert_eq!(files[0].mode, mode);
+    assert_eq!(files[0].mtime, mtime);
 }
 
 #[test]
@@ -573,11 +573,12 @@ fn test_file_chunking_and_streaming() {
     // Verify file was stored correctly
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].0, "large_file.bin");
-    assert_eq!(files[0].1.size, test_data_size as u64);
+    assert_eq!(files[0].name, "large_file.bin");
+    assert_eq!(files[0].size, test_data_size as u64);
     
     // Should have 2 chunks (4MB + 2MB)
-    assert_eq!(files[0].1.chunks.len(), 2);
+    let file_entry = vault.find_file(&files[0].name).unwrap().unwrap();
+    assert_eq!(file_entry.chunks.len(), 2);
 
     // Read entire file back
     let read_data = vault.read_file("large_file.bin").unwrap();
@@ -675,7 +676,8 @@ fn test_large_file_performance() {
 
     // Verify chunking
     let files = vault.list_files().unwrap();
-    assert_eq!(files[0].1.chunks.len(), 4); // 16MB / 4MB = 4 chunks
+    let file_entry = vault.find_file(&files[0].name).unwrap().unwrap();
+    assert_eq!(file_entry.chunks.len(), 4); // 16MB / 4MB = 4 chunks
 
     // Measure full read performance
     let read_start = Instant::now();
@@ -720,7 +722,7 @@ fn test_chunk_encryption_uniqueness() {
     
     // Find the file entry to get chunk information
     let files = vault.list_files().unwrap();
-    let file_entry = &files[0].1;
+    let file_entry = vault.find_file(&files[0].name).unwrap().unwrap();
     
     // Verify we have multiple chunks
     assert!(file_entry.chunks.len() >= 2);
@@ -776,8 +778,8 @@ fn test_simple_file_write_read() {
     // Check file was added to file table
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].0, "small.txt");
-    assert_eq!(files[0].1.size, small_data.len() as u64);
+    assert_eq!(files[0].name, "small.txt");
+    assert_eq!(files[0].size, small_data.len() as u64);
     
     // Read file back
     let read_small = vault.read_file("small.txt").unwrap();
@@ -814,7 +816,7 @@ fn test_empty_and_small_files() {
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 3);
     
-    let filenames: Vec<&str> = files.iter().map(|(name, _)| name.as_str()).collect();
+    let filenames: Vec<&str> = files.iter().map(|file_info| file_info.name.as_str()).collect();
     assert!(filenames.contains(&"empty.txt"));
     assert!(filenames.contains(&"single.txt"));
     assert!(filenames.contains(&"small.txt"));
@@ -851,7 +853,7 @@ fn test_file_overwrite_and_replacement() {
     
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1); // Still only one file
-    assert_eq!(files[0].1.size, new_data.len() as u64);
+    assert_eq!(files[0].size, new_data.len() as u64);
 
     // Overwrite with smaller file
     let small_data = b"Small";
@@ -863,7 +865,7 @@ fn test_file_overwrite_and_replacement() {
     
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
-    assert_eq!(files[0].1.size, small_data.len() as u64);
+    assert_eq!(files[0].size, small_data.len() as u64);
 }
 
 

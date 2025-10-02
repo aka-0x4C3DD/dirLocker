@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/test"
+	"github.com/stretchr/testify/require"
 
 	"dirLocker/pkg/config"
 	"dirLocker/pkg/logging"
@@ -47,7 +48,8 @@ func TestVaultBrowserOperations(t *testing.T) {
 	}
 	defer logger.Close()
 
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create test vault
@@ -203,7 +205,8 @@ func TestMainWindowIntegration(t *testing.T) {
 	}
 	defer logger.Close()
 
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create main window
@@ -266,7 +269,8 @@ func TestRecoveryKeyOperations(t *testing.T) {
 	}
 	defer logger.Close()
 
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	require.NoError(t, err)
 	defer vaultManager.CloseAllVaults()
 
 	// Create and open test vault

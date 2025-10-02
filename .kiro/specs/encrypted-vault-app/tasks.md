@@ -128,56 +128,60 @@
   - Write unit tests for icon detection and application scenarios
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
 
-- [x] 15. Implement native Qt-based GUI application
-
-
-
-
-
-
-
-  - Replace therecipe/qt with a modern Qt binding library (such as qt6 Go bindings or alternative native GUI framework)
-  - Create native desktop GUI application with main window and vault browser (no web-based components)
+- [x] 15. Implement Fyne-based GUI application with core functionality
+  - Replace Qt with Fyne framework for cross-platform native GUI
+  - Create main window with vault list, vault browser, and file hiding tabs
   - Implement vault creation/opening dialogs with cipher selection and KDF parameter configuration
-  - Add native file browser with tree view showing vault contents and file operations
-  - Create file hiding interface with visual indicators for hidden files using native OS widgets
-  - Implement mount/unmount functionality with platform-specific integration
-  - Add native settings dialog for configuration management and icon selection
-  - Create system tray integration with native context menu and OS notifications
-  - Ensure full native OS integration (Windows native, macOS native, Linux native)
+  - Add vault browser with tree view showing vault contents and file operations
+  - Create file hiding interface with visual indicators for hidden files
+  - Implement system tray integration with context menu and notifications
+  - Add comprehensive error handling with user-friendly dialogs
   - Write GUI integration tests and user workflow tests
   - _Requirements: 4.5, 12.5, 13.1, 13.2, 13.3, 13.4, 13.5_
 
-- [x] 15.1 Complete GUI vault content management and system integration
+- [x] 16. Implement desktop filesystem mounting infrastructure and platform abstraction
+  - Create mount manager interface with platform-specific implementations
+  - Implement mount point management, cleanup, and error handling infrastructure
+  - Add platform detection and driver requirement checking (Dokany/WinFSP, macFUSE, FUSE)
+  - Create mount/unmount command integration in CLI and GUI applications
+  - Implement secure memory clearing when unmounting vaults
+  - Write platform-specific mounting infrastructure tests
+  - Note: This provides the mounting framework but requires Task 18 for actual filesystem daemon implementation
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4 .5_
+
+- [x] 17. Complete GUI file operations and vault content management
 
 
 
 
 
 
+
+
+  - Add missing FFI functions for file operations (vault_list_files, vault_read_file, vault_write_file)
   - Implement VaultManager methods for GUI file operations (ListFiles, AddFile, ExtractFile, DeleteFile, CreateDirectory)
   - Add vault content display functionality to VaultBrowser tree view with real vault file listing
   - Implement file operations in VaultBrowser (add files/folders, extract files, delete items) with progress dialogs
   - Add drag-and-drop support for adding files to vault browser
   - Implement vault file preview and properties dialogs for selected files
   - Add system notifications for vault operations (file added, extracted, vault mounted/unmounted, errors)
-  - Implement notification system using native OS notification APIs (Windows Toast, macOS Notification Center, Linux libnotify)
-  - Add vault status indicators in system tray (show mounted/unmounted state, file operation progress)
   - Implement recovery key operations in GUI (generate, export, import recovery keys)
-  - Add comprehensive error handling with user-friendly error dialogs for all vault operations
   - Write integration tests for vault file operations and notification system
   - _Requirements: 4.5, 8.2, 8.3, 11.1, 11.2, 11.3, 13.1, 13.2, 13.3_
 
-- [ ] 16. Implement desktop filesystem mounting
-  - Create Windows mounting using Dokany/WinFSP with UAC elevation handling
-  - Implement macOS mounting using macFUSE with Gatekeeper compatibility
-  - Add Linux mounting using FUSE with distribution-specific considerations
-  - Create mount point management and cleanup on unmount
-  - Implement secure memory clearing when unmounting vaults
-  - Write platform-specific mounting tests and error handling
+- [ ] 18. Implement FUSE filesystem daemon for actual vault mounting
+  - Create standalone `dirlocker-fuse` binary for Linux FUSE filesystem operations
+  - Implement Windows filesystem daemon using Dokany/WinFSP APIs
+  - Add macOS filesystem daemon using macFUSE APIs
+  - Implement core FUSE operations (open, read, write, readdir, getattr, etc.)
+  - Create filesystem-to-vault operation translation layer
+  - Add file handle management and caching for performance
+  - Implement proper filesystem semantics (directories, permissions, timestamps)
+  - Add filesystem daemon integration with mount manager infrastructure
+  - Write comprehensive filesystem operation tests
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 17. Implement plausible deniability features
+- [ ] 19. Implement plausible deniability features
   - Create multiple file table support with separate password encryption
   - Implement indistinguishable file table storage in same container format
   - Add decoy file table creation and management
@@ -186,7 +190,7 @@
   - Write unit tests for multiple file table scenarios
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [ ] 18. Set up automated build and packaging system
+- [ ] 20. Set up automated build and packaging system
   - Create cross-compilation setup for Windows, macOS, and Linux desktop applications
   - Implement MSI package generation for Windows with proper metadata and dependencies
   - Add DMG package generation for macOS with code signing and notarization
@@ -195,7 +199,7 @@
   - Implement package integrity verification and testing
   - _Requirements: 14.1, 14.2, 14.3, 14.6, 14.7_
 
-- [ ] 19. Implement iOS mobile application
+- [ ] 21. Implement iOS mobile application
   - Create iOS Swift application with File Provider extension
   - Integrate Rust core library via C FFI with proper memory management
   - Implement Files app integration using File Provider extension
@@ -204,7 +208,7 @@
   - Set up IPA package generation for App Store distribution
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 14.5_
 
-- [ ] 20. Implement Android mobile application
+- [ ] 22. Implement Android mobile application
   - Create Android Kotlin application with DocumentProvider implementation
   - Integrate Rust core library via JNI with proper lifecycle management
   - Implement Storage Access Framework (SAF) integration
@@ -213,7 +217,7 @@
   - Set up APK/AAB package generation for Play Store distribution
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 14.4_
 
-- [ ] 21. Implement comprehensive testing and security validation
+- [ ] 23. Implement comprehensive testing and security validation
   - Create cross-platform compatibility test suite with test vectors
   - Implement security testing for memory hygiene and key material protection
   - Add performance testing for large vaults and concurrent access
@@ -222,7 +226,7 @@
   - Add cryptographic validation tests with known test vectors
   - _Requirements: 15.1, 15.2, 15.3, 15.5_
 
-- [ ] 22. Finalize dirLocker documentation and distribution preparation
+- [ ] 24. Finalize dirLocker documentation and distribution preparation
   - Create comprehensive user documentation and security guidelines for dirLocker
   - Implement final integration testing across all platforms and features
   - Set up distribution channels and update mechanisms for dirLocker

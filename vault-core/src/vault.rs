@@ -16,6 +16,16 @@ use crate::sharing::{SharingManager, X25519KeyPair};
 // Re-export format types for convenience
 pub use crate::format::{ChunkInfo, FileEntry};
 
+/// File information for FFI compatibility
+#[derive(Debug, Clone)]
+pub struct FileInfo {
+    pub name: String,
+    pub size: u64,
+    pub is_dir: bool,
+    pub mtime: chrono::DateTime<chrono::Utc>,
+    pub mode: u32,
+}
+
 /// Vault space usage statistics
 #[derive(Debug, Clone)]
 pub struct VaultSpaceUsage {
@@ -422,7 +432,7 @@ impl Vault {
     }
 
     /// List all files in the vault (decrypted filenames)
-    pub fn list_files(&self) -> VaultResult<Vec<(String, &crate::format::FileEntry)>> {
+    pub fn list_files(&self) -> VaultResult<Vec<FileInfo>> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
@@ -436,7 +446,13 @@ impl Vault {
         let mut files = Vec::new();
         for entry in &file_table.files {
             let filename = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
-            files.push((filename, entry));
+            files.push(FileInfo {
+                name: filename,
+                size: entry.size,
+                is_dir: entry.is_dir,
+                mtime: entry.mtime,
+                mode: entry.mode,
+            });
         }
 
         Ok(files)
@@ -495,8 +511,18 @@ impl Vault {
 
     /// Write file data to vault using chunking
     pub fn write_file(&mut self, filename: &str, data: &[u8]) -> VaultResult<()> {
+        self.write_file_with_options(filename, data, true)
+    }
+
+    /// Write file data to vault with option to defer file table save
+    pub fn write_file_with_options(&mut self, filename: &str, data: &[u8], save_file_table: bool) -> VaultResult<()> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // Validate filename
+        if filename.is_empty() {
+            return Err(VaultError::invalid_argument("Filename cannot be empty"));
         }
 
         // Check if file already exists and remove it
@@ -593,8 +619,27 @@ impl Vault {
             }
         }
 
-        // Add file entry to vault and save file table first
+        // Add file entry to vault and optionally save file table
         self.add_file_entry(file_entry)?;
+        if save_file_table {
+            self.save_file_table()?;
+        }
+
+        Ok(())
+    }
+
+    /// Write multiple files to vault efficiently (batch operation)
+    pub fn write_files_batch(&mut self, files: &[(&str, &[u8])]) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // Write all files without saving file table each time
+        for (filename, data) in files {
+            self.write_file_with_options(filename, data, false)?;
+        }
+
+        // Save file table once at the end
         self.save_file_table()?;
 
         Ok(())
@@ -1187,6 +1232,97 @@ impl Vault {
         if let Some(mut subkeys) = self.subkeys.take() {
             subkeys.clear();
         }
+
+        Ok(())
+    }
+
+    /// Delete a file from the vault
+    pub fn delete_file(&mut self, filename: &str) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // Find the file entry
+        let file_table = self.file_table.as_mut().ok_or_else(|| {
+            VaultError::invalid_argument("File table not available")
+        })?;
+
+        let subkeys = self.subkeys.as_ref().ok_or_else(|| {
+            VaultError::invalid_argument("Subkeys not available")
+        })?;
+
+        // Find and remove the file entry
+        let mut found_index = None;
+        for (index, entry) in file_table.files.iter().enumerate() {
+            let decrypted_name = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
+            if decrypted_name == filename {
+                found_index = Some(index);
+                break;
+            }
+        }
+
+        let index = found_index.ok_or_else(|| {
+            VaultError::file_not_found(&format!("File not found: {}", filename))
+        })?;
+
+        // Remove the file entry
+        file_table.files.remove(index);
+
+        // Save the updated file table
+        self.save_file_table()?;
+
+        Ok(())
+    }
+
+    /// Create a directory in the vault
+    pub fn create_directory(&mut self, dirname: &str) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // Validate directory name
+        if dirname.is_empty() {
+            return Err(VaultError::invalid_argument("Directory name cannot be empty"));
+        }
+
+        // Check if directory already exists
+        match self.find_file(dirname) {
+            Ok(Some(_)) => {
+                return Err(VaultError::invalid_argument(&format!("Directory already exists: {}", dirname)));
+            }
+            Ok(None) => {
+                // Directory doesn't exist, proceed with creation
+            }
+            Err(e) => {
+                // Error occurred during search
+                return Err(e);
+            }
+        }
+
+        // Create directory entry
+        let subkeys = self.subkeys.as_ref().ok_or_else(|| {
+            VaultError::internal_error("Subkeys not available")
+        })?;
+
+        let dir_entry = crate::format::FileEntry::new(
+            dirname,
+            0,
+            chrono::Utc::now(),
+            0o755, // Directory permissions
+            true,  // is_dir
+            self.crypto.as_ref(),
+            &subkeys.filename_key,
+        )?;
+
+        // Add to file table
+        let file_table = self.file_table.as_mut().ok_or_else(|| {
+            VaultError::internal_error("File table not available")
+        })?;
+
+        file_table.files.push(dir_entry);
+
+        // Save the updated file table
+        self.save_file_table()?;
 
         Ok(())
     }

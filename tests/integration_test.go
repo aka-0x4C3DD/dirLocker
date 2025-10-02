@@ -21,7 +21,10 @@ func TestVaultManagerIntegration(t *testing.T) {
 	cfg := createTestConfig(tempDir)
 	logger := logging.NewTestLogger()
 
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	if err != nil {
+		t.Fatalf("Failed to create vault manager: %v", err)
+	}
 	defer vaultManager.CloseAllVaults()
 
 	vaultPath := filepath.Join(tempDir, "test.vault")
@@ -369,7 +372,10 @@ func TestErrorHandling(t *testing.T) {
 	cfg := createTestConfig(tempDir)
 	logger := logging.NewTestLogger()
 
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	if err != nil {
+		t.Fatalf("Failed to create vault manager: %v", err)
+	}
 	defer vaultManager.CloseAllVaults()
 
 	t.Run("InvalidVaultPath", func(t *testing.T) {

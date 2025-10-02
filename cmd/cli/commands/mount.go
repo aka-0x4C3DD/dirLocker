@@ -1,13 +1,16 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"dirLocker/pkg/logging"
+	"dirLocker/pkg/mount"
 	"dirLocker/pkg/vault"
 
 	"github.com/spf13/cobra"
@@ -47,6 +50,22 @@ func newMountVaultCommand(vaultManager *vault.VaultManager, logger *logging.Logg
 		RunE: func(cmd *cobra.Command, args []string) error {
 			vaultPath := args[0]
 
+			// Check if mounting is supported
+			if !vaultManager.IsMountingSupported() {
+				fmt.Printf("Mounting is not supported on this platform.\n")
+				fmt.Printf("Required drivers: %s\n", strings.Join(vaultManager.GetRequiredMountDrivers(), ", "))
+				fmt.Printf("\nTroubleshooting:\n%s\n", vaultManager.GetMountTroubleshootingInfo())
+				return fmt.Errorf("mounting not supported")
+			}
+
+			// Check drivers
+			if err := vaultManager.CheckMountDrivers(); err != nil {
+				fmt.Printf("Mount drivers not available: %v\n", err)
+				fmt.Printf("Required drivers: %s\n", strings.Join(vaultManager.GetRequiredMountDrivers(), ", "))
+				fmt.Printf("\nTroubleshooting:\n%s\n", vaultManager.GetMountTroubleshootingInfo())
+				return fmt.Errorf("mount drivers not available: %w", err)
+			}
+
 			// Check if vault is open
 			_, exists := vaultManager.GetVault(vaultPath)
 			if !exists {
@@ -79,17 +98,42 @@ func newMountVaultCommand(vaultManager *vault.VaultManager, logger *logging.Logg
 				fmt.Printf("Mount options: %s\n", strings.Join(options, ","))
 			}
 
-			// Platform-specific mounting logic
-			switch runtime.GOOS {
-			case "windows":
-				return mountWindows(vaultPath, mountPoint, readOnly, allowOther, fsName, options, logger)
-			case "linux":
-				return mountLinux(vaultPath, mountPoint, readOnly, allowOther, fsName, options, logger)
-			case "darwin":
-				return mountMacOS(vaultPath, mountPoint, readOnly, allowOther, fsName, options, logger)
-			default:
-				return fmt.Errorf("mounting not supported on platform: %s", runtime.GOOS)
+			// Create mount options
+			mountOptions := &mount.MountOptions{
+				MountPoint:   mountPoint,
+				ReadOnly:     readOnly,
+				AllowOther:   allowOther,
+				Timeout:      60 * time.Second,
+				Debug:        false,
+				CacheTimeout: 1 * time.Second,
 			}
+
+			// Perform the mount
+			ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+			defer cancel()
+
+			fmt.Printf("\nMounting...")
+			mountInfo, err := vaultManager.MountVault(ctx, vaultPath, mountPoint, mountOptions)
+			if err != nil {
+				fmt.Printf(" FAILED\n")
+				fmt.Printf("Error: %v\n", err)
+				fmt.Printf("\nTroubleshooting:\n%s\n", vaultManager.GetMountTroubleshootingInfo())
+				return fmt.Errorf("failed to mount vault: %w", err)
+			}
+
+			fmt.Printf(" SUCCESS\n")
+			fmt.Printf("\nMount Information:\n")
+			fmt.Printf("  Vault Path: %s\n", mountInfo.VaultPath)
+			fmt.Printf("  Mount Point: %s\n", mountInfo.MountPoint)
+			fmt.Printf("  Mounted At: %s\n", mountInfo.MountedAt.Format("2006-01-02 15:04:05"))
+			fmt.Printf("  Read Only: %t\n", mountInfo.ReadOnly)
+			fmt.Printf("  Filesystem: %s\n", mountInfo.FileSystem)
+			fmt.Printf("  Process ID: %d\n", mountInfo.ProcessID)
+
+			fmt.Printf("\nVault is now accessible at: %s\n", mountInfo.MountPoint)
+			fmt.Printf("Use 'dirlocker mount unmount %s' to unmount when finished.\n", mountInfo.MountPoint)
+
+			return nil
 		},
 	}
 
@@ -114,23 +158,57 @@ func newUnmountVaultCommand(vaultManager *vault.VaultManager, logger *logging.Lo
 		RunE: func(cmd *cobra.Command, args []string) error {
 			mountPoint := args[0]
 
+			// Check if mounting is supported
+			if !vaultManager.IsMountingSupported() {
+				return fmt.Errorf("mounting not supported on this platform")
+			}
+
 			logger.Info("Unmounting vault", "mount_point", mountPoint, "force", force)
 
 			fmt.Printf("Unmounting: %s\n", mountPoint)
 			fmt.Printf("Platform: %s\n", runtime.GOOS)
 			fmt.Printf("Force unmount: %t\n", force)
 
-			// Platform-specific unmounting logic
-			switch runtime.GOOS {
-			case "windows":
-				return unmountWindows(mountPoint, force, logger)
-			case "linux":
-				return unmountLinux(mountPoint, force, logger)
-			case "darwin":
-				return unmountMacOS(mountPoint, force, logger)
-			default:
-				return fmt.Errorf("unmounting not supported on platform: %s", runtime.GOOS)
+			// Check if mount point is actually mounted
+			isMounted, err := vaultManager.IsVaultMounted(mountPoint)
+			if err != nil {
+				return fmt.Errorf("failed to check mount status: %w", err)
 			}
+
+			if !isMounted {
+				fmt.Printf("Mount point is not currently mounted: %s\n", mountPoint)
+				return nil
+			}
+
+			// Get mount info before unmounting
+			mountInfo, err := vaultManager.GetMountInfo(mountPoint)
+			if err != nil {
+				fmt.Printf("Warning: Could not get mount info: %v\n", err)
+			} else {
+				fmt.Printf("Vault: %s\n", mountInfo.VaultPath)
+				fmt.Printf("Filesystem: %s\n", mountInfo.FileSystem)
+			}
+
+			// Perform the unmount
+			timeout := 30 * time.Second
+			if force {
+				timeout = 10 * time.Second // Shorter timeout for force unmount
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+
+			fmt.Printf("\nUnmounting...")
+			if err := vaultManager.UnmountVault(ctx, mountPoint); err != nil {
+				fmt.Printf(" FAILED\n")
+				fmt.Printf("Error: %v\n", err)
+				return fmt.Errorf("failed to unmount vault: %w", err)
+			}
+
+			fmt.Printf(" SUCCESS\n")
+			fmt.Printf("Vault has been unmounted from: %s\n", mountPoint)
+
+			return nil
 		},
 	}
 
@@ -147,16 +225,38 @@ func newListMountsCommand(vaultManager *vault.VaultManager, logger *logging.Logg
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Info("Listing mounted vaults")
 
+			// Check if mounting is supported
+			if !vaultManager.IsMountingSupported() {
+				fmt.Printf("Mounting is not supported on this platform.\n")
+				return nil
+			}
+
 			fmt.Printf("Mounted vaults:\n")
 			fmt.Printf("Platform: %s\n\n", runtime.GOOS)
 
-			// This is a placeholder for the actual mount listing implementation
-			// which will be implemented in task 14
-			fmt.Printf("Mount listing functionality will be implemented in task 14.\n")
-			fmt.Printf("This would show:\n")
-			fmt.Printf("- Active mount points\n")
-			fmt.Printf("- Associated vault files\n")
-			fmt.Printf("- Mount options and status\n")
+			// Get list of mounted vaults
+			mounts, err := vaultManager.ListMountedVaults()
+			if err != nil {
+				return fmt.Errorf("failed to list mounted vaults: %w", err)
+			}
+
+			if len(mounts) == 0 {
+				fmt.Printf("No vaults are currently mounted.\n")
+				return nil
+			}
+
+			// Display mounted vaults
+			for i, mountInfo := range mounts {
+				fmt.Printf("%d. Mount Point: %s\n", i+1, mountInfo.MountPoint)
+				fmt.Printf("   Vault Path: %s\n", mountInfo.VaultPath)
+				fmt.Printf("   Mounted At: %s\n", mountInfo.MountedAt.Format("2006-01-02 15:04:05"))
+				fmt.Printf("   Read Only: %t\n", mountInfo.ReadOnly)
+				fmt.Printf("   Filesystem: %s\n", mountInfo.FileSystem)
+				fmt.Printf("   Process ID: %d\n", mountInfo.ProcessID)
+				fmt.Printf("\n")
+			}
+
+			fmt.Printf("Total mounted vaults: %d\n", len(mounts))
 
 			return nil
 		},
@@ -179,20 +279,49 @@ func newMountStatusCommand(vaultManager *vault.VaultManager, logger *logging.Log
 			fmt.Printf("Checking mount status: %s\n", mountPoint)
 			fmt.Printf("Platform: %s\n", runtime.GOOS)
 
+			// Check if mounting is supported
+			if !vaultManager.IsMountingSupported() {
+				fmt.Printf("Status: Mounting not supported on this platform\n")
+				return nil
+			}
+
 			// Check if mount point exists
 			if _, err := os.Stat(mountPoint); os.IsNotExist(err) {
 				fmt.Printf("Status: Mount point does not exist\n")
 				return nil
 			}
 
-			// This is a placeholder for the actual mount status implementation
-			// which will be implemented in task 14
-			fmt.Printf("Mount status functionality will be implemented in task 14.\n")
-			fmt.Printf("This would show:\n")
-			fmt.Printf("- Mount active/inactive status\n")
-			fmt.Printf("- Associated vault file\n")
-			fmt.Printf("- Filesystem driver information\n")
-			fmt.Printf("- Performance statistics\n")
+			// Check if mounted
+			isMounted, err := vaultManager.IsVaultMounted(mountPoint)
+			if err != nil {
+				return fmt.Errorf("failed to check mount status: %w", err)
+			}
+
+			if !isMounted {
+				fmt.Printf("Status: Not mounted\n")
+				return nil
+			}
+
+			fmt.Printf("Status: Mounted\n")
+
+			// Get detailed mount information
+			mountInfo, err := vaultManager.GetMountInfo(mountPoint)
+			if err != nil {
+				fmt.Printf("Warning: Could not get detailed mount info: %v\n", err)
+				return nil
+			}
+
+			fmt.Printf("\nMount Details:\n")
+			fmt.Printf("  Vault Path: %s\n", mountInfo.VaultPath)
+			fmt.Printf("  Mount Point: %s\n", mountInfo.MountPoint)
+			fmt.Printf("  Mounted At: %s\n", mountInfo.MountedAt.Format("2006-01-02 15:04:05"))
+			fmt.Printf("  Read Only: %t\n", mountInfo.ReadOnly)
+			fmt.Printf("  Filesystem: %s\n", mountInfo.FileSystem)
+			fmt.Printf("  Process ID: %d\n", mountInfo.ProcessID)
+
+			// Calculate uptime
+			uptime := time.Since(mountInfo.MountedAt)
+			fmt.Printf("  Uptime: %s\n", uptime.Round(time.Second))
 
 			return nil
 		},
@@ -231,170 +360,4 @@ func validateMountPoint(mountPoint string) error {
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-}
-
-func mountWindows(vaultPath, mountPoint string, readOnly, allowOther bool, fsName string, options []string, logger *logging.Logger) error {
-	fmt.Printf("\nWindows Mounting Details:\n")
-	fmt.Printf("Driver: WinFsp or Dokany\n")
-	fmt.Printf("Mount type: %s\n", map[bool]string{true: "Drive letter", false: "Directory"}[len(mountPoint) == 2])
-
-	if fsName == "" {
-		fsName = "dirLocker Vault"
-	}
-
-	fmt.Printf("Volume label: %s\n", fsName)
-
-	// This is a placeholder for the actual Windows mounting implementation
-	// which will be implemented in task 14
-	fmt.Printf("\nWindows mounting functionality will be implemented in task 14.\n")
-	fmt.Printf("This would:\n")
-	fmt.Printf("- Initialize WinFsp/Dokany driver\n")
-	fmt.Printf("- Create filesystem callbacks\n")
-	fmt.Printf("- Mount vault at %s\n", mountPoint)
-	fmt.Printf("- Handle file operations through vault API\n")
-
-	logger.Info("Windows mount initiated", "vault", vaultPath, "mount_point", mountPoint)
-	return nil
-}
-
-func mountLinux(vaultPath, mountPoint string, readOnly, allowOther bool, fsName string, options []string, logger *logging.Logger) error {
-	fmt.Printf("\nLinux Mounting Details:\n")
-	fmt.Printf("Driver: FUSE\n")
-	fmt.Printf("Mount point: %s\n", mountPoint)
-
-	// Check if mount point directory exists
-	if _, err := os.Stat(mountPoint); os.IsNotExist(err) {
-		fmt.Printf("Creating mount point directory: %s\n", mountPoint)
-		if err := os.MkdirAll(mountPoint, 0755); err != nil {
-			return fmt.Errorf("failed to create mount point: %w", err)
-		}
-	}
-
-	// Build FUSE options
-	fuseOptions := []string{}
-	if readOnly {
-		fuseOptions = append(fuseOptions, "ro")
-	}
-	if allowOther {
-		fuseOptions = append(fuseOptions, "allow_other")
-	}
-	fuseOptions = append(fuseOptions, options...)
-
-	if len(fuseOptions) > 0 {
-		fmt.Printf("FUSE options: %s\n", strings.Join(fuseOptions, ","))
-	}
-
-	// This is a placeholder for the actual Linux mounting implementation
-	// which will be implemented in task 14
-	fmt.Printf("\nLinux mounting functionality will be implemented in task 14.\n")
-	fmt.Printf("This would:\n")
-	fmt.Printf("- Initialize FUSE filesystem\n")
-	fmt.Printf("- Implement FUSE callbacks\n")
-	fmt.Printf("- Mount vault at %s\n", mountPoint)
-	fmt.Printf("- Handle file operations through vault API\n")
-
-	logger.Info("Linux mount initiated", "vault", vaultPath, "mount_point", mountPoint)
-	return nil
-}
-
-func mountMacOS(vaultPath, mountPoint string, readOnly, allowOther bool, fsName string, options []string, logger *logging.Logger) error {
-	fmt.Printf("\nmacOS Mounting Details:\n")
-	fmt.Printf("Driver: macFUSE\n")
-	fmt.Printf("Mount point: %s\n", mountPoint)
-
-	// Check if mount point directory exists
-	if _, err := os.Stat(mountPoint); os.IsNotExist(err) {
-		fmt.Printf("Creating mount point directory: %s\n", mountPoint)
-		if err := os.MkdirAll(mountPoint, 0755); err != nil {
-			return fmt.Errorf("failed to create mount point: %w", err)
-		}
-	}
-
-	if fsName == "" {
-		fsName = "dirLocker Vault"
-	}
-	fmt.Printf("Volume name: %s\n", fsName)
-
-	// Build macFUSE options
-	macOptions := []string{}
-	if readOnly {
-		macOptions = append(macOptions, "ro")
-	}
-	if allowOther {
-		macOptions = append(macOptions, "allow_other")
-	}
-	macOptions = append(macOptions, "volname="+fsName)
-	macOptions = append(macOptions, options...)
-
-	if len(macOptions) > 0 {
-		fmt.Printf("macFUSE options: %s\n", strings.Join(macOptions, ","))
-	}
-
-	// This is a placeholder for the actual macOS mounting implementation
-	// which will be implemented in task 14
-	fmt.Printf("\nmacOS mounting functionality will be implemented in task 14.\n")
-	fmt.Printf("This would:\n")
-	fmt.Printf("- Initialize macFUSE filesystem\n")
-	fmt.Printf("- Implement FUSE callbacks\n")
-	fmt.Printf("- Mount vault at %s\n", mountPoint)
-	fmt.Printf("- Handle file operations through vault API\n")
-
-	logger.Info("macOS mount initiated", "vault", vaultPath, "mount_point", mountPoint)
-	return nil
-}
-
-func unmountWindows(mountPoint string, force bool, logger *logging.Logger) error {
-	fmt.Printf("\nWindows Unmounting Details:\n")
-	fmt.Printf("Driver: WinFsp or Dokany\n")
-
-	// This is a placeholder for the actual Windows unmounting implementation
-	fmt.Printf("\nWindows unmounting functionality will be implemented in task 14.\n")
-	fmt.Printf("This would:\n")
-	fmt.Printf("- Signal filesystem to unmount\n")
-	if force {
-		fmt.Printf("- Force unmount even if files are open\n")
-	}
-	fmt.Printf("- Clean up driver resources\n")
-	fmt.Printf("- Remove mount point %s\n", mountPoint)
-
-	logger.Info("Windows unmount initiated", "mount_point", mountPoint, "force", force)
-	return nil
-}
-
-func unmountLinux(mountPoint string, force bool, logger *logging.Logger) error {
-	fmt.Printf("\nLinux Unmounting Details:\n")
-	fmt.Printf("Driver: FUSE\n")
-
-	// This is a placeholder for the actual Linux unmounting implementation
-	fmt.Printf("\nLinux unmounting functionality will be implemented in task 14.\n")
-	fmt.Printf("This would:\n")
-	if force {
-		fmt.Printf("- Execute: fusermount -u -z %s\n", mountPoint)
-	} else {
-		fmt.Printf("- Execute: fusermount -u %s\n", mountPoint)
-	}
-	fmt.Printf("- Clean up FUSE resources\n")
-	fmt.Printf("- Remove mount point if empty\n")
-
-	logger.Info("Linux unmount initiated", "mount_point", mountPoint, "force", force)
-	return nil
-}
-
-func unmountMacOS(mountPoint string, force bool, logger *logging.Logger) error {
-	fmt.Printf("\nmacOS Unmounting Details:\n")
-	fmt.Printf("Driver: macFUSE\n")
-
-	// This is a placeholder for the actual macOS unmounting implementation
-	fmt.Printf("\nmacOS unmounting functionality will be implemented in task 14.\n")
-	fmt.Printf("This would:\n")
-	if force {
-		fmt.Printf("- Execute: umount -f %s\n", mountPoint)
-	} else {
-		fmt.Printf("- Execute: umount %s\n", mountPoint)
-	}
-	fmt.Printf("- Clean up macFUSE resources\n")
-	fmt.Printf("- Remove mount point if empty\n")
-
-	logger.Info("macOS unmount initiated", "mount_point", mountPoint, "force", force)
-	return nil
 }

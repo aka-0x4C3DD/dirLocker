@@ -956,6 +956,318 @@ pub extern "C" fn vault_recovery_key_from_hex(
             set_last_error(CErrorCode::Success);
             CErrorCode::Success as c_int
         }
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            CErrorCode::InvalidArgument as c_int
+        }
+    }
+}
+
+// File operations FFI functions
+
+/// List all files and directories in the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `entries` will be set to allocated array (must be freed with vault_free_file_entries)
+/// - `count` will be set to number of entries
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_list_files(
+    handle: CVaultHandle,
+    entries: *mut *mut CFileEntry,
+    count: *mut usize,
+) -> c_int {
+    if handle.is_null() || entries.is_null() || count.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    match vault.list_files() {
+        Ok(file_list) => {
+            let entry_count = file_list.len();
+            
+            if entry_count == 0 {
+                unsafe {
+                    *entries = ptr::null_mut();
+                    *count = 0;
+                }
+                set_last_error(CErrorCode::Success);
+                return CErrorCode::Success as c_int;
+            }
+
+            // Allocate array of CFileEntry
+            let entries_ptr = unsafe {
+                libc::malloc(entry_count * std::mem::size_of::<CFileEntry>()) as *mut CFileEntry
+            };
+            
+            if entries_ptr.is_null() {
+                set_last_error(CErrorCode::InternalError);
+                return CErrorCode::InternalError as c_int;
+            }
+
+            // Fill the array
+            for (i, file_info) in file_list.iter().enumerate() {
+                let name_cstring = match std::ffi::CString::new(file_info.name.clone()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        // Clean up allocated memory
+                        unsafe {
+                            for j in 0..i {
+                                let entry = entries_ptr.add(j);
+                                if !(*entry).name.is_null() {
+                                    let _ = std::ffi::CString::from_raw((*entry).name);
+                                }
+                            }
+                            libc::free(entries_ptr as *mut libc::c_void);
+                        }
+                        set_last_error(CErrorCode::InternalError);
+                        return CErrorCode::InternalError as c_int;
+                    }
+                };
+
+                unsafe {
+                    let entry = entries_ptr.add(i);
+                    (*entry).name = name_cstring.into_raw();
+                    (*entry).size = file_info.size;
+                    (*entry).is_dir = if file_info.is_dir { 1 } else { 0 };
+                    (*entry).mtime = file_info.mtime.timestamp();
+                    (*entry).mode = file_info.mode;
+                }
+            }
+
+            unsafe {
+                *entries = entries_ptr;
+                *count = entry_count;
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Free file entries array allocated by vault_list_files
+///
+/// # Safety
+/// - `entries` must be array previously allocated by vault_list_files
+/// - `count` must match the count returned by vault_list_files
+#[no_mangle]
+pub extern "C" fn vault_free_file_entries(entries: *mut CFileEntry, count: usize) {
+    if entries.is_null() || count == 0 {
+        return;
+    }
+
+    unsafe {
+        for i in 0..count {
+            let entry = entries.add(i);
+            if !(*entry).name.is_null() {
+                let _ = std::ffi::CString::from_raw((*entry).name);
+            }
+        }
+        libc::free(entries as *mut libc::c_void);
+    }
+}
+
+/// Read a file from the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `path` must be a valid null-terminated C string
+/// - `data` will be set to allocated buffer (must be freed with vault_free_file_data)
+/// - `size` will be set to file size
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_read_file(
+    handle: CVaultHandle,
+    path: *const c_char,
+    data: *mut *mut u8,
+    size: *mut usize,
+) -> c_int {
+    if handle.is_null() || path.is_null() || data.is_null() || size.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.read_file(path_str) {
+        Ok(file_data) => {
+            let data_size = file_data.len();
+            
+            if data_size == 0 {
+                unsafe {
+                    *data = ptr::null_mut();
+                    *size = 0;
+                }
+                set_last_error(CErrorCode::Success);
+                return CErrorCode::Success as c_int;
+            }
+
+            // Allocate buffer for file data
+            let data_ptr = unsafe { libc::malloc(data_size) as *mut u8 };
+            if data_ptr.is_null() {
+                set_last_error(CErrorCode::InternalError);
+                return CErrorCode::InternalError as c_int;
+            }
+
+            // Copy data to allocated buffer
+            unsafe {
+                std::ptr::copy_nonoverlapping(file_data.as_ptr(), data_ptr, data_size);
+                *data = data_ptr;
+                *size = data_size;
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Free file data allocated by vault_read_file
+///
+/// # Safety
+/// - `data` must be buffer previously allocated by vault_read_file
+#[no_mangle]
+pub extern "C" fn vault_free_file_data(data: *mut u8) {
+    if !data.is_null() {
+        unsafe {
+            libc::free(data as *mut libc::c_void);
+        }
+    }
+}
+
+/// Write a file to the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `path` must be a valid null-terminated C string
+/// - `data` must point to valid data buffer or be null for empty file
+/// - `size` must be the size of the data buffer
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_write_file(
+    handle: CVaultHandle,
+    path: *const c_char,
+    data: *const u8,
+    size: usize,
+) -> c_int {
+    if handle.is_null() || path.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    let file_data = if data.is_null() || size == 0 {
+        Vec::new()
+    } else {
+        unsafe { std::slice::from_raw_parts(data, size) }.to_vec()
+    };
+
+    match vault.write_file(path_str, &file_data) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Delete a file from the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `path` must be a valid null-terminated C string
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_delete_file(
+    handle: CVaultHandle,
+    path: *const c_char,
+) -> c_int {
+    if handle.is_null() || path.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.delete_file(path_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Create a directory in the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `path` must be a valid null-terminated C string
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_create_directory(
+    handle: CVaultHandle,
+    path: *const c_char,
+) -> c_int {
+    if handle.is_null() || path.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.create_directory(path_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
         Err(e) => {
             set_last_error(e.code().into());
             e.code() as c_int

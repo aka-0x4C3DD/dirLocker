@@ -12,10 +12,11 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use chrono::Utc;
+use rand;
 
-use crate::crypto::{CryptoEngine, SubKeys, create_crypto_engine, CipherType};
+use crate::crypto::{create_crypto_engine, CipherType, CryptoEngine, SubKeys};
 use crate::error::{VaultError, VaultResult};
-use crate::format::{VaultFormat, VaultHeader, FileTable, FileEntry, ChunkInfo};
+use crate::format::{ChunkInfo, FileEntry, FileTable, VaultFormat, VaultHeader};
 
 /// Atomic file writer that uses temp-file-then-rename pattern
 pub struct AtomicFileWriter {
@@ -29,9 +30,9 @@ impl AtomicFileWriter {
     pub fn new<P: AsRef<Path>>(final_path: P) -> VaultResult<Self> {
         let final_path = final_path.as_ref().to_path_buf();
         let temp_path = Self::generate_temp_path(&final_path)?;
-        
+
         let file = File::create(&temp_path)?;
-        
+
         Ok(AtomicFileWriter {
             temp_path,
             final_path,
@@ -42,16 +43,18 @@ impl AtomicFileWriter {
     /// Generate a temporary file path
     fn generate_temp_path(original_path: &Path) -> VaultResult<PathBuf> {
         let mut temp_path = original_path.to_path_buf();
-        
+
         // Add random suffix to avoid conflicts
         let random_suffix: u64 = rand::random();
-        let temp_name = format!("{}.tmp.{}", 
-            original_path.file_name()
+        let temp_name = format!(
+            "{}.tmp.{}",
+            original_path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("vault"),
             random_suffix
         );
-        
+
         temp_path.set_file_name(temp_name);
         Ok(temp_path)
     }
@@ -62,7 +65,9 @@ impl AtomicFileWriter {
             file.write_all(data)?;
             Ok(())
         } else {
-            Err(VaultError::internal_error("AtomicFileWriter already committed or aborted"))
+            Err(VaultError::internal_error(
+                "AtomicFileWriter already committed or aborted",
+            ))
         }
     }
 
@@ -72,7 +77,9 @@ impl AtomicFileWriter {
             file.flush()?;
             Ok(())
         } else {
-            Err(VaultError::internal_error("AtomicFileWriter already committed or aborted"))
+            Err(VaultError::internal_error(
+                "AtomicFileWriter already committed or aborted",
+            ))
         }
     }
 
@@ -82,12 +89,14 @@ impl AtomicFileWriter {
             // Ensure all data is written to disk
             file.sync_all()?;
             drop(file);
-            
+
             // Atomic rename
             std::fs::rename(&self.temp_path, &self.final_path)?;
             Ok(())
         } else {
-            Err(VaultError::internal_error("AtomicFileWriter already committed or aborted"))
+            Err(VaultError::internal_error(
+                "AtomicFileWriter already committed or aborted",
+            ))
         }
     }
 
@@ -163,7 +172,7 @@ impl VaultIntegrityChecker {
         password: &str,
     ) -> VaultResult<VaultValidationResult> {
         let path = path.as_ref();
-        
+
         // Try to read and validate header
         let header_valid = match VaultFormat::read_vault_header(path) {
             Ok((header, _)) => {
@@ -189,7 +198,7 @@ impl VaultIntegrityChecker {
         let (header, file_table_offset) = VaultFormat::read_vault_header(path)?;
         let cipher_type: CipherType = header.cipher.parse()?;
         let crypto = create_crypto_engine(cipher_type)?;
-        
+
         let master_key = crate::crypto::derive_key(
             password,
             &header.kdf_params.salt,
@@ -197,7 +206,7 @@ impl VaultIntegrityChecker {
             header.kdf_params.operations,
             header.kdf_params.parallelism,
         )?;
-        
+
         let subkeys = crate::crypto::derive_all_subkeys(&master_key)?;
 
         // Try to read and validate file table
@@ -229,7 +238,7 @@ impl VaultIntegrityChecker {
         // If we have a valid file table, validate individual files
         if let Some(file_table) = file_table {
             result.total_files = file_table.files.len();
-            
+
             for file_entry in &file_table.files {
                 let file_result = Self::validate_file_integrity(
                     path,
@@ -238,7 +247,7 @@ impl VaultIntegrityChecker {
                     crypto.as_ref(),
                     &subkeys,
                 )?;
-                
+
                 if file_result.is_valid {
                     result.valid_files += 1;
                 } else {
@@ -248,7 +257,7 @@ impl VaultIntegrityChecker {
                     result.corrupted_files.push(file_result);
                 }
             }
-            
+
             result.is_valid = result.is_valid && result.corrupted_files.is_empty();
         }
 
@@ -264,9 +273,10 @@ impl VaultIntegrityChecker {
         subkeys: &SubKeys,
     ) -> VaultResult<FileValidationResult> {
         let vault_path = vault_path.as_ref();
-        
+
         // Decrypt filename for reporting
-        let filename = file_entry.decrypt_filename(crypto, &subkeys.filename_key)
+        let filename = file_entry
+            .decrypt_filename(crypto, &subkeys.filename_key)
             .unwrap_or_else(|_| "<corrupted_filename>".to_string());
 
         let mut invalid_chunks = Vec::new();
@@ -298,9 +308,10 @@ impl VaultIntegrityChecker {
 
         let total_chunks = file_entry.chunks.len();
         let is_valid = invalid_chunks.is_empty();
-        
+
         // A file can be recovered if at least 50% of chunks are valid
-        let can_be_recovered = valid_chunks > 0 && (valid_chunks as f64 / total_chunks as f64) >= 0.5;
+        let can_be_recovered =
+            valid_chunks > 0 && (valid_chunks as f64 / total_chunks as f64) >= 0.5;
 
         Ok(FileValidationResult {
             filename,
@@ -328,10 +339,13 @@ impl VaultIntegrityChecker {
             chunk.offset,
             chunk.size,
             crypto.nonce_size(),
-        ).map_err(|e| VaultError::corrupted_vault(format!(
-            "Failed to read chunk {} at offset {}: {}",
-            chunk_index, chunk.offset, e
-        )))?;
+        )
+        .map_err(|e| {
+            VaultError::corrupted_vault(format!(
+                "Failed to read chunk {} at offset {}: {}",
+                chunk_index, chunk.offset, e
+            ))
+        })?;
 
         // Verify the nonce matches what's stored in the chunk info
         if nonce != chunk.iv {
@@ -342,15 +356,19 @@ impl VaultIntegrityChecker {
         }
 
         // Try to decrypt the chunk - this validates the AEAD tag
-        crypto.decrypt(
-            file_encryption_key,
-            &nonce,
-            &encrypted_chunk,
-            &[], // No AAD for chunks
-        ).map_err(|e| VaultError::corrupted_vault(format!(
-            "Chunk {} AEAD validation failed: {}",
-            chunk_index, e
-        )))?;
+        crypto
+            .decrypt(
+                file_encryption_key,
+                &nonce,
+                &encrypted_chunk,
+                &[], // No AAD for chunks
+            )
+            .map_err(|e| {
+                VaultError::corrupted_vault(format!(
+                    "Chunk {} AEAD validation failed: {}",
+                    chunk_index, e
+                ))
+            })?;
 
         Ok(())
     }
@@ -358,12 +376,16 @@ impl VaultIntegrityChecker {
     /// Validate header integrity and consistency
     fn validate_header_integrity(header: &VaultHeader) -> VaultResult<()> {
         // Check cipher is supported
-        let _cipher_type: CipherType = header.cipher.parse()
-            .map_err(|_| VaultError::corrupted_vault(format!("Invalid cipher: {}", header.cipher)))?;
+        let _cipher_type: CipherType = header.cipher.parse().map_err(|_| {
+            VaultError::corrupted_vault(format!("Invalid cipher: {}", header.cipher))
+        })?;
 
         // Validate KDF parameters
         if header.kdf != "argon2id" {
-            return Err(VaultError::corrupted_vault(format!("Invalid KDF: {}", header.kdf)));
+            return Err(VaultError::corrupted_vault(format!(
+                "Invalid KDF: {}",
+                header.kdf
+            )));
         }
 
         if header.kdf_params.salt.len() < 16 {
@@ -371,25 +393,35 @@ impl VaultIntegrityChecker {
         }
 
         if header.kdf_params.memory < 1024 {
-            return Err(VaultError::corrupted_vault("Memory parameter too low".to_string()));
+            return Err(VaultError::corrupted_vault(
+                "Memory parameter too low".to_string(),
+            ));
         }
 
         // Validate offsets and sizes
         if header.file_table_offset == 0 {
-            return Err(VaultError::corrupted_vault("Invalid file table offset".to_string()));
+            return Err(VaultError::corrupted_vault(
+                "Invalid file table offset".to_string(),
+            ));
         }
 
         if header.file_table_reserved_size < 64 * 1024 {
-            return Err(VaultError::corrupted_vault("File table reserved size too small".to_string()));
+            return Err(VaultError::corrupted_vault(
+                "File table reserved size too small".to_string(),
+            ));
         }
 
         if header.chunk_size < 1024 || header.chunk_size > 64 * 1024 * 1024 {
-            return Err(VaultError::corrupted_vault("Invalid chunk size".to_string()));
+            return Err(VaultError::corrupted_vault(
+                "Invalid chunk size".to_string(),
+            ));
         }
 
         // Validate UUID
         if header.vault_uuid.is_nil() {
-            return Err(VaultError::corrupted_vault("Invalid vault UUID".to_string()));
+            return Err(VaultError::corrupted_vault(
+                "Invalid vault UUID".to_string(),
+            ));
         }
 
         Ok(())
@@ -417,7 +449,7 @@ impl VaultIntegrityChecker {
 
         let cipher_type: CipherType = header.cipher.parse()?;
         let crypto = create_crypto_engine(cipher_type)?;
-        
+
         let master_key = crate::crypto::derive_key(
             password,
             &header.kdf_params.salt,
@@ -425,7 +457,7 @@ impl VaultIntegrityChecker {
             header.kdf_params.operations,
             header.kdf_params.parallelism,
         )?;
-        
+
         let subkeys = crate::crypto::derive_all_subkeys(&master_key)?;
 
         // Try to read existing file table
@@ -435,11 +467,12 @@ impl VaultIntegrityChecker {
             file_table_offset,
             crypto.as_ref(),
             &subkeys,
-        ).ok();
+        )
+        .ok();
 
         if let Some(file_table) = existing_file_table {
             repair_log.push("Existing file table found, validating files...".to_string());
-            
+
             // Validate and repair existing file table
             Self::repair_existing_file_table(
                 path,
@@ -450,8 +483,9 @@ impl VaultIntegrityChecker {
                 &mut repair_log,
             )
         } else {
-            repair_log.push("File table corrupted, attempting reconstruction from chunks...".to_string());
-            
+            repair_log
+                .push("File table corrupted, attempting reconstruction from chunks...".to_string());
+
             // Reconstruct file table from scratch by scanning chunks
             Self::reconstruct_file_table_from_chunks(
                 path,
@@ -482,13 +516,8 @@ impl VaultIntegrityChecker {
 
         // Validate each file and its chunks
         for file_entry in file_table.files {
-            let file_result = Self::validate_file_integrity(
-                vault_path,
-                &file_entry,
-                header,
-                crypto,
-                subkeys,
-            )?;
+            let file_result =
+                Self::validate_file_integrity(vault_path, &file_entry, header, crypto, subkeys)?;
 
             if file_result.is_valid {
                 // File is completely valid
@@ -506,7 +535,7 @@ impl VaultIntegrityChecker {
                     subkeys,
                     repair_log,
                 )?;
-                
+
                 if let Some(recovered) = recovered_file {
                     valid_files.push(recovered);
                     files_recovered += 1;
@@ -519,13 +548,19 @@ impl VaultIntegrityChecker {
                 } else {
                     files_lost += 1;
                     chunks_lost += file_result.total_chunks;
-                    repair_log.push(format!("File '{}' could not be recovered", file_result.filename));
+                    repair_log.push(format!(
+                        "File '{}' could not be recovered",
+                        file_result.filename
+                    ));
                 }
             } else {
                 // File is too corrupted to recover
                 files_lost += 1;
                 chunks_lost += file_result.total_chunks;
-                repair_log.push(format!("File '{}' is too corrupted to recover", file_result.filename));
+                repair_log.push(format!(
+                    "File '{}' is too corrupted to recover",
+                    file_result.filename
+                ));
             }
         }
 
@@ -533,13 +568,7 @@ impl VaultIntegrityChecker {
         file_table.files = valid_files;
 
         // Write repaired file table
-        VaultFormat::write_encrypted_file_table(
-            vault_path,
-            header,
-            &file_table,
-            crypto,
-            subkeys,
-        )?;
+        VaultFormat::write_encrypted_file_table(vault_path, header, &file_table, crypto, subkeys)?;
 
         repair_log.push("Repaired file table written successfully".to_string());
 
@@ -561,13 +590,12 @@ impl VaultIntegrityChecker {
         _subkeys: &SubKeys,
         repair_log: &mut Vec<String>,
     ) -> VaultResult<VaultRepairResult> {
-        
         repair_log.push("Scanning vault for recoverable chunks...".to_string());
-        
+
         // This is a complex operation that would scan the entire vault file
         // looking for valid encrypted chunks. For now, we'll return a basic result
         // indicating that reconstruction is not yet implemented.
-        
+
         repair_log.push("Full reconstruction from chunks is not yet implemented".to_string());
         repair_log.push("Please restore from backup if available".to_string());
 
@@ -605,12 +633,14 @@ impl VaultIntegrityChecker {
             ) {
                 Ok(()) => {
                     // Chunk is valid, try to decrypt to get actual size
-                    if let Ok((nonce, encrypted_chunk)) = VaultFormat::read_chunk_from_vault_with_nonce_size(
-                        vault_path,
-                        chunk.offset,
-                        chunk.size,
-                        crypto.nonce_size(),
-                    ) {
+                    if let Ok((nonce, encrypted_chunk)) =
+                        VaultFormat::read_chunk_from_vault_with_nonce_size(
+                            vault_path,
+                            chunk.offset,
+                            chunk.size,
+                            crypto.nonce_size(),
+                        )
+                    {
                         if let Ok(decrypted) = crypto.decrypt(
                             &subkeys.file_encryption_key,
                             &nonce,
@@ -645,14 +675,16 @@ impl VaultIntegrityChecker {
     fn create_backup_path(original_path: &Path) -> VaultResult<PathBuf> {
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
         let mut backup_path = original_path.to_path_buf();
-        
-        let backup_name = format!("{}.backup.{}",
-            original_path.file_name()
+
+        let backup_name = format!(
+            "{}.backup.{}",
+            original_path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("vault"),
             timestamp
         );
-        
+
         backup_path.set_file_name(backup_name);
         Ok(backup_path)
     }
@@ -660,7 +692,7 @@ impl VaultIntegrityChecker {
     /// Perform a quick integrity check without full validation
     pub fn quick_integrity_check<P: AsRef<Path>>(path: P) -> VaultResult<bool> {
         let path = path.as_ref();
-        
+
         // Check if file exists and is readable
         if !path.exists() {
             return Ok(false);
@@ -680,28 +712,28 @@ impl VaultIntegrityChecker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
-    use crate::vault::Vault;
     use crate::crypto::CipherType;
+    use crate::vault::Vault;
+    use tempfile::tempdir;
 
     #[test]
     fn test_atomic_file_writer_success() {
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("test.txt");
-        
+
         let test_data = b"Hello, atomic world!";
-        
+
         {
             let mut writer = AtomicFileWriter::new(&file_path).unwrap();
             writer.write(test_data).unwrap();
             writer.flush().unwrap();
-            
+
             // File should not exist yet
             assert!(!file_path.exists());
-            
+
             writer.commit().unwrap();
         }
-        
+
         // File should exist now
         assert!(file_path.exists());
         let content = std::fs::read(&file_path).unwrap();
@@ -712,20 +744,20 @@ mod tests {
     fn test_atomic_file_writer_abort() {
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("test.txt");
-        
+
         let test_data = b"This should not be written";
-        
+
         {
             let mut writer = AtomicFileWriter::new(&file_path).unwrap();
             writer.write(test_data).unwrap();
             writer.flush().unwrap();
-            
+
             // File should not exist yet
             assert!(!file_path.exists());
-            
+
             writer.abort().unwrap();
         }
-        
+
         // File should still not exist
         assert!(!file_path.exists());
     }
@@ -734,20 +766,20 @@ mod tests {
     fn test_atomic_file_writer_drop_cleanup() {
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("test.txt");
-        
+
         let test_data = b"This should be cleaned up";
-        
+
         {
             let mut writer = AtomicFileWriter::new(&file_path).unwrap();
             writer.write(test_data).unwrap();
             writer.flush().unwrap();
-            
+
             // File should not exist yet
             assert!(!file_path.exists());
-            
+
             // Drop without commit - should clean up temp file
         }
-        
+
         // File should still not exist
         assert!(!file_path.exists());
     }
@@ -760,15 +792,17 @@ mod tests {
 
         // Create a valid vault
         let mut vault = Vault::create(&vault_path, password, CipherType::Aes256Gcm).unwrap();
-        
+
         // Add some test files
         vault.write_file("test1.txt", b"Hello, World!").unwrap();
-        vault.write_file("test2.txt", b"Another test file with more content").unwrap();
+        vault
+            .write_file("test2.txt", b"Another test file with more content")
+            .unwrap();
         drop(vault);
 
         // Validate the vault
         let result = VaultIntegrityChecker::validate_vault(&vault_path, password).unwrap();
-        
+
         assert!(result.is_valid);
         assert!(result.header_valid);
         assert!(result.file_table_valid);
@@ -790,7 +824,7 @@ mod tests {
 
         // Try to validate with wrong password
         let result = VaultIntegrityChecker::validate_vault(&vault_path, wrong_password);
-        
+
         // Should fail due to wrong password
         assert!(result.is_err());
     }
@@ -831,14 +865,17 @@ mod tests {
 
         // Create a vault with a file
         let mut vault = Vault::create(&vault_path, password, CipherType::Aes256Gcm).unwrap();
-        vault.write_file("test.txt", b"Hello, World! This is a test file.").unwrap();
-        
+        vault
+            .write_file("test.txt", b"Hello, World! This is a test file.")
+            .unwrap();
+
         let files = vault.list_files().unwrap();
-        let file_entry = &files[0].1;
+        let file_info = &files[0];
+        let file_entry = vault.find_file(&file_info.name).unwrap().unwrap();
         let _header = vault.header().clone();
         let crypto = vault.crypto();
         let subkeys = vault.subkeys().unwrap();
-        
+
         // Validate the chunk
         let chunk = &file_entry.chunks[0];
         let result = VaultIntegrityChecker::validate_chunk_integrity(
@@ -848,7 +885,7 @@ mod tests {
             crypto,
             &subkeys.file_encryption_key,
         );
-        
+
         assert!(result.is_ok());
     }
 
@@ -860,14 +897,17 @@ mod tests {
 
         // Create a vault with a file
         let mut vault = Vault::create(&vault_path, password, CipherType::Aes256Gcm).unwrap();
-        vault.write_file("test.txt", b"Hello, World! This is a test file.").unwrap();
-        
+        vault
+            .write_file("test.txt", b"Hello, World! This is a test file.")
+            .unwrap();
+
         let files = vault.list_files().unwrap();
-        let file_entry = &files[0].1;
+        let file_info = &files[0];
+        let file_entry = vault.find_file(&file_info.name).unwrap().unwrap();
         let header = vault.header().clone();
         let crypto = vault.crypto();
         let subkeys = vault.subkeys().unwrap();
-        
+
         // Validate the file
         let result = VaultIntegrityChecker::validate_file_integrity(
             &vault_path,
@@ -875,8 +915,9 @@ mod tests {
             &header,
             crypto,
             subkeys,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         assert!(result.is_valid);
         assert_eq!(result.filename, "test.txt");
         assert_eq!(result.total_chunks, 1);
@@ -899,7 +940,7 @@ mod tests {
 
         // Repair the vault (should succeed with no changes needed)
         let result = VaultIntegrityChecker::repair_vault(&vault_path, password, false).unwrap();
-        
+
         assert!(result.success);
         assert_eq!(result.files_recovered, 2);
         assert_eq!(result.files_lost, 0);
@@ -911,24 +952,24 @@ mod tests {
     fn test_atomic_file_writer_multiple_writes() {
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("multi_write.txt");
-        
+
         let data1 = b"First chunk of data\n";
         let data2 = b"Second chunk of data\n";
         let data3 = b"Third chunk of data\n";
-        
+
         {
             let mut writer = AtomicFileWriter::new(&file_path).unwrap();
             writer.write(data1).unwrap();
             writer.write(data2).unwrap();
             writer.write(data3).unwrap();
             writer.flush().unwrap();
-            
+
             // File should not exist yet
             assert!(!file_path.exists());
-            
+
             writer.commit().unwrap();
         }
-        
+
         // File should exist now with all data
         assert!(file_path.exists());
         let content = std::fs::read(&file_path).unwrap();
@@ -948,7 +989,9 @@ mod tests {
         // Create a valid vault with multiple files
         let mut vault = Vault::create(&vault_path, password, CipherType::Aes256Gcm).unwrap();
         vault.write_file("file1.txt", b"Content of file 1").unwrap();
-        vault.write_file("file2.txt", b"Content of file 2 with more data").unwrap();
+        vault
+            .write_file("file2.txt", b"Content of file 2 with more data")
+            .unwrap();
         vault.write_file("file3.txt", b"Content of file 3").unwrap();
         drop(vault);
 
@@ -978,17 +1021,19 @@ mod tests {
 
         // Create a valid vault
         let mut vault = Vault::create(&vault_path, password, CipherType::Aes256Gcm).unwrap();
-        vault.write_file("important.txt", b"Important data that should be preserved").unwrap();
+        vault
+            .write_file("important.txt", b"Important data that should be preserved")
+            .unwrap();
         drop(vault);
 
         // Repair the vault with backup creation
         let result = VaultIntegrityChecker::repair_vault(&vault_path, password, true).unwrap();
-        
+
         assert!(result.success);
         assert_eq!(result.files_recovered, 1);
         assert_eq!(result.files_lost, 0);
         assert!(!result.repair_log.is_empty());
-        
+
         // Check that backup was created
         let backup_files: Vec<_> = std::fs::read_dir(temp_dir.path())
             .unwrap()
@@ -1002,8 +1047,11 @@ mod tests {
                 }
             })
             .collect();
-        
-        assert!(!backup_files.is_empty(), "Backup file should have been created");
+
+        assert!(
+            !backup_files.is_empty(),
+            "Backup file should have been created"
+        );
     }
 
     #[test]
@@ -1013,28 +1061,33 @@ mod tests {
         let password = "test_password";
 
         // Create a vault with a large file (multiple chunks)
-        let mut vault = Vault::create(&vault_path, password, CipherType::XChaCha20Poly1305).unwrap();
-        
+        let mut vault =
+            Vault::create(&vault_path, password, CipherType::XChaCha20Poly1305).unwrap();
+
         // Create 8MB of test data (2 chunks of 4MB each)
         let chunk_size = 4 * 1024 * 1024;
         let large_data: Vec<u8> = (0..(2 * chunk_size)).map(|i| (i % 256) as u8).collect();
-        
+
         vault.write_file("large_file.bin", &large_data).unwrap();
         drop(vault);
 
         // Validate the vault
         let result = VaultIntegrityChecker::validate_vault(&vault_path, password).unwrap();
-        
+
         assert!(result.is_valid);
         assert_eq!(result.total_files, 1);
         assert_eq!(result.valid_files, 1);
         assert!(result.corrupted_files.is_empty());
-        
+
         // Verify the file has multiple chunks
         let vault = Vault::open(&vault_path, password).unwrap();
         let files = vault.list_files().unwrap();
-        let file_entry = &files[0].1;
-        assert!(file_entry.chunks.len() >= 2, "Large file should have multiple chunks");
+        let file_info = &files[0];
+        let file_entry = vault.find_file(&file_info.name).unwrap().unwrap();
+        assert!(
+            file_entry.chunks.len() >= 2,
+            "Large file should have multiple chunks"
+        );
     }
 
     #[test]
@@ -1047,10 +1100,12 @@ mod tests {
         let mut vault = Vault::create(&vault_path, password, CipherType::Aes256Gcm).unwrap();
         vault.write_file("small.txt", b"Small file").unwrap();
         vault.write_file("empty.txt", b"").unwrap();
-        
+
         let files = vault.list_files().unwrap();
-        let small_file_entry = &files[0].1;
-        let empty_file_entry = &files[1].1;
+        let small_file_info = &files[0];
+        let empty_file_info = &files[1];
+        let small_file_entry = vault.find_file(&small_file_info.name).unwrap().unwrap();
+        let empty_file_entry = vault.find_file(&empty_file_info.name).unwrap().unwrap();
         let header = vault.header().clone();
         let crypto = vault.crypto();
         let subkeys = vault.subkeys().unwrap();
@@ -1062,7 +1117,8 @@ mod tests {
             &header,
             crypto,
             subkeys,
-        ).unwrap();
+        )
+        .unwrap();
 
         let empty_result = VaultIntegrityChecker::validate_file_integrity(
             &vault_path,
@@ -1070,7 +1126,8 @@ mod tests {
             &header,
             crypto,
             subkeys,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Check small file validation
         assert!(small_result.is_valid);
@@ -1087,4 +1144,5 @@ mod tests {
         assert_eq!(empty_result.valid_chunks, 1);
         assert!(empty_result.invalid_chunks.is_empty());
         assert!(empty_result.can_be_recovered);
-    }}
+    }
+}

@@ -1,3 +1,6 @@
+//go:build !nogui
+// +build !nogui
+
 package main
 
 import (
@@ -15,8 +18,6 @@ import (
 
 var (
 	version = "dev"
-	commit  = "unknown"
-	date    = "unknown"
 )
 
 func main() {
@@ -47,7 +48,11 @@ func main() {
 	defer logger.Close()
 
 	// Initialize vault manager
-	vaultManager := vault.NewVaultManager(cfg, logger)
+	vaultManager, err := vault.NewVaultManager(cfg, logger)
+	if err != nil {
+		logger.Error("Failed to initialize vault manager", "error", err)
+		os.Exit(1)
+	}
 	defer vaultManager.CloseAllVaults()
 
 	// Start auto-close timer

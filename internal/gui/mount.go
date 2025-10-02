@@ -1,9 +1,12 @@
 package gui
 
 import (
+	"context"
+	"dirLocker/pkg/mount"
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -199,8 +202,46 @@ func (mw *MainWindow) performMount(mountPoint string) {
 	go func() {
 		defer progress.Hide()
 
-		// TODO: Implement vault mounting
-		mw.showError("Not Implemented", "Vault mounting is not yet implemented in the GUI")
+		// Check if mounting is supported
+		if !mw.vaultManager.IsMountingSupported() {
+			mw.showMountTroubleshooting(fmt.Errorf("mounting not supported on this platform"))
+			return
+		}
+
+		// Check if vault is open
+		_, exists := mw.vaultManager.GetVault(mw.selectedVault)
+		if !exists {
+			mw.showError("Mount Error", "Vault must be opened before mounting")
+			return
+		}
+
+		// Create mount options
+		options := &mount.MountOptions{
+			MountPoint:   mountPoint,
+			ReadOnly:     false,
+			AllowOther:   false,
+			Timeout:      30 * time.Second,
+			Debug:        false,
+			CacheTimeout: 1 * time.Second,
+		}
+
+		// Perform the mount
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		mountInfo, err := mw.vaultManager.MountVault(ctx, mw.selectedVault, mountPoint, options)
+		if err != nil {
+			mw.showMountTroubleshooting(err)
+			return
+		}
+
+		// Show success message
+		mw.showInfo("Mount Successful",
+			fmt.Sprintf("Vault '%s' has been successfully mounted at '%s'.\n\nYou can now access your encrypted files through your file manager.",
+				vaultName, mountInfo.MountPoint))
+
+		// Refresh the vault list to show mount status
+		mw.refreshVaultList()
 	}()
 }
 
@@ -220,70 +261,61 @@ func (mw *MainWindow) performUnmount() {
 	go func() {
 		defer progress.Hide()
 
-		// TODO: Implement vault unmounting
-		mw.showError("Not Implemented", "Vault unmounting is not yet implemented in the GUI")
+		// Check if mounting is supported
+		if !mw.vaultManager.IsMountingSupported() {
+			mw.showError("Unmount Error", "Mounting not supported on this platform")
+			return
+		}
+
+		// Find the mount point for this vault
+		mounts, err := mw.vaultManager.ListMountedVaults()
+		if err != nil {
+			mw.showError("Unmount Error", fmt.Sprintf("Failed to list mounted vaults: %v", err))
+			return
+		}
+
+		var mountPoint string
+		for _, mountInfo := range mounts {
+			if mountInfo.VaultPath == mw.selectedVault {
+				mountPoint = mountInfo.MountPoint
+				break
+			}
+		}
+
+		if mountPoint == "" {
+			mw.showError("Unmount Error", "Vault is not currently mounted")
+			return
+		}
+
+		// Perform the unmount
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := mw.vaultManager.UnmountVault(ctx, mountPoint); err != nil {
+			mw.showError("Unmount Error", fmt.Sprintf("Failed to unmount vault: %v", err))
+			return
+		}
+
+		// Show success message
+		mw.showInfo("Unmount Successful",
+			fmt.Sprintf("Vault '%s' has been successfully unmounted from '%s'.\n\nThe encrypted files are now secure and inaccessible.",
+				vaultName, mountPoint))
+
+		// Refresh the vault list to show mount status
+		mw.refreshVaultList()
 	}()
 }
 
 // showMountTroubleshooting shows troubleshooting information for mount failures
 func (mw *MainWindow) showMountTroubleshooting(err error) {
-	var troubleshootingText string
-
-	switch runtime.GOOS {
-	case "windows":
-		troubleshootingText = `Mount failed on Windows. Common solutions:
-
-1. Install Dokany or WinFSP:
-   • Download from: https://github.com/dokan-dev/dokany/releases
-   • Or: https://github.com/billziss-gh/winfsp/releases
-
-2. Run as Administrator:
-   • Right-click dirLocker and select "Run as administrator"
-
-3. Check drive letter availability:
-   • Make sure the selected drive letter is not in use
-
-4. Antivirus software:
-   • Some antivirus programs block filesystem drivers
-   • Add dirLocker to your antivirus whitelist`
-
-	case "darwin":
-		troubleshootingText = `Mount failed on macOS. Common solutions:
-
-1. Install macFUSE:
-   • Download from: https://osxfuse.github.io/
-   • Follow installation instructions and restart
-
-2. Enable System Extension:
-   • Go to System Preferences > Security & Privacy
-   • Allow macFUSE system extension if prompted
-
-3. Check mount point permissions:
-   • Make sure you have write access to the mount directory
-   • Try using /tmp/vault_mount as a test location
-
-4. Gatekeeper issues:
-   • You may need to allow dirLocker in Security & Privacy settings`
-
-	default: // Linux
-		troubleshootingText = `Mount failed on Linux. Common solutions:
-
-1. Install FUSE:
-   • Ubuntu/Debian: sudo apt install fuse
-   • CentOS/RHEL: sudo yum install fuse
-   • Arch: sudo pacman -S fuse2
-
-2. Add user to fuse group:
-   • sudo usermod -a -G fuse $USER
-   • Log out and back in
-
-3. Check mount point permissions:
-   • Make sure you have write access to the mount directory
-   • Try using /tmp/vault_mount as a test location
-
-4. Load fuse module:
-   • sudo modprobe fuse`
-	}
+	troubleshootingText := fmt.Sprintf("Mount Error: %v\n\n", err)
+	troubleshootingText += mw.vaultManager.GetMountTroubleshootingInfo()
 
 	dialog.ShowInformation("Mount Troubleshooting", troubleshootingText, mw.window)
+}
+
+// refreshVaultList refreshes the vault list display
+func (mw *MainWindow) refreshVaultList() {
+	// This method should be implemented to refresh the vault list
+	// For now, it's a placeholder
 }
