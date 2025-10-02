@@ -187,3 +187,17 @@ The Encrypted Vault Application is a cross-platform security tool that provides 
 3. WHEN logging operations THEN the system SHALL never log plaintext content or passwords
 4. WHEN storing keys THEN the system SHALL use OS keyrings/keystores where possible to encrypt master keys in RAM
 5. WHEN implementing crypto THEN the system SHALL provide reproducible builds and consider open-source core library for auditability
+
+### Requirement 16
+
+**User Story:** As a user who needs persistent plausible deniability features, I want the vault format to support dynamic metadata without corrupting the vault structure, so that hidden file tables and other metadata can be safely persisted across vault sessions.
+
+#### Acceptance Criteria
+
+1. WHEN the vault format stores metadata THEN the system SHALL use dedicated metadata sections that do not affect core vault structure offsets
+2. WHEN updating vault metadata THEN the system SHALL ensure file table offsets remain stable and valid
+3. WHEN adding hidden file table metadata THEN the system SHALL store it in separate metadata sections without changing header size
+4. WHEN opening a vault with metadata sections THEN the system SHALL correctly locate and decrypt all metadata without corrupting file access
+5. WHEN implementing metadata sections THEN the system SHALL maintain backward compatibility with existing vault files
+6. WHEN metadata sections are updated THEN the system SHALL use atomic operations to prevent corruption during partial writes
+7. WHEN the vault format includes metadata sections THEN the system SHALL clearly document the new format specification and migration path

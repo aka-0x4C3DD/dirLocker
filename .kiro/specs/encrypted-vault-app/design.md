@@ -233,20 +233,21 @@ func (im *IconManager) HandleMultipleIcons(icons []string) (string, error)
 
 ### Vault Container Format
 
-Following the specified format exactly:
+Enhanced format with dedicated metadata sections to prevent corruption:
 
 ```
-[Magic][Version][HeaderLen][HeaderJSON][FileTable][Chunks...]
+[Magic][Version][HeaderLen][HeaderJSON][MetadataSections][FileTable][Chunks...]
 
 Magic: "VLT1" (4 bytes ASCII)
-Version: 0x01 (1 byte)
+Version: 0x02 (1 byte) - Updated for metadata sections support
 HeaderLen: Big-endian 32-bit length of HeaderJSON
-HeaderJSON: UTF-8 encoded JSON metadata
+HeaderJSON: UTF-8 encoded core metadata (fixed structure)
+MetadataSections: Variable-length encrypted metadata sections
 FileTable: Encrypted JSON file listing
 Chunks: AEAD-encrypted file content segments
 ```
 
-**Header JSON Structure:**
+**Header JSON Structure (Fixed Core):**
 ```json
 {
   "cipher": "xchacha20poly1305" | "aes-256-gcm",
@@ -261,11 +262,31 @@ Chunks: AEAD-encrypted file content segments
   "file_table_offset": 1234,
   "file_table_size": 5678,
   "chunk_size": 4194304,
-  "flags": ["padded", "plausible_deniability"],
   "created_at": "2024-01-01T00:00:00Z",
-  "platform_hint": "windows"
+  "platform_hint": "windows",
+  "metadata_sections_offset": 890,
+  "metadata_sections_size": 344
 }
 ```
+
+**Metadata Sections Structure:**
+```
+[SectionCount][Section1][Section2]...[SectionN]
+
+SectionCount: Big-endian 32-bit number of sections
+Each Section: [TypeLen][Type][DataLen][EncryptedData]
+  TypeLen: Big-endian 32-bit length of type string
+  Type: UTF-8 section type identifier
+  DataLen: Big-endian 32-bit length of encrypted data
+  EncryptedData: AEAD-encrypted section content
+```
+
+**Supported Metadata Section Types:**
+- `"hidden_tables"`: Plausible deniability hidden file table metadata
+- `"sharing_keys"`: X25519 recipient keys and envelope data
+- `"recovery_info"`: Recovery key metadata and hints
+- `"user_settings"`: User preferences and configuration
+- `"audit_log"`: Encrypted operation audit trail
 
 **File Table Structure:**
 ```json

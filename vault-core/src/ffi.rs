@@ -1275,6 +1275,221 @@ pub extern "C" fn vault_create_directory(
     }
 }
 
+// Metadata Sections FFI functions
+
+/// Metadata section types for FFI
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub enum CMetadataSectionType {
+    HiddenTables = 0,
+    SharingKeys = 1,
+    RecoveryInfo = 2,
+    UserSettings = 3,
+    AuditLog = 4,
+}
+
+impl From<CMetadataSectionType> for crate::format::MetadataSectionType {
+    fn from(c_type: CMetadataSectionType) -> Self {
+        match c_type {
+            CMetadataSectionType::HiddenTables => crate::format::MetadataSectionType::HiddenTables,
+            CMetadataSectionType::SharingKeys => crate::format::MetadataSectionType::SharingKeys,
+            CMetadataSectionType::RecoveryInfo => crate::format::MetadataSectionType::RecoveryInfo,
+            CMetadataSectionType::UserSettings => crate::format::MetadataSectionType::UserSettings,
+            CMetadataSectionType::AuditLog => crate::format::MetadataSectionType::AuditLog,
+        }
+    }
+}
+
+/// Set a metadata section in the vault
+/// 
+/// # Safety
+/// - handle must be a valid vault handle
+/// - data must be valid for data_len bytes
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_set_metadata_section(
+    handle: CVaultHandle,
+    section_type: CMetadataSectionType,
+    data: *const u8,
+    data_len: usize,
+) -> c_int {
+    if handle.is_null() || data.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let data_slice = unsafe { std::slice::from_raw_parts(data, data_len) };
+    let rust_section_type = section_type.into();
+
+    match vault.set_metadata_section(rust_section_type, data_slice.to_vec()) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            let error_code = CErrorCode::from(e.code());
+            set_last_error(error_code);
+            error_code as c_int
+        }
+    }
+}
+
+/// Get a metadata section from the vault
+/// 
+/// # Safety
+/// - handle must be a valid vault handle
+/// - data_out and data_len_out must be valid pointers
+/// - Caller must free returned data with vault_free_metadata_data
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_get_metadata_section(
+    handle: CVaultHandle,
+    section_type: CMetadataSectionType,
+    data_out: *mut *mut u8,
+    data_len_out: *mut usize,
+) -> c_int {
+    if handle.is_null() || data_out.is_null() || data_len_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+    let rust_section_type = section_type.into();
+
+    match vault.get_metadata_section(&rust_section_type) {
+        Ok(Some(data)) => {
+            // Allocate memory using libc::malloc for consistency with free
+            let data_len = data.len();
+            let data_ptr = unsafe { libc::malloc(data_len) as *mut u8 };
+            
+            if data_ptr.is_null() {
+                set_last_error(CErrorCode::InternalError);
+                return CErrorCode::InternalError as c_int;
+            }
+
+            unsafe {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), data_ptr, data_len);
+                *data_out = data_ptr;
+                *data_len_out = data_len;
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Ok(None) => {
+            // No data found
+            unsafe {
+                *data_out = ptr::null_mut();
+                *data_len_out = 0;
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            let error_code = CErrorCode::from(e.code());
+            set_last_error(error_code);
+            error_code as c_int
+        }
+    }
+}
+
+/// Remove a metadata section from the vault
+/// 
+/// # Safety
+/// - handle must be a valid vault handle
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_remove_metadata_section(
+    handle: CVaultHandle,
+    section_type: CMetadataSectionType,
+) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    let rust_section_type = section_type.into();
+
+    match vault.remove_metadata_section(&rust_section_type) {
+        Ok(_) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            let error_code = CErrorCode::from(e.code());
+            set_last_error(error_code);
+            error_code as c_int
+        }
+    }
+}
+
+/// Migrate vault to use metadata sections format
+/// 
+/// # Safety
+/// - handle must be a valid vault handle
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_migrate_to_metadata_sections(handle: CVaultHandle) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+
+    match vault.migrate_to_metadata_sections() {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            let error_code = CErrorCode::from(e.code());
+            set_last_error(error_code);
+            error_code as c_int
+        }
+    }
+}
+
+/// Check if vault supports metadata sections
+/// 
+/// # Safety
+/// - handle must be a valid vault handle
+/// - Returns 1 if supported, 0 if not supported, negative on error
+#[no_mangle]
+pub extern "C" fn vault_supports_metadata_sections(handle: CVaultHandle) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return -1;
+    }
+
+    let vault = unsafe { &*handle };
+    
+    if vault.supports_metadata_sections() {
+        set_last_error(CErrorCode::Success);
+        1
+    } else {
+        set_last_error(CErrorCode::Success);
+        0
+    }
+}
+
+/// Free metadata section data
+/// 
+/// # Safety
+/// - data must have been allocated by vault_get_metadata_section
+/// - data must not be used after this call
+#[no_mangle]
+pub extern "C" fn vault_free_metadata_data(data: *mut u8) {
+    if !data.is_null() {
+        unsafe {
+            libc::free(data as *mut libc::c_void);
+        }
+    }
+}
+
 // Vault integrity and repair FFI functions
 
 /// Vault validation result structure for FFI
@@ -1596,4 +1811,380 @@ pub extern "C" fn vault_free_envelope(envelope: *mut CEnvelope) {
             libc::free(envelope_data.encrypted_key as *mut libc::c_void);
         }
     }
+}
+
+
+// Plausible Deniability FFI Functions
+
+/// Hidden file table metadata structure for FFI
+#[repr(C)]
+pub struct CHiddenTableMetadata {
+    pub table_id: [u8; 16], // UUID as bytes
+    pub offset: u64,
+    pub size: u64,
+    pub reserved_size: u64,
+    pub cipher: *mut c_char,
+    pub created_at: i64,
+    pub is_decoy: c_int,
+}
+
+/// Add a hidden file table to the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `password` must be a valid null-terminated C string
+/// - `table_id_out` must point to valid memory for 16 bytes (UUID)
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_add_hidden_table(
+    handle: CVaultHandle,
+    password: *const c_char,
+    cipher: CCipherType,
+    is_decoy: c_int,
+    table_id_out: *mut u8,
+) -> c_int {
+    if handle.is_null() || password.is_null() || table_id_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.add_hidden_file_table(password_str, cipher.into(), is_decoy != 0) {
+        Ok(table_id) => {
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    table_id.as_bytes().as_ptr(),
+                    table_id_out,
+                    16,
+                );
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Remove a hidden file table from the vault
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `table_id` must point to 16 bytes (UUID)
+/// - Returns 1 if removed, 0 if not found, negative on error
+#[no_mangle]
+pub extern "C" fn vault_remove_hidden_table(
+    handle: CVaultHandle,
+    table_id: *const u8,
+) -> c_int {
+    if handle.is_null() || table_id.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    
+    let table_id_bytes = unsafe { std::slice::from_raw_parts(table_id, 16) };
+    let table_uuid = match uuid::Uuid::from_slice(table_id_bytes) {
+        Ok(uuid) => uuid,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.remove_hidden_file_table(&table_uuid) {
+        Ok(removed) => {
+            set_last_error(CErrorCode::Success);
+            if removed { 1 } else { 0 }
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            -(e.code() as c_int)
+        }
+    }
+}
+
+/// Get the number of hidden file tables
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - Returns table count on success, negative error code on failure
+#[no_mangle]
+pub extern "C" fn vault_hidden_table_count(handle: CVaultHandle) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    match vault.hidden_file_table_count() {
+        Ok(count) => {
+            set_last_error(CErrorCode::Success);
+            count as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            -(e.code() as c_int)
+        }
+    }
+}
+
+/// List all hidden file table IDs
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `table_ids_out` will be set to allocated array (must be freed with vault_free_table_ids)
+/// - `count_out` will be set to the number of table IDs
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_list_hidden_tables(
+    handle: CVaultHandle,
+    table_ids_out: *mut *mut u8,
+    count_out: *mut usize,
+) -> c_int {
+    if handle.is_null() || table_ids_out.is_null() || count_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &*handle };
+
+    match vault.list_hidden_file_table_ids() {
+        Ok(table_ids) => {
+            let count = table_ids.len();
+            
+            // Allocate array for table IDs (16 bytes each)
+            let array_size = count * 16;
+            let array_ptr = unsafe { libc::malloc(array_size) as *mut u8 };
+            
+            if array_ptr.is_null() {
+                set_last_error(CErrorCode::InternalError);
+                return CErrorCode::InternalError as c_int;
+            }
+
+            // Copy table IDs
+            for (i, table_id) in table_ids.iter().enumerate() {
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        table_id.as_bytes().as_ptr(),
+                        array_ptr.add(i * 16),
+                        16,
+                    );
+                }
+            }
+
+            unsafe {
+                *table_ids_out = array_ptr;
+                *count_out = count;
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Free table IDs array allocated by vault_list_hidden_tables
+///
+/// # Safety
+/// - `table_ids` must be an array previously allocated by vault_list_hidden_tables
+#[no_mangle]
+pub extern "C" fn vault_free_table_ids(table_ids: *mut u8) {
+    if !table_ids.is_null() {
+        unsafe {
+            libc::free(table_ids as *mut libc::c_void);
+        }
+    }
+}
+
+/// Open a vault with a specific hidden file table password
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - `password` must be a valid null-terminated C string
+/// - `table_id_out` will be set to the unlocked table ID (16 bytes)
+/// - Returns vault handle on success, null on failure
+#[no_mangle]
+pub extern "C" fn vault_open_hidden_table(
+    path: *const c_char,
+    password: *const c_char,
+    table_id_out: *mut u8,
+) -> CVaultHandle {
+    if path.is_null() || password.is_null() || table_id_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return ptr::null_mut();
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return ptr::null_mut();
+        }
+    };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return ptr::null_mut();
+        }
+    };
+
+    match crate::vault::Vault::open_with_hidden_table(path_str, password_str) {
+        Ok((vault, table_id)) => {
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    table_id.as_bytes().as_ptr(),
+                    table_id_out,
+                    16,
+                );
+            }
+            set_last_error(CErrorCode::Success);
+            Box::into_raw(Box::new(vault))
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            ptr::null_mut()
+        }
+    }
+}
+
+/// Set the active hidden file table for operations
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `table_id` must point to 16 bytes (UUID)
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_set_active_hidden_table(
+    handle: CVaultHandle,
+    table_id: *const u8,
+) -> c_int {
+    if handle.is_null() || table_id.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+    
+    let table_id_bytes = unsafe { std::slice::from_raw_parts(table_id, 16) };
+    let table_uuid = match uuid::Uuid::from_slice(table_id_bytes) {
+        Ok(uuid) => uuid,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.set_active_hidden_file_table(table_uuid) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Create a decoy file table with fake content
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - `password` must be a valid null-terminated C string
+/// - `table_id_out` must point to valid memory for 16 bytes (UUID)
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_create_decoy_table(
+    handle: CVaultHandle,
+    password: *const c_char,
+    cipher: CCipherType,
+    table_id_out: *mut u8,
+) -> c_int {
+    if handle.is_null() || password.is_null() || table_id_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match vault.create_decoy_file_table(password_str, cipher.into()) {
+        Ok(table_id) => {
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    table_id.as_bytes().as_ptr(),
+                    table_id_out,
+                    16,
+                );
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Wipe metadata that could reveal the existence of hidden tables
+///
+/// # Safety
+/// - `handle` must be a valid vault handle
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_wipe_revealing_metadata(handle: CVaultHandle) -> c_int {
+    if handle.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let vault = unsafe { &mut *handle };
+
+    match vault.wipe_revealing_metadata() {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Get documentation about plausible deniability limitations
+///
+/// # Safety
+/// - Returns a static string that doesn't need to be freed
+#[no_mangle]
+pub extern "C" fn vault_get_deniability_limitations() -> *const c_char {
+    crate::deniability::DeniabilityManager::get_limitations_doc().as_ptr() as *const c_char
 }

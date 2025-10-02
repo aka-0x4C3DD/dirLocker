@@ -209,18 +209,19 @@ impl ShareEnvelope {
     
     /// Serialize subkeys for encryption
     fn serialize_subkeys(subkeys: &SubKeys) -> VaultResult<Vec<u8>> {
-        let mut data = Vec::with_capacity(96); // 3 * 32 bytes
+        let mut data = Vec::with_capacity(128); // 4 * 32 bytes
         data.extend_from_slice(&subkeys.file_encryption_key);
         data.extend_from_slice(&subkeys.filename_key);
         data.extend_from_slice(&subkeys.mac_key);
+        data.extend_from_slice(&subkeys.metadata_key);
         Ok(data)
     }
     
     /// Deserialize subkeys from decrypted data
     fn deserialize_subkeys(data: &[u8]) -> VaultResult<SubKeys> {
-        if data.len() != 96 {
+        if data.len() != 128 {
             return Err(VaultError::crypto_error(format!(
-                "Invalid subkeys data length: {} (expected 96)",
+                "Invalid subkeys data length: {} (expected 128)",
                 data.len()
             )));
         }
@@ -237,10 +238,16 @@ impl ShareEnvelope {
             .try_into()
             .map_err(|_| VaultError::crypto_error("Failed to parse MAC key"))?;
         
+        // For sharing, we need to derive the metadata key as well
+        let metadata_key: [u8; 32] = data[96..128]
+            .try_into()
+            .map_err(|_| VaultError::crypto_error("Failed to parse metadata key"))?;
+        
         Ok(SubKeys {
             file_encryption_key,
             filename_key,
             mac_key,
+            metadata_key,
         })
     }
     
@@ -990,7 +997,7 @@ mod tests {
         
         // Serialize
         let serialized = ShareEnvelope::serialize_subkeys(&subkeys).unwrap();
-        assert_eq!(serialized.len(), 96);
+        assert_eq!(serialized.len(), 128);
         
         // Deserialize
         let deserialized = ShareEnvelope::deserialize_subkeys(&serialized).unwrap();

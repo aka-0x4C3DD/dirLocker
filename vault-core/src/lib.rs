@@ -4,6 +4,7 @@
 //! opening, and managing encrypted vault containers with cross-platform compatibility.
 
 pub mod crypto;
+pub mod deniability;
 pub mod error;
 pub mod ffi;
 pub mod format;
@@ -12,8 +13,15 @@ pub mod password;
 pub mod sharing;
 pub mod vault;
 
+#[cfg(test)]
+mod deniability_tests;
+
+#[cfg(test)]
+mod metadata_tests;
+
 // Re-export main types for library users
 pub use crypto::CipherType;
+pub use deniability::{DeniabilityManager, HiddenFileTableMetadata, MAX_FILE_TABLES};
 pub use error::{VaultError, VaultResult};
 pub use integrity::{VaultIntegrityChecker, VaultValidationResult, VaultRepairResult, AtomicFileWriter};
 pub use password::{PasswordManager, RecoveryKey, WrappedMasterKey, AlgorithmRotationManager};

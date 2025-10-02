@@ -131,6 +131,78 @@ void vault_free_file_data(uint8_t* data);
 // CStreamHandle vault_open_stream(CVaultHandle handle, const char* path);
 // int vault_read_chunk(CStreamHandle stream, uint64_t offset, size_t size, uint8_t* data);
 
+// Metadata Sections Support
+
+// Metadata section types
+typedef enum {
+    METADATA_SECTION_HIDDEN_TABLES = 0,
+    METADATA_SECTION_SHARING_KEYS = 1,
+    METADATA_SECTION_RECOVERY_INFO = 2,
+    METADATA_SECTION_USER_SETTINGS = 3,
+    METADATA_SECTION_AUDIT_LOG = 4
+} CMetadataSectionType;
+
+// Set a metadata section in the vault
+int vault_set_metadata_section(CVaultHandle handle, CMetadataSectionType section_type, const uint8_t* data, size_t data_len);
+
+// Get a metadata section from the vault
+int vault_get_metadata_section(CVaultHandle handle, CMetadataSectionType section_type, uint8_t** data_out, size_t* data_len_out);
+
+// Remove a metadata section from the vault
+int vault_remove_metadata_section(CVaultHandle handle, CMetadataSectionType section_type);
+
+// Migrate vault to use metadata sections format
+int vault_migrate_to_metadata_sections(CVaultHandle handle);
+
+// Check if vault supports metadata sections
+int vault_supports_metadata_sections(CVaultHandle handle);
+
+// Free metadata section data
+void vault_free_metadata_data(uint8_t* data);
+
+// Plausible Deniability Functions
+
+// Hidden file table metadata structure
+typedef struct {
+    uint8_t table_id[16];  // UUID as bytes
+    uint64_t offset;
+    uint64_t size;
+    uint64_t reserved_size;
+    char* cipher;
+    int64_t created_at;
+    int is_decoy;
+} CHiddenTableMetadata;
+
+// Add a hidden file table to the vault
+int vault_add_hidden_table(CVaultHandle handle, const char* password, CCipherType cipher, int is_decoy, uint8_t* table_id_out);
+
+// Remove a hidden file table from the vault
+int vault_remove_hidden_table(CVaultHandle handle, const uint8_t* table_id);
+
+// Get the number of hidden file tables
+int vault_hidden_table_count(CVaultHandle handle);
+
+// List all hidden file table IDs
+int vault_list_hidden_tables(CVaultHandle handle, uint8_t** table_ids_out, size_t* count_out);
+
+// Free table IDs array
+void vault_free_table_ids(uint8_t* table_ids);
+
+// Open a vault with a specific hidden file table password
+CVaultHandle vault_open_hidden_table(const char* path, const char* password, uint8_t* table_id_out);
+
+// Set the active hidden file table for operations
+int vault_set_active_hidden_table(CVaultHandle handle, const uint8_t* table_id);
+
+// Create a decoy file table with fake content
+int vault_create_decoy_table(CVaultHandle handle, const char* password, CCipherType cipher, uint8_t* table_id_out);
+
+// Wipe metadata that could reveal the existence of hidden tables
+int vault_wipe_revealing_metadata(CVaultHandle handle);
+
+// Get documentation about plausible deniability limitations
+const char* vault_get_deniability_limitations(void);
+
 #ifdef __cplusplus
 }
 #endif

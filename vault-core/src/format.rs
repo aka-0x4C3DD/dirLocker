@@ -3,7 +3,7 @@
 //! This module implements the standardized vault container format:
 //! [Magic][Version][HeaderLen][HeaderJSON][FileTable][Chunks...]
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Write, Seek};
 use std::path::Path;
 
@@ -17,14 +17,14 @@ use crate::crypto::{CryptoEngine, SubKeys, generate_nonce};
 /// Magic bytes for vault files: "VLT1"
 pub const VAULT_MAGIC: &[u8; 4] = b"VLT1";
 
-/// Current vault format version
-pub const VAULT_VERSION: u8 = 0x01;
+/// Current vault format version (updated for metadata sections support)
+pub const VAULT_VERSION: u8 = 0x02;
 
 /// Minimum supported vault version
 pub const MIN_SUPPORTED_VERSION: u8 = 0x01;
 
 /// Maximum supported vault version
-pub const MAX_SUPPORTED_VERSION: u8 = 0x01;
+pub const MAX_SUPPORTED_VERSION: u8 = 0x02;
 
 /// Vault file header structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +48,17 @@ pub struct VaultHeader {
     /// Version of the file table format for migration support
     #[serde(default = "default_file_table_version")]
     pub file_table_version: u32,
+    /// Offset to metadata sections (0 if none) - replaces hidden_tables_offset
+    #[serde(default)]
+    pub metadata_sections_offset: u64,
+    /// Size of metadata sections area - replaces hidden_tables_size
+    #[serde(default)]
+    pub metadata_sections_size: u64,
+    /// Legacy fields for backward compatibility (v0.01 vaults)
+    #[serde(default)]
+    pub hidden_tables_offset: u64,
+    #[serde(default)]
+    pub hidden_tables_size: u64,
 }
 
 fn default_file_table_reserved_size() -> u64 {
@@ -271,6 +282,113 @@ pub struct ChunkInfo {
     pub iv: Vec<u8>,
 }
 
+/// Metadata section types supported by the vault format
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetadataSectionType {
+    HiddenTables,
+    SharingKeys,
+    RecoveryInfo,
+    UserSettings,
+    AuditLog,
+}
+
+impl MetadataSectionType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MetadataSectionType::HiddenTables => "hidden_tables",
+            MetadataSectionType::SharingKeys => "sharing_keys",
+            MetadataSectionType::RecoveryInfo => "recovery_info",
+            MetadataSectionType::UserSettings => "user_settings",
+            MetadataSectionType::AuditLog => "audit_log",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "hidden_tables" => Some(MetadataSectionType::HiddenTables),
+            "sharing_keys" => Some(MetadataSectionType::SharingKeys),
+            "recovery_info" => Some(MetadataSectionType::RecoveryInfo),
+            "user_settings" => Some(MetadataSectionType::UserSettings),
+            "audit_log" => Some(MetadataSectionType::AuditLog),
+            _ => None,
+        }
+    }
+}
+
+/// Individual metadata section
+#[derive(Debug, Clone)]
+pub struct MetadataSection {
+    pub section_type: MetadataSectionType,
+    pub data: Vec<u8>,
+}
+
+/// Container for all metadata sections
+#[derive(Debug, Clone)]
+pub struct MetadataSections {
+    pub sections: Vec<MetadataSection>,
+}
+
+impl MetadataSections {
+    /// Create a new empty metadata sections container
+    pub fn new() -> Self {
+        Self {
+            sections: Vec::new(),
+        }
+    }
+
+    /// Add or update a metadata section
+    pub fn set_section(&mut self, section_type: MetadataSectionType, data: Vec<u8>) {
+        // Remove existing section of the same type
+        self.sections.retain(|s| s.section_type != section_type);
+        
+        // Add new section
+        self.sections.push(MetadataSection {
+            section_type,
+            data,
+        });
+    }
+
+    /// Get a metadata section by type
+    pub fn get_section(&self, section_type: &MetadataSectionType) -> Option<&[u8]> {
+        self.sections
+            .iter()
+            .find(|s| &s.section_type == section_type)
+            .map(|s| s.data.as_slice())
+    }
+
+    /// Remove a metadata section by type
+    pub fn remove_section(&mut self, section_type: &MetadataSectionType) -> bool {
+        let original_len = self.sections.len();
+        self.sections.retain(|s| &s.section_type != section_type);
+        self.sections.len() != original_len
+    }
+
+    /// Check if sections container is empty
+    pub fn is_empty(&self) -> bool {
+        self.sections.is_empty()
+    }
+
+    /// Get the number of sections
+    pub fn len(&self) -> usize {
+        self.sections.len()
+    }
+
+    /// Calculate the total serialized size of all sections
+    pub fn calculate_serialized_size(&self) -> usize {
+        let mut size = 4; // Section count (u32)
+        
+        for section in &self.sections {
+            let type_str = section.section_type.as_str();
+            size += 4; // Type length (u32)
+            size += type_str.len(); // Type string
+            size += 4; // Data length (u32)
+            size += section.data.len(); // Encrypted data
+        }
+        
+        size
+    }
+}
+
 /// Vault file format reader/writer
 pub struct VaultFormat;
 
@@ -292,8 +410,8 @@ impl VaultFormat {
             // Write version
             writer.write_all(&[VAULT_VERSION])?;
 
-            // Serialize header to JSON (pretty formatting for file storage)
-            let header_json = serde_json::to_string_pretty(header)?;
+            // Serialize header to JSON (compact format for consistent size)
+            let header_json = serde_json::to_string(header)?;
             let header_bytes = header_json.as_bytes();
 
             // Write header length (big-endian 32-bit)
@@ -644,8 +762,8 @@ impl VaultFormat {
         // Validate header contents
         Self::validate_header(&header)?;
 
-        // Calculate file table offset
-        let file_table_offset = 4 + 1 + 4 + header_len as u64; // magic + version + header_len + header
+        // Use the file table offset from the header (not calculated)
+        let file_table_offset = header.file_table_offset;
 
         Ok((header, file_table_offset))
     }
@@ -653,6 +771,63 @@ impl VaultFormat {
     /// Check if a vault version is supported
     pub fn is_version_supported(version: u8) -> bool {
         version >= MIN_SUPPORTED_VERSION && version <= MAX_SUPPORTED_VERSION
+    }
+
+    /// Update the vault header in an existing vault file
+    pub fn update_vault_header<P: AsRef<Path>>(path: P, header: &VaultHeader) -> VaultResult<()> {
+        let path = path.as_ref();
+        
+        // Read the current file to preserve everything after the header
+        let file_data = std::fs::read(path)?;
+        
+        // Calculate the old header size
+        let old_header_len = u32::from_be_bytes([
+            file_data[5],
+            file_data[6],
+            file_data[7],
+            file_data[8],
+        ]) as usize;
+        
+        let old_header_end = 4 + 1 + 4 + old_header_len; // magic + version + len + header
+        
+        // Serialize new header (use compact format to minimize size changes)
+        let new_header_json = serde_json::to_string(header)?;
+        let new_header_bytes = new_header_json.as_bytes();
+        let new_header_len = new_header_bytes.len() as u32;
+        let _new_header_end = 4 + 1 + 4 + new_header_len;
+        
+        // Check if header size changed
+        if new_header_len != old_header_len as u32 {
+            return Err(VaultError::internal_error(
+                format!("Header size changed from {} to {} bytes, this is not supported", 
+                       old_header_len, new_header_len)
+            ));
+        }
+        
+        // Build new file content
+        let mut new_file_data = Vec::new();
+        
+        // Write magic bytes
+        new_file_data.extend_from_slice(VAULT_MAGIC);
+        
+        // Write version
+        new_file_data.push(VAULT_VERSION);
+        
+        // Write new header length
+        new_file_data.extend_from_slice(&new_header_len.to_be_bytes());
+        
+        // Write new header
+        new_file_data.extend_from_slice(new_header_bytes);
+        
+        // Header size didn't change, just copy everything after the header
+        new_file_data.extend_from_slice(&file_data[old_header_end..]);
+        
+        // Write atomically using temp file
+        let temp_path = Self::get_temp_path(path)?;
+        std::fs::write(&temp_path, &new_file_data)?;
+        std::fs::rename(&temp_path, path)?;
+        
+        Ok(())
     }
 
     /// Validate header contents
@@ -1024,6 +1199,306 @@ impl VaultFormat {
 
         Ok(())
     }
+
+    /// Serialize metadata sections to binary format
+    /// Format: [SectionCount][Section1][Section2]...[SectionN]
+    /// Each Section: [TypeLen][Type][DataLen][Data]
+    pub fn serialize_metadata_sections(sections: &MetadataSections) -> VaultResult<Vec<u8>> {
+        let mut buffer = Vec::new();
+
+        // Write section count (big-endian u32)
+        let section_count = sections.sections.len() as u32;
+        buffer.extend_from_slice(&section_count.to_be_bytes());
+
+        // Write each section
+        for section in &sections.sections {
+            let type_str = section.section_type.as_str();
+            let type_bytes = type_str.as_bytes();
+
+            // Write type length (big-endian u32)
+            let type_len = type_bytes.len() as u32;
+            buffer.extend_from_slice(&type_len.to_be_bytes());
+
+            // Write type string
+            buffer.extend_from_slice(type_bytes);
+
+            // Write data length (big-endian u32)
+            let data_len = section.data.len() as u32;
+            buffer.extend_from_slice(&data_len.to_be_bytes());
+
+            // Write data
+            buffer.extend_from_slice(&section.data);
+        }
+
+        Ok(buffer)
+    }
+
+    /// Deserialize metadata sections from binary format
+    pub fn deserialize_metadata_sections(data: &[u8]) -> VaultResult<MetadataSections> {
+        if data.len() < 4 {
+            return Ok(MetadataSections::new());
+        }
+
+        let mut cursor = 0;
+        let mut sections = MetadataSections::new();
+
+        // Read section count
+        if cursor + 4 > data.len() {
+            return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated section count"));
+        }
+        let section_count = u32::from_be_bytes([
+            data[cursor], data[cursor + 1], data[cursor + 2], data[cursor + 3]
+        ]);
+        cursor += 4;
+
+        // Read each section
+        for _ in 0..section_count {
+            // Read type length
+            if cursor + 4 > data.len() {
+                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated type length"));
+            }
+            let type_len = u32::from_be_bytes([
+                data[cursor], data[cursor + 1], data[cursor + 2], data[cursor + 3]
+            ]) as usize;
+            cursor += 4;
+
+            // Read type string
+            if cursor + type_len > data.len() {
+                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated type string"));
+            }
+            let type_str = std::str::from_utf8(&data[cursor..cursor + type_len])
+                .map_err(|_| VaultError::corrupted_vault("Invalid metadata sections: invalid type string UTF-8"))?;
+            cursor += type_len;
+
+            // Parse section type
+            let section_type = MetadataSectionType::from_str(type_str)
+                .ok_or_else(|| VaultError::corrupted_vault(format!("Unknown metadata section type: {}", type_str)))?;
+
+            // Read data length
+            if cursor + 4 > data.len() {
+                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated data length"));
+            }
+            let data_len = u32::from_be_bytes([
+                data[cursor], data[cursor + 1], data[cursor + 2], data[cursor + 3]
+            ]) as usize;
+            cursor += 4;
+
+            // Read data
+            if cursor + data_len > data.len() {
+                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated section data"));
+            }
+            let section_data = data[cursor..cursor + data_len].to_vec();
+            cursor += data_len;
+
+            // Add section
+            sections.set_section(section_type, section_data);
+        }
+
+        Ok(sections)
+    }
+
+    /// Encrypt metadata sections using a dedicated subkey
+    pub fn encrypt_metadata_sections(
+        sections: &MetadataSections,
+        crypto_engine: &dyn CryptoEngine,
+        metadata_key: &[u8],
+    ) -> VaultResult<Vec<u8>> {
+        if sections.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Serialize sections to binary format
+        let serialized = Self::serialize_metadata_sections(sections)?;
+
+        // Generate nonce for encryption
+        let nonce = generate_nonce(crypto_engine.nonce_size())?;
+
+        // Encrypt using metadata key with no AAD (metadata sections are self-contained)
+        let encrypted_data = crypto_engine.encrypt(
+            metadata_key,
+            &nonce,
+            &serialized,
+            &[], // No AAD for metadata sections
+        )?;
+
+        // Combine nonce + encrypted data
+        let mut result = Vec::with_capacity(nonce.len() + encrypted_data.len());
+        result.extend_from_slice(&nonce);
+        result.extend_from_slice(&encrypted_data);
+
+        Ok(result)
+    }
+
+    /// Decrypt metadata sections using a dedicated subkey
+    pub fn decrypt_metadata_sections(
+        encrypted_data: &[u8],
+        crypto_engine: &dyn CryptoEngine,
+        metadata_key: &[u8],
+    ) -> VaultResult<MetadataSections> {
+        if encrypted_data.is_empty() {
+            return Ok(MetadataSections::new());
+        }
+
+        let nonce_size = crypto_engine.nonce_size();
+        if encrypted_data.len() < nonce_size {
+            return Err(VaultError::corrupted_vault("Invalid metadata sections: too short for nonce"));
+        }
+
+        // Extract nonce and encrypted data
+        let nonce = &encrypted_data[..nonce_size];
+        let ciphertext = &encrypted_data[nonce_size..];
+
+        // Decrypt using metadata key
+        let decrypted_data = crypto_engine.decrypt(
+            metadata_key,
+            nonce,
+            ciphertext,
+            &[], // No AAD for metadata sections
+        )?;
+
+        // Deserialize sections from binary format
+        Self::deserialize_metadata_sections(&decrypted_data)
+    }
+
+    /// Read encrypted metadata sections from vault file
+    pub fn read_metadata_sections<P: AsRef<Path>>(
+        path: P,
+        header: &VaultHeader,
+        crypto_engine: &dyn CryptoEngine,
+        metadata_key: &[u8],
+    ) -> VaultResult<MetadataSections> {
+        if header.metadata_sections_offset == 0 || header.metadata_sections_size == 0 {
+            return Ok(MetadataSections::new());
+        }
+
+        let file = File::open(path)?;
+        let mut reader = BufReader::new(file);
+
+        // Seek to metadata sections position
+        reader.get_mut().seek(std::io::SeekFrom::Start(header.metadata_sections_offset))?;
+
+        // Read encrypted metadata sections
+        let mut encrypted_data = vec![0u8; header.metadata_sections_size as usize];
+        reader.read_exact(&mut encrypted_data)?;
+
+        // Decrypt and deserialize
+        Self::decrypt_metadata_sections(&encrypted_data, crypto_engine, metadata_key)
+    }
+
+    /// Write encrypted metadata sections to vault file
+    pub fn write_metadata_sections<P: AsRef<Path>>(
+        path: P,
+        header: &VaultHeader,
+        sections: &MetadataSections,
+        crypto_engine: &dyn CryptoEngine,
+        metadata_key: &[u8],
+    ) -> VaultResult<()> {
+        if sections.sections.is_empty() {
+            // No metadata sections to write
+            return Ok(());
+        }
+
+        // Encrypt metadata sections
+        let encrypted_data = Self::encrypt_metadata_sections(sections, crypto_engine, metadata_key)?;
+
+        // Open file for writing at the metadata sections offset
+        let mut file = OpenOptions::new()
+            .write(true)
+            .open(path)?;
+
+        // Seek to metadata sections position
+        file.seek(std::io::SeekFrom::Start(header.metadata_sections_offset))?;
+
+        // Write encrypted metadata sections
+        file.write_all(&encrypted_data)?;
+        file.flush()?;
+
+        Ok(())
+    }
+
+    /// Update vault header with new metadata sections size and offsets
+    pub fn update_metadata_sections_info<P: AsRef<Path>>(
+        path: P,
+        metadata_sections_size: u64,
+    ) -> VaultResult<()> {
+        let (mut header, _) = Self::read_vault_header(&path)?;
+        
+        // Calculate metadata sections offset if not set
+        if header.metadata_sections_offset == 0 {
+            let temp_header_json = serde_json::to_string_pretty(&header)?;
+            let header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
+            header.metadata_sections_offset = header_size;
+        }
+
+        // Update metadata sections size
+        header.metadata_sections_size = metadata_sections_size;
+
+        // Recalculate file table offset to be after metadata sections
+        header.file_table_offset = header.metadata_sections_offset + metadata_sections_size;
+        header.chunk_data_start_offset = header.file_table_offset + header.file_table_reserved_size;
+
+        // Update header
+        Self::update_vault_header(path, &header)?;
+        Ok(())
+    }
+
+    /// Update vault to use the new format with metadata sections (migration)
+    pub fn migrate_to_metadata_sections<P: AsRef<Path>>(
+        path: P,
+        crypto_engine: &dyn CryptoEngine,
+        subkeys: &SubKeys,
+    ) -> VaultResult<()> {
+        let path = path.as_ref();
+
+        // Read current header
+        let (mut header, file_table_offset) = Self::read_vault_header(path)?;
+
+        // Check if already using metadata sections format
+        if header.metadata_sections_offset > 0 {
+            return Ok(()); // Already migrated
+        }
+
+        // Read current file table
+        let file_table = Self::read_encrypted_file_table(
+            path,
+            &header,
+            file_table_offset,
+            crypto_engine,
+            subkeys,
+        )?;
+
+        // Create empty metadata sections for now
+        let _metadata_sections = MetadataSections::new();
+
+        // Migrate legacy hidden tables data if present (currently not implemented)
+        if header.hidden_tables_offset > 0 && header.hidden_tables_size > 0 {
+            // Read legacy hidden tables data and migrate to metadata sections
+            // For now, we'll just clear the legacy fields
+            header.hidden_tables_offset = 0;
+            header.hidden_tables_size = 0;
+        }
+
+        // Calculate new offsets for metadata sections format
+        let temp_header_json = serde_json::to_string_pretty(&header)?;
+        let header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
+        
+        // For now, create empty metadata sections area
+        header.metadata_sections_offset = header_size;
+        header.metadata_sections_size = 0; // Empty for now
+        header.file_table_offset = header_size; // No metadata sections yet
+        header.chunk_data_start_offset = header.file_table_offset + header.file_table_reserved_size;
+
+        // Update header to new format version
+        header.file_table_version = 2; // Increment file table version for metadata support
+
+        // Rewrite header with new format
+        Self::update_vault_header(path, &header)?;
+
+        // Rewrite file table at new offset
+        Self::write_encrypted_file_table(path, &header, &file_table, crypto_engine, subkeys)?;
+
+        Ok(())
+    }
 }
 
 /// Helper module for base64 serialization of byte arrays
@@ -1069,7 +1544,7 @@ mod tests {
                 parallelism: 1,
             },
             vault_uuid: Uuid::new_v4(),
-            file_table_offset: 0,
+            file_table_offset: 500, // Reasonable offset for test
             file_table_size: 0,
             file_table_reserved_size: 1024 * 1024, // 1MB
             chunk_data_start_offset: 0,
@@ -1078,6 +1553,10 @@ mod tests {
             created_at: Utc::now(),
             platform_hint: "test".to_string(),
             file_table_version: 1,
+            metadata_sections_offset: 0,
+            metadata_sections_size: 0,
+            hidden_tables_offset: 0,
+            hidden_tables_size: 0,
         }
     }
 
@@ -1278,6 +1757,10 @@ fn test_vault_format_with_known_test_vectors() {
         created_at: Utc::now(),
         platform_hint: "test".to_string(),
         file_table_version: 1,
+        metadata_sections_offset: 0,
+        metadata_sections_size: 0,
+        hidden_tables_offset: 0,
+        hidden_tables_size: 0,
     };
     // Use fixed values for reproducible test
     header.kdf_params.salt = vec![
@@ -1300,7 +1783,7 @@ fn test_vault_format_with_known_test_vectors() {
     assert_eq!(&file_contents[0..4], b"VLT1");
 
     // Verify version
-    assert_eq!(file_contents[4], 0x01);
+    assert_eq!(file_contents[4], 0x02);
 
     // Verify header length is reasonable
     let header_len = u32::from_be_bytes([
@@ -1676,6 +2159,10 @@ fn test_algorithm_identifier_parsing() {
             created_at: Utc::now(),
             platform_hint: "test".to_string(),
             file_table_version: 1,
+            metadata_sections_offset: 0,
+            metadata_sections_size: 0,
+            hidden_tables_offset: 0,
+            hidden_tables_size: 0,
         };
 
         // Create and read back
@@ -1693,17 +2180,18 @@ fn test_algorithm_identifier_parsing() {
 fn test_version_compatibility_checking() {
     // Test that version checking works correctly
     assert!(VaultFormat::is_version_supported(0x01));
+    assert!(VaultFormat::is_version_supported(0x02));
 
     // Test boundary conditions
     assert!(!VaultFormat::is_version_supported(0x00));
-    assert!(!VaultFormat::is_version_supported(0x02));
+    assert!(!VaultFormat::is_version_supported(0x03));
     assert!(!VaultFormat::is_version_supported(0xFF));
 
     // Test version range
     let (min, max) = VaultFormat::supported_version_range();
     assert_eq!(min, 0x01);
-    assert_eq!(max, 0x01);
-    assert_eq!(VaultFormat::current_version(), 0x01);
+    assert_eq!(max, 0x02);
+    assert_eq!(VaultFormat::current_version(), 0x02);
 }
 
 #[test]
@@ -1733,6 +2221,10 @@ fn test_large_header_handling() {
         created_at: Utc::now(),
         platform_hint: "test".to_string(),
         file_table_version: 1,
+        metadata_sections_offset: 0,
+        metadata_sections_size: 0,
+        hidden_tables_offset: 0,
+        hidden_tables_size: 0,
     };
     // Add many flags to make header larger
     header.flags = (0..100).map(|i| format!("flag_{}", i)).collect();

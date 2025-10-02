@@ -14,6 +14,7 @@ pub const RECOMMENDED_SALT_SIZE: usize = 32;
 pub const FILE_ENCRYPTION_KEY_INFO: &[u8] = b"file_encryption_key";
 pub const FILENAME_KEY_INFO: &[u8] = b"filename_key";
 pub const MAC_KEY_INFO: &[u8] = b"mac_key";
+pub const METADATA_KEY_INFO: &[u8] = b"metadata_key";
 
 /// Minimum Argon2id parameters for security
 pub const MIN_MEMORY_KB: u32 = 64 * 1024; // 64MB
@@ -359,11 +360,13 @@ pub fn derive_all_subkeys(master_key: &[u8]) -> VaultResult<SubKeys> {
     let file_encryption_key = derive_subkeys(master_key, FILE_ENCRYPTION_KEY_INFO)?;
     let filename_key = derive_subkeys(master_key, FILENAME_KEY_INFO)?;
     let mac_key = derive_subkeys(master_key, MAC_KEY_INFO)?;
+    let metadata_key = derive_subkeys(master_key, METADATA_KEY_INFO)?;
 
     Ok(SubKeys {
         file_encryption_key,
         filename_key,
         mac_key,
+        metadata_key,
     })
 }
 
@@ -373,6 +376,7 @@ pub struct SubKeys {
     pub file_encryption_key: [u8; SUBKEY_SIZE],
     pub filename_key: [u8; SUBKEY_SIZE],
     pub mac_key: [u8; SUBKEY_SIZE],
+    pub metadata_key: [u8; SUBKEY_SIZE],
 }
 
 impl SubKeys {
@@ -382,6 +386,7 @@ impl SubKeys {
         self.file_encryption_key.fill(0);
         self.filename_key.fill(0);
         self.mac_key.fill(0);
+        self.metadata_key.fill(0);
     }
 }
 

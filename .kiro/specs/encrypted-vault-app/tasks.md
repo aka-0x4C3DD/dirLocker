@@ -173,7 +173,7 @@
   - Write comprehensive filesystem operation tests
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 19. Implement plausible deniability features
+- [x] 19. Implement plausible deniability features
   - Create multiple file table support with separate password encryption in Rust core
   - Implement indistinguishable file table storage in same container format
   - Add decoy file table creation and management functions
@@ -184,7 +184,26 @@
   - Write unit tests for multiple file table scenarios
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [ ] 20. Set up automated build and packaging system
+- [x] 20. Implement metadata sections for persistent vault metadata
+
+
+
+
+
+
+  - Design and implement the enhanced vault format (version 0x02) with dedicated metadata sections
+  - Create metadata section structure with type-length-value encoding for extensibility
+  - Implement metadata section encryption using separate subkeys derived from master key
+  - Add support for "hidden_tables", "sharing_keys", "recovery_info", "user_settings", and "audit_log" section types
+  - Update vault creation and opening logic to handle metadata sections without affecting file table offsets
+  - Implement atomic metadata section updates to prevent corruption during partial writes
+  - Add backward compatibility support for reading version 0x01 vaults without metadata sections
+  - Create migration functionality to upgrade existing vaults to the new format
+  - Update FFI interface to support metadata section operations
+  - Write comprehensive unit tests for metadata section functionality and corruption prevention
+  - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7_
+
+- [ ] 21. Set up automated build and packaging system
   - Create GitHub Actions or similar CI/CD workflow for automated builds
   - Implement cross-compilation setup for Windows, macOS, and Linux desktop applications
   - Add MSI package generation for Windows with proper metadata and dependencies
@@ -195,7 +214,7 @@
   - Create release automation scripts for publishing packages
   - _Requirements: 14.1, 14.2, 14.3, 14.6, 14.7_
 
-- [ ] 21. Implement iOS mobile application
+- [ ] 22. Implement iOS mobile application
   - Create iOS Swift application project with File Provider extension
   - Integrate Rust core library via C FFI with proper memory management
   - Implement Files app integration using File Provider extension
@@ -207,7 +226,7 @@
   - Write iOS-specific integration tests
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 14.5_
 
-- [ ] 22. Implement Android mobile application
+- [ ] 23. Implement Android mobile application
   - Create Android Kotlin application project with DocumentProvider implementation
   - Integrate Rust core library via JNI with proper lifecycle management
   - Implement Storage Access Framework (SAF) integration
@@ -219,7 +238,7 @@
   - Write Android-specific integration tests
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 14.4_
 
-- [ ] 23. Implement comprehensive testing and security validation
+- [ ] 24. Implement comprehensive testing and security validation
   - Create cross-platform compatibility test suite with test vectors
   - Implement security testing for memory hygiene and key material protection
   - Add performance testing for large vaults and concurrent access
@@ -230,7 +249,7 @@
   - Implement automated security scanning in CI pipeline
   - _Requirements: 15.1, 15.2, 15.3, 15.5_
 
-- [ ] 24. Finalize dirLocker documentation and distribution preparation
+- [ ] 25. Finalize dirLocker documentation and distribution preparation
   - Create comprehensive user documentation (installation, usage, troubleshooting)
   - Write security guidelines and best practices documentation
   - Document API and FFI interfaces for developers

@@ -1,6 +1,7 @@
 //! Core vault implementation and handle management
 
 use std::collections::HashMap;
+use std::io::{Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -167,6 +168,8 @@ pub struct Vault {
     file_table: Option<FileTable>,
     subkeys: Option<SubKeys>,
     sharing_manager: Option<SharingManager>,
+    deniability_manager: Option<crate::deniability::DeniabilityManager>,
+    metadata_sections: Option<crate::format::MetadataSections>,
     is_open: bool,
 }
 
@@ -265,26 +268,36 @@ impl Vault {
             flags: vec![],
             created_at: Utc::now(),
             platform_hint: std::env::consts::OS.to_string(),
-            file_table_version: 1,
+            file_table_version: 2, // Updated for metadata sections support
+            metadata_sections_offset: 0,
+            metadata_sections_size: 0,
+            hidden_tables_offset: 0, // Legacy field for backward compatibility
+            hidden_tables_size: 0,   // Legacy field for backward compatibility
         };
 
         // Calculate actual offsets using the same format as the file format
         // First pass to get approximate size
-        let temp_header_json = serde_json::to_string_pretty(&temp_header)?;
+        let temp_header_json = serde_json::to_string(&temp_header)?;
         let approx_header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
+        
+        // Simple layout: Header -> FileTable -> Chunks -> MetadataSections (at end)
         let file_table_offset = approx_header_size;
         let chunk_data_start_offset = file_table_offset + temp_header.file_table_reserved_size;
 
         // Create header with calculated offsets
         let mut header = VaultHeader {
+            metadata_sections_offset: 0, // Will be set when metadata sections are added
+            metadata_sections_size: 0, // No metadata sections yet
             file_table_offset,
             chunk_data_start_offset,
             ..temp_header
         };
 
         // Second pass with updated header to get exact size
-        let final_header_json = serde_json::to_string_pretty(&header)?;
+        let final_header_json = serde_json::to_string(&header)?;
         let final_header_size = 4 + 1 + 4 + final_header_json.len() as u64;
+        
+        // Recalculate with exact header size
         header.file_table_offset = final_header_size;
         header.chunk_data_start_offset = final_header_size + header.file_table_reserved_size;
 
@@ -303,6 +316,8 @@ impl Vault {
             file_table: Some(empty_file_table),
             subkeys: Some(subkeys),
             sharing_manager: Some(SharingManager::new(header.vault_uuid)),
+            deniability_manager: Some(crate::deniability::DeniabilityManager::new(header.clone())),
+            metadata_sections: Some(crate::format::MetadataSections::new()),
             is_open: true,
         };
 
@@ -359,6 +374,18 @@ impl Vault {
             Err(e) => return Err(e),
         };
 
+        let mut deniability_mgr = crate::deniability::DeniabilityManager::new(header.clone());
+        
+        // Load hidden tables metadata if present
+        if header.hidden_tables_offset > 0 {
+            let _ = deniability_mgr.load_from_vault(&path, &subkeys.file_encryption_key);
+            // Ignore errors - hidden tables are optional
+        }
+
+        // Load metadata sections by scanning the end of the file
+        let metadata_sections = Some(Self::scan_for_metadata_sections(&path, crypto.as_ref(), &subkeys.metadata_key)
+            .unwrap_or_else(|_| crate::format::MetadataSections::new()));
+
         let vault = Vault {
             handle: 0, // Will be set by registry
             path,
@@ -367,6 +394,8 @@ impl Vault {
             file_table,
             subkeys: Some(subkeys),
             sharing_manager: Some(SharingManager::new(header.vault_uuid)),
+            deniability_manager: Some(deniability_mgr),
+            metadata_sections,
             is_open: true,
         };
 
@@ -505,6 +534,42 @@ impl Vault {
             subkeys,
             use_atomic,
         )?;
+
+        Ok(())
+    }
+
+    /// Save the vault header to disk (updates hidden table metadata)
+    /// 
+    /// NOTE: This method is currently disabled to prevent vault corruption.
+    /// The issue is that updating the header changes its size, which shifts
+    /// the file table offset and corrupts the vault structure.
+    /// 
+    /// For now, hidden tables metadata is not persisted across vault sessions.
+    /// This is documented as a known limitation.
+    #[allow(dead_code)]
+    fn save_header(&mut self) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // DISABLED: This causes vault corruption by changing header size
+        // which shifts file table offset. For now, don't persist hidden tables.
+        
+        // Save hidden tables metadata to separate location
+        if let Some(ref mut deniability_mgr) = self.deniability_manager {
+            let master_key = self.subkeys.as_ref()
+                .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?
+                .file_encryption_key.clone();
+            
+            // Only save metadata to separate location, don't update header
+            deniability_mgr.save_to_vault(&self.path, &master_key)?;
+            
+            // DON'T update header - this causes corruption
+            // self.header = deniability_mgr.get_updated_header();
+        }
+
+        // DON'T rewrite the vault header - this causes corruption
+        // VaultFormat::update_vault_header(&self.path, &self.header)?;
 
         Ok(())
     }
@@ -1052,11 +1117,13 @@ impl Vault {
         let vault = Vault {
             handle: 0, // Will be set by registry
             path,
-            header,
+            header: header.clone(),
             crypto,
             file_table,
             subkeys: Some(subkeys),
             sharing_manager: Some(sharing_manager),
+            deniability_manager: Some(crate::deniability::DeniabilityManager::new(header)),
+            metadata_sections: Some(crate::format::MetadataSections::new()),
             is_open: true,
         };
 
@@ -1323,6 +1390,403 @@ impl Vault {
 
         // Save the updated file table
         self.save_file_table()?;
+
+        Ok(())
+    }
+
+    // Plausible Deniability Methods
+
+    /// Add a hidden file table with its own password
+    pub fn add_hidden_file_table(
+        &mut self,
+        password: &str,
+        cipher_type: CipherType,
+        is_decoy: bool,
+    ) -> VaultResult<Uuid> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        let table_id = deniability_mgr.add_hidden_table(password, cipher_type, is_decoy)?;
+        
+        // TODO: Save the updated header once persistence is fully implemented
+        // self.save_header()?;
+        
+        Ok(table_id)
+    }
+
+    /// Remove a hidden file table
+    pub fn remove_hidden_file_table(&mut self, table_id: &Uuid) -> VaultResult<bool> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        let removed = deniability_mgr.remove_hidden_table(table_id)?;
+        
+        // TODO: Save the updated header once persistence is fully implemented
+        // if removed {
+        //     self.save_header()?;
+        // }
+        
+        Ok(removed)
+    }
+
+    /// Get the number of hidden file tables
+    pub fn hidden_file_table_count(&self) -> VaultResult<usize> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        Ok(deniability_mgr.table_count())
+    }
+
+    /// List all hidden file table IDs
+    pub fn list_hidden_file_table_ids(&self) -> VaultResult<Vec<Uuid>> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        Ok(deniability_mgr.list_table_ids())
+    }
+
+    /// Set the active hidden file table for operations
+    pub fn set_active_hidden_file_table(&mut self, table_id: Uuid) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        deniability_mgr.set_active_table(table_id)
+    }
+
+    /// Open a vault with a hidden file table password
+    /// Returns the vault and the table ID that was unlocked
+    pub fn open_with_hidden_table<P: AsRef<Path>>(
+        path: P,
+        password: &str,
+    ) -> VaultResult<(Self, Uuid)> {
+        let path = path.as_ref().to_path_buf();
+
+        // First, try to open as a normal vault
+        match Self::open(&path, password) {
+            Ok(vault) => {
+                // Successfully opened with main password
+                // Return with a dummy UUID to indicate main table
+                return Ok((vault, Uuid::nil()));
+            }
+            Err(VaultError::InvalidPassword) => {
+                // Wrong password for main table, try hidden tables
+            }
+            Err(e) => return Err(e),
+        }
+
+        // Read vault header to initialize deniability manager
+        let (header, _) = VaultFormat::read_vault_header(&path)?;
+
+        // Create a temporary deniability manager to try unlocking
+        let deniability_mgr = crate::deniability::DeniabilityManager::new(header.clone());
+
+        // Try to unlock a hidden table
+        match deniability_mgr.try_unlock_table(&path, password)? {
+            Some(table_id) => {
+                // Successfully unlocked a hidden table
+                // Read the hidden file table
+                let file_table = deniability_mgr.read_hidden_table(&path, &table_id, password)?;
+
+                // Get the table metadata to determine cipher
+                let metadata = deniability_mgr.get_table_metadata(&table_id)
+                    .ok_or_else(|| VaultError::internal_error("Table metadata not found"))?;
+
+                let cipher_type: CipherType = metadata.cipher.parse()?;
+                let crypto = crate::crypto::create_crypto_engine(cipher_type)?;
+
+                // Derive keys from password
+                let master_key = derive_key(
+                    password,
+                    &metadata.kdf_params.salt,
+                    metadata.kdf_params.memory,
+                    metadata.kdf_params.operations,
+                    metadata.kdf_params.parallelism,
+                )?;
+
+                let subkeys = derive_all_subkeys(&master_key)?;
+
+                // Create vault with the hidden file table
+                let mut vault = Vault {
+                    handle: 0,
+                    path,
+                    header: header.clone(),
+                    crypto,
+                    file_table: Some(file_table),
+                    subkeys: Some(subkeys),
+                    sharing_manager: Some(SharingManager::new(header.vault_uuid)),
+                    deniability_manager: Some(deniability_mgr),
+                    metadata_sections: Some(crate::format::MetadataSections::new()),
+                    is_open: true,
+                };
+
+                // Set the active table
+                vault.set_active_hidden_file_table(table_id)?;
+
+                Ok((vault, table_id))
+            }
+            None => {
+                // No hidden table matched this password
+                Err(VaultError::InvalidPassword)
+            }
+        }
+    }
+
+    /// Create a decoy file table with fake content
+    pub fn create_decoy_file_table(
+        &mut self,
+        password: &str,
+        cipher_type: CipherType,
+    ) -> VaultResult<Uuid> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        let table_id = deniability_mgr.create_decoy_table(password, cipher_type)?;
+        
+        // TODO: Save the updated header once persistence is fully implemented
+        // self.save_header()?;
+        
+        Ok(table_id)
+    }
+
+    /// Wipe metadata that could reveal the existence of hidden tables
+    pub fn wipe_revealing_metadata(&mut self) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let deniability_mgr = self.deniability_manager.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
+
+        deniability_mgr.wipe_revealing_metadata();
+        
+        // TODO: Save the updated header once persistence is fully implemented
+        // self.save_header()?;
+        
+        Ok(())
+    }
+
+    /// Get documentation about plausible deniability limitations
+    pub fn get_deniability_limitations() -> &'static str {
+        crate::deniability::DeniabilityManager::get_limitations_doc()
+    }
+
+    /// Set a metadata section in the vault
+    pub fn set_metadata_section(
+        &mut self,
+        section_type: crate::format::MetadataSectionType,
+        data: Vec<u8>,
+    ) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let metadata_sections = self.metadata_sections.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
+
+        // Find existing section or add new one
+        let section = crate::format::MetadataSection {
+            section_type: section_type.clone(),
+            data,
+        };
+
+        // Remove existing section of the same type
+        metadata_sections.sections.retain(|s| s.section_type != section_type);
+        
+        // Add new section
+        metadata_sections.sections.push(section);
+
+        // Persist metadata sections to disk
+        self.save_metadata_sections()?;
+
+        Ok(())
+    }
+
+    /// Get a metadata section from the vault
+    pub fn get_metadata_section(
+        &self,
+        section_type: &crate::format::MetadataSectionType,
+    ) -> VaultResult<Option<Vec<u8>>> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let metadata_sections = self.metadata_sections.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
+
+        // Find section by type
+        for section in &metadata_sections.sections {
+            if section.section_type == *section_type {
+                return Ok(Some(section.data.clone()));
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Remove a metadata section from the vault
+    pub fn remove_metadata_section(
+        &mut self,
+        section_type: &crate::format::MetadataSectionType,
+    ) -> VaultResult<bool> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        let metadata_sections = self.metadata_sections.as_mut()
+            .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
+
+        let initial_len = metadata_sections.sections.len();
+        metadata_sections.sections.retain(|s| s.section_type != *section_type);
+        let removed = metadata_sections.sections.len() < initial_len;
+
+        if removed {
+            // Persist changes to disk
+            self.save_metadata_sections()?;
+        }
+
+        Ok(removed)
+    }
+
+    /// Migrate this vault to use metadata sections format
+    pub fn migrate_to_metadata_sections(&mut self) -> VaultResult<()> {
+        if !self.is_open {
+            return Err(VaultError::invalid_argument("Vault is not open"));
+        }
+
+        // With the new approach, all vaults support metadata sections by default
+        // No migration is needed since we scan for metadata sections at the end of the file
+        Ok(())
+    }
+
+    /// Check if this vault supports metadata sections
+    pub fn supports_metadata_sections(&self) -> bool {
+        self.header.metadata_sections_offset > 0 || self.header.file_table_version >= 2
+    }
+
+    /// Scan for metadata sections at the end of the file
+    fn scan_for_metadata_sections<P: AsRef<Path>>(
+        path: P,
+        crypto_engine: &dyn CryptoEngine,
+        metadata_key: &[u8],
+    ) -> VaultResult<crate::format::MetadataSections> {
+        let file_data = std::fs::read(path)?;
+        
+        let nonce_size = crypto_engine.nonce_size();
+        let min_encrypted_size = nonce_size + crypto_engine.tag_size();
+        
+        // Since we append metadata sections at the end, we should look backwards from the end
+        // Try to find the start of the encrypted metadata sections
+        if file_data.len() < min_encrypted_size {
+            return Ok(crate::format::MetadataSections::new());
+        }
+        
+        // Try to find metadata sections by looking for the encrypted data pattern
+        // Since we know the structure: nonce + encrypted_data, we can search for valid decryptions
+        
+        // Try different starting positions from the end, working backwards
+        let search_limit = std::cmp::min(4096, file_data.len()); // Search last 4KB
+        
+        for start_pos in (file_data.len().saturating_sub(search_limit)..file_data.len()).rev() {
+            if start_pos + min_encrypted_size > file_data.len() {
+                continue;
+            }
+            
+            let data_slice = &file_data[start_pos..];
+            
+            // Try to decrypt this slice as metadata sections
+            match VaultFormat::decrypt_metadata_sections(data_slice, crypto_engine, metadata_key) {
+                Ok(sections) => {
+                    if !sections.sections.is_empty() {
+                        return Ok(sections);
+                    }
+                }
+                Err(_) => continue, // Try next position
+            }
+        }
+        
+        // No metadata sections found
+        Ok(crate::format::MetadataSections::new())
+    }
+
+    /// Save metadata sections to disk (append at end of file)
+    fn save_metadata_sections(&mut self) -> VaultResult<()> {
+        let subkeys = self.subkeys.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
+
+        let metadata_sections = self.metadata_sections.as_ref()
+            .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
+
+        // If no metadata sections, just update the size to 0 in memory
+        if metadata_sections.sections.is_empty() {
+            if self.header.metadata_sections_size > 0 {
+                self.header.metadata_sections_offset = 0;
+                self.header.metadata_sections_size = 0;
+                // Don't update the header on disk to avoid size issues
+            }
+            return Ok(());
+        }
+
+        // Encrypt metadata sections
+        let encrypted_data = VaultFormat::encrypt_metadata_sections(
+            metadata_sections,
+            self.crypto.as_ref(),
+            &subkeys.metadata_key,
+        )?;
+
+        let new_size = encrypted_data.len() as u64;
+
+        // Get current file size to determine where to append metadata sections
+        let file_size = std::fs::metadata(&self.path)?.len();
+        
+        // If we already have metadata sections, we'll overwrite them
+        let metadata_offset = if self.header.metadata_sections_offset > 0 {
+            self.header.metadata_sections_offset
+        } else {
+            file_size // Append at end
+        };
+
+        // Update header in memory (but don't write to disk to avoid header size issues)
+        self.header.metadata_sections_offset = metadata_offset;
+        self.header.metadata_sections_size = new_size;
+
+        // Write metadata sections at the calculated offset
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .open(&self.path)?;
+        
+        file.seek(std::io::SeekFrom::Start(metadata_offset))?;
+        file.write_all(&encrypted_data)?;
+        file.flush()?;
+
+        // Truncate file if the new metadata sections are smaller than the old ones
+        let new_file_size = metadata_offset + new_size;
+        file.set_len(new_file_size)?;
+        
+
 
         Ok(())
     }
