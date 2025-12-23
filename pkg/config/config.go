@@ -35,8 +35,8 @@ type Config struct {
 	LogCompress bool   `json:"log_compress" mapstructure:"log_compress"`
 
 	// Security settings
-	SecureMemory     bool `json:"secure_memory" mapstructure:"secure_memory"`
-	ClearClipboard   bool `json:"clear_clipboard" mapstructure:"clear_clipboard"`
+	SecureMemory     bool          `json:"secure_memory" mapstructure:"secure_memory"`
+	ClearClipboard   bool          `json:"clear_clipboard" mapstructure:"clear_clipboard"`
 	ClipboardTimeout time.Duration `json:"clipboard_timeout" mapstructure:"clipboard_timeout"`
 
 	// Application settings
@@ -57,7 +57,7 @@ type KDFParams struct {
 func DefaultConfig() *Config {
 	homeDir, _ := os.UserHomeDir()
 	configDir := filepath.Join(homeDir, ".dirlocker")
-	
+
 	return &Config{
 		// Vault settings
 		DefaultCipher:    "xchacha20poly1305",
@@ -280,7 +280,7 @@ func (c *Config) RemoveMountPoint(vaultPath string) {
 // Clone creates a deep copy of the configuration
 func (c *Config) Clone() *Config {
 	clone := *c
-	
+
 	// Deep copy mount points map
 	if c.MountPoints != nil {
 		clone.MountPoints = make(map[string]string)
@@ -288,7 +288,7 @@ func (c *Config) Clone() *Config {
 			clone.MountPoints[k] = v
 		}
 	}
-	
+
 	return &clone
 }
 

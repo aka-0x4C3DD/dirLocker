@@ -303,7 +303,7 @@ pub extern "C" fn vault_add_sharing_recipient(
 
     let vault = unsafe { &mut *handle };
     let public_key_slice = unsafe { std::slice::from_raw_parts(recipient_public_key, 32) };
-    
+
     let public_key: [u8; 32] = match public_key_slice.try_into() {
         Ok(key) => key,
         Err(_) => {
@@ -342,7 +342,7 @@ pub extern "C" fn vault_remove_sharing_recipient(
 
     let vault = unsafe { &mut *handle };
     let public_key_slice = unsafe { std::slice::from_raw_parts(recipient_public_key, 32) };
-    
+
     let public_key: [u8; 32] = match public_key_slice.try_into() {
         Ok(key) => key,
         Err(_) => {
@@ -354,7 +354,11 @@ pub extern "C" fn vault_remove_sharing_recipient(
     match vault.remove_sharing_recipient(&public_key) {
         Ok(removed) => {
             set_last_error(CErrorCode::Success);
-            if removed { 1 } else { 0 }
+            if removed {
+                1
+            } else {
+                0
+            }
         }
         Err(e) => {
             set_last_error(e.code().into());
@@ -621,7 +625,11 @@ pub extern "C" fn vault_generate_recovery_key(
     recovery_key_out: *mut CRecoveryKey,
     wrapped_key_out: *mut CWrappedMasterKey,
 ) -> c_int {
-    if handle.is_null() || password.is_null() || recovery_key_out.is_null() || wrapped_key_out.is_null() {
+    if handle.is_null()
+        || password.is_null()
+        || recovery_key_out.is_null()
+        || wrapped_key_out.is_null()
+    {
         set_last_error(CErrorCode::InvalidArgument);
         return CErrorCode::InvalidArgument as c_int;
     }
@@ -749,26 +757,29 @@ pub extern "C" fn vault_recover_with_key(
     };
 
     // Convert C structures to Rust structures
-    let rust_recovery_key = match crate::password::RecoveryKey::from_bytes(unsafe {
-        &(*recovery_key).key_data
-    }) {
-        Ok(key) => key,
-        Err(_) => {
-            set_last_error(CErrorCode::InvalidArgument);
-            return CErrorCode::InvalidArgument as c_int;
-        }
-    };
+    let rust_recovery_key =
+        match crate::password::RecoveryKey::from_bytes(unsafe { &(*recovery_key).key_data }) {
+            Ok(key) => key,
+            Err(_) => {
+                set_last_error(CErrorCode::InvalidArgument);
+                return CErrorCode::InvalidArgument as c_int;
+            }
+        };
 
     let wrapped_key_data = unsafe { &*wrapped_key };
     let encrypted_key = unsafe {
-        std::slice::from_raw_parts(wrapped_key_data.encrypted_key, wrapped_key_data.encrypted_key_len)
-    }.to_vec();
-    let nonce = unsafe {
-        std::slice::from_raw_parts(wrapped_key_data.nonce, wrapped_key_data.nonce_len)
-    }.to_vec();
-    let salt = unsafe {
-        std::slice::from_raw_parts(wrapped_key_data.salt, wrapped_key_data.salt_len)
-    }.to_vec();
+        std::slice::from_raw_parts(
+            wrapped_key_data.encrypted_key,
+            wrapped_key_data.encrypted_key_len,
+        )
+    }
+    .to_vec();
+    let nonce =
+        unsafe { std::slice::from_raw_parts(wrapped_key_data.nonce, wrapped_key_data.nonce_len) }
+            .to_vec();
+    let salt =
+        unsafe { std::slice::from_raw_parts(wrapped_key_data.salt, wrapped_key_data.salt_len) }
+            .to_vec();
     let cipher = match unsafe { CStr::from_ptr(wrapped_key_data.cipher) }.to_str() {
         Ok(s) => s.to_string(),
         Err(_) => {
@@ -789,7 +800,12 @@ pub extern "C" fn vault_recover_with_key(
         },
     };
 
-    match crate::vault::Vault::recover_with_key(path_str, &rust_recovery_key, &rust_wrapped_key, new_password_str) {
+    match crate::vault::Vault::recover_with_key(
+        path_str,
+        &rust_recovery_key,
+        &rust_wrapped_key,
+        new_password_str,
+    ) {
         Ok(()) => {
             set_last_error(CErrorCode::Success);
             CErrorCode::Success as c_int
@@ -814,19 +830,19 @@ pub extern "C" fn vault_free_wrapped_key(wrapped_key: *mut CWrappedMasterKey) {
 
     unsafe {
         let key_data = &mut *wrapped_key;
-        
+
         if !key_data.encrypted_key.is_null() {
             libc::free(key_data.encrypted_key as *mut libc::c_void);
         }
-        
+
         if !key_data.nonce.is_null() {
             libc::free(key_data.nonce as *mut libc::c_void);
         }
-        
+
         if !key_data.salt.is_null() {
             libc::free(key_data.salt as *mut libc::c_void);
         }
-        
+
         if !key_data.cipher.is_null() {
             let _ = std::ffi::CString::from_raw(key_data.cipher);
         }
@@ -896,18 +912,17 @@ pub extern "C" fn vault_recovery_key_to_hex(
         return CErrorCode::InvalidArgument as c_int;
     }
 
-    let rust_recovery_key = match crate::password::RecoveryKey::from_bytes(unsafe {
-        &(*recovery_key).key_data
-    }) {
-        Ok(key) => key,
-        Err(_) => {
-            set_last_error(CErrorCode::InvalidArgument);
-            return CErrorCode::InvalidArgument as c_int;
-        }
-    };
+    let rust_recovery_key =
+        match crate::password::RecoveryKey::from_bytes(unsafe { &(*recovery_key).key_data }) {
+            Ok(key) => key,
+            Err(_) => {
+                set_last_error(CErrorCode::InvalidArgument);
+                return CErrorCode::InvalidArgument as c_int;
+            }
+        };
 
     let hex_string = rust_recovery_key.to_hex();
-    
+
     let c_string = match std::ffi::CString::new(hex_string) {
         Ok(s) => s,
         Err(_) => {
@@ -988,7 +1003,7 @@ pub extern "C" fn vault_list_files(
     match vault.list_files() {
         Ok(file_list) => {
             let entry_count = file_list.len();
-            
+
             if entry_count == 0 {
                 unsafe {
                     *entries = ptr::null_mut();
@@ -1002,7 +1017,7 @@ pub extern "C" fn vault_list_files(
             let entries_ptr = unsafe {
                 libc::malloc(entry_count * std::mem::size_of::<CFileEntry>()) as *mut CFileEntry
             };
-            
+
             if entries_ptr.is_null() {
                 set_last_error(CErrorCode::InternalError);
                 return CErrorCode::InternalError as c_int;
@@ -1107,7 +1122,7 @@ pub extern "C" fn vault_read_file(
     match vault.read_file(path_str) {
         Ok(file_data) => {
             let data_size = file_data.len();
-            
+
             if data_size == 0 {
                 unsafe {
                     *data = ptr::null_mut();
@@ -1208,10 +1223,7 @@ pub extern "C" fn vault_write_file(
 /// - `path` must be a valid null-terminated C string
 /// - Returns 0 on success, error code on failure
 #[no_mangle]
-pub extern "C" fn vault_delete_file(
-    handle: CVaultHandle,
-    path: *const c_char,
-) -> c_int {
+pub extern "C" fn vault_delete_file(handle: CVaultHandle, path: *const c_char) -> c_int {
     if handle.is_null() || path.is_null() {
         set_last_error(CErrorCode::InvalidArgument);
         return CErrorCode::InvalidArgument as c_int;
@@ -1245,10 +1257,7 @@ pub extern "C" fn vault_delete_file(
 /// - `path` must be a valid null-terminated C string
 /// - Returns 0 on success, error code on failure
 #[no_mangle]
-pub extern "C" fn vault_create_directory(
-    handle: CVaultHandle,
-    path: *const c_char,
-) -> c_int {
+pub extern "C" fn vault_create_directory(handle: CVaultHandle, path: *const c_char) -> c_int {
     if handle.is_null() || path.is_null() {
         set_last_error(CErrorCode::InvalidArgument);
         return CErrorCode::InvalidArgument as c_int;
@@ -1301,7 +1310,7 @@ impl From<CMetadataSectionType> for crate::format::MetadataSectionType {
 }
 
 /// Set a metadata section in the vault
-/// 
+///
 /// # Safety
 /// - handle must be a valid vault handle
 /// - data must be valid for data_len bytes
@@ -1336,7 +1345,7 @@ pub extern "C" fn vault_set_metadata_section(
 }
 
 /// Get a metadata section from the vault
-/// 
+///
 /// # Safety
 /// - handle must be a valid vault handle
 /// - data_out and data_len_out must be valid pointers
@@ -1362,7 +1371,7 @@ pub extern "C" fn vault_get_metadata_section(
             // Allocate memory using libc::malloc for consistency with free
             let data_len = data.len();
             let data_ptr = unsafe { libc::malloc(data_len) as *mut u8 };
-            
+
             if data_ptr.is_null() {
                 set_last_error(CErrorCode::InternalError);
                 return CErrorCode::InternalError as c_int;
@@ -1396,7 +1405,7 @@ pub extern "C" fn vault_get_metadata_section(
 }
 
 /// Remove a metadata section from the vault
-/// 
+///
 /// # Safety
 /// - handle must be a valid vault handle
 /// - Returns 0 on success, error code on failure
@@ -1427,7 +1436,7 @@ pub extern "C" fn vault_remove_metadata_section(
 }
 
 /// Migrate vault to use metadata sections format
-/// 
+///
 /// # Safety
 /// - handle must be a valid vault handle
 /// - Returns 0 on success, error code on failure
@@ -1454,7 +1463,7 @@ pub extern "C" fn vault_migrate_to_metadata_sections(handle: CVaultHandle) -> c_
 }
 
 /// Check if vault supports metadata sections
-/// 
+///
 /// # Safety
 /// - handle must be a valid vault handle
 /// - Returns 1 if supported, 0 if not supported, negative on error
@@ -1466,7 +1475,7 @@ pub extern "C" fn vault_supports_metadata_sections(handle: CVaultHandle) -> c_in
     }
 
     let vault = unsafe { &*handle };
-    
+
     if vault.supports_metadata_sections() {
         set_last_error(CErrorCode::Success);
         1
@@ -1477,7 +1486,7 @@ pub extern "C" fn vault_supports_metadata_sections(handle: CVaultHandle) -> c_in
 }
 
 /// Free metadata section data
-/// 
+///
 /// # Safety
 /// - data must have been allocated by vault_get_metadata_section
 /// - data must not be used after this call
@@ -1592,7 +1601,11 @@ pub extern "C" fn vault_quick_integrity_check(path: *const c_char) -> c_int {
     match crate::integrity::VaultIntegrityChecker::quick_integrity_check(path_str) {
         Ok(is_valid) => {
             set_last_error(CErrorCode::Success);
-            if is_valid { 1 } else { 0 }
+            if is_valid {
+                1
+            } else {
+                0
+            }
         }
         Err(e) => {
             set_last_error(e.code().into());
@@ -1653,7 +1666,8 @@ pub extern "C" fn vault_repair(
                 // Allocate array for repair log strings
                 let log_count = result.repair_log.len();
                 if log_count > 0 {
-                    let log_array = libc::malloc(log_count * std::mem::size_of::<*mut c_char>()) as *mut *mut c_char;
+                    let log_array = libc::malloc(log_count * std::mem::size_of::<*mut c_char>())
+                        as *mut *mut c_char;
                     if log_array.is_null() {
                         set_last_error(CErrorCode::InternalError);
                         return CErrorCode::InternalError as c_int;
@@ -1706,7 +1720,7 @@ pub extern "C" fn vault_free_repair_result(result: *mut CVaultRepairResult) {
 
     unsafe {
         let result_data = &mut *result;
-        
+
         if !result_data.repair_log.is_null() && result_data.repair_log_count > 0 {
             for i in 0..result_data.repair_log_count {
                 let log_entry = *result_data.repair_log.add(i);
@@ -1784,7 +1798,11 @@ pub extern "C" fn vault_quick_integrity_check_handle(handle: CVaultHandle) -> c_
     match vault.quick_integrity_check() {
         Ok(is_valid) => {
             set_last_error(CErrorCode::Success);
-            if is_valid { 1 } else { 0 }
+            if is_valid {
+                1
+            } else {
+                0
+            }
         }
         Err(e) => {
             set_last_error(e.code().into());
@@ -1806,13 +1824,12 @@ pub extern "C" fn vault_free_envelope(envelope: *mut CEnvelope) {
 
     unsafe {
         let envelope_data = &mut *envelope;
-        
+
         if !envelope_data.encrypted_key.is_null() {
             libc::free(envelope_data.encrypted_key as *mut libc::c_void);
         }
     }
 }
-
 
 // Plausible Deniability FFI Functions
 
@@ -1861,11 +1878,7 @@ pub extern "C" fn vault_add_hidden_table(
     match vault.add_hidden_file_table(password_str, cipher.into(), is_decoy != 0) {
         Ok(table_id) => {
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    table_id.as_bytes().as_ptr(),
-                    table_id_out,
-                    16,
-                );
+                std::ptr::copy_nonoverlapping(table_id.as_bytes().as_ptr(), table_id_out, 16);
             }
             set_last_error(CErrorCode::Success);
             CErrorCode::Success as c_int
@@ -1884,17 +1897,14 @@ pub extern "C" fn vault_add_hidden_table(
 /// - `table_id` must point to 16 bytes (UUID)
 /// - Returns 1 if removed, 0 if not found, negative on error
 #[no_mangle]
-pub extern "C" fn vault_remove_hidden_table(
-    handle: CVaultHandle,
-    table_id: *const u8,
-) -> c_int {
+pub extern "C" fn vault_remove_hidden_table(handle: CVaultHandle, table_id: *const u8) -> c_int {
     if handle.is_null() || table_id.is_null() {
         set_last_error(CErrorCode::InvalidArgument);
         return CErrorCode::InvalidArgument as c_int;
     }
 
     let vault = unsafe { &mut *handle };
-    
+
     let table_id_bytes = unsafe { std::slice::from_raw_parts(table_id, 16) };
     let table_uuid = match uuid::Uuid::from_slice(table_id_bytes) {
         Ok(uuid) => uuid,
@@ -1907,7 +1917,11 @@ pub extern "C" fn vault_remove_hidden_table(
     match vault.remove_hidden_file_table(&table_uuid) {
         Ok(removed) => {
             set_last_error(CErrorCode::Success);
-            if removed { 1 } else { 0 }
+            if removed {
+                1
+            } else {
+                0
+            }
         }
         Err(e) => {
             set_last_error(e.code().into());
@@ -1965,11 +1979,11 @@ pub extern "C" fn vault_list_hidden_tables(
     match vault.list_hidden_file_table_ids() {
         Ok(table_ids) => {
             let count = table_ids.len();
-            
+
             // Allocate array for table IDs (16 bytes each)
             let array_size = count * 16;
             let array_ptr = unsafe { libc::malloc(array_size) as *mut u8 };
-            
+
             if array_ptr.is_null() {
                 set_last_error(CErrorCode::InternalError);
                 return CErrorCode::InternalError as c_int;
@@ -2051,11 +2065,7 @@ pub extern "C" fn vault_open_hidden_table(
     match crate::vault::Vault::open_with_hidden_table(path_str, password_str) {
         Ok((vault, table_id)) => {
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    table_id.as_bytes().as_ptr(),
-                    table_id_out,
-                    16,
-                );
+                std::ptr::copy_nonoverlapping(table_id.as_bytes().as_ptr(), table_id_out, 16);
             }
             set_last_error(CErrorCode::Success);
             Box::into_raw(Box::new(vault))
@@ -2084,7 +2094,7 @@ pub extern "C" fn vault_set_active_hidden_table(
     }
 
     let vault = unsafe { &mut *handle };
-    
+
     let table_id_bytes = unsafe { std::slice::from_raw_parts(table_id, 16) };
     let table_uuid = match uuid::Uuid::from_slice(table_id_bytes) {
         Ok(uuid) => uuid,
@@ -2138,11 +2148,7 @@ pub extern "C" fn vault_create_decoy_table(
     match vault.create_decoy_file_table(password_str, cipher.into()) {
         Ok(table_id) => {
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    table_id.as_bytes().as_ptr(),
-                    table_id_out,
-                    16,
-                );
+                std::ptr::copy_nonoverlapping(table_id.as_bytes().as_ptr(), table_id_out, 16);
             }
             set_last_error(CErrorCode::Success);
             CErrorCode::Success as c_int

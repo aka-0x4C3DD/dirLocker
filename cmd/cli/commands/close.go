@@ -31,7 +31,7 @@ Use --all flag to close all open vaults.`,
 			if closeAll {
 				// Close all vaults
 				logger.Info("Closing all open vaults")
-				
+
 				openVaults := vaultManager.ListOpenVaults()
 				if len(openVaults) == 0 {
 					fmt.Println("No vaults are currently open")

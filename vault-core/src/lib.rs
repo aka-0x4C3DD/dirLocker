@@ -23,9 +23,11 @@ mod metadata_tests;
 pub use crypto::CipherType;
 pub use deniability::{DeniabilityManager, HiddenFileTableMetadata, MAX_FILE_TABLES};
 pub use error::{VaultError, VaultResult};
-pub use integrity::{VaultIntegrityChecker, VaultValidationResult, VaultRepairResult, AtomicFileWriter};
-pub use password::{PasswordManager, RecoveryKey, WrappedMasterKey, AlgorithmRotationManager};
-pub use sharing::{SharingManager, ShareEnvelope, ShareEnvelopeCollection, X25519KeyPair};
+pub use integrity::{
+    AtomicFileWriter, VaultIntegrityChecker, VaultRepairResult, VaultValidationResult,
+};
+pub use password::{AlgorithmRotationManager, PasswordManager, RecoveryKey, WrappedMasterKey};
+pub use sharing::{ShareEnvelope, ShareEnvelopeCollection, SharingManager, X25519KeyPair};
 pub use vault::{Vault, VaultHandle};
 
 // FFI exports for C compatibility
@@ -102,7 +104,7 @@ fn test_vault_open_wrong_password() {
     // Try to open with wrong password - should fail now that we have proper password validation
     let result = Vault::open(&path, "wrong_password");
     assert!(result.is_err());
-    
+
     // Should be InvalidPassword error
     if let Err(VaultError::InvalidPassword) = result {
         // Expected
@@ -169,8 +171,8 @@ fn test_vault_header_validation() {
 
 #[test]
 fn test_vault_file_operations() {
-    use tempfile::tempdir;
     use chrono::Utc;
+    use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("test.vault");
@@ -192,7 +194,8 @@ fn test_vault_file_operations() {
             false,
             vault.crypto(),
             &subkeys.filename_key,
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     // Add file entry
@@ -217,8 +220,8 @@ fn test_vault_file_operations() {
 
 #[test]
 fn test_vault_encrypted_file_table_persistence() {
-    use tempfile::tempdir;
     use chrono::Utc;
+    use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("test.vault");
@@ -246,7 +249,8 @@ fn test_vault_encrypted_file_table_persistence() {
                     *is_dir,
                     vault.crypto(),
                     &subkeys.filename_key,
-                ).unwrap()
+                )
+                .unwrap()
             };
             vault.add_file_entry(entry).unwrap();
         }
@@ -257,13 +261,17 @@ fn test_vault_encrypted_file_table_persistence() {
 
     // Reopen vault and verify files are preserved
     {
-        let vault = Vault::open(&path, password).expect("Failed to reopen vault with correct password");
+        let vault =
+            Vault::open(&path, password).expect("Failed to reopen vault with correct password");
         let files = vault.list_files().unwrap();
 
         assert_eq!(files.len(), 3);
 
         // Verify file details
-        let file_names: Vec<&str> = files.iter().map(|file_info| file_info.name.as_str()).collect();
+        let file_names: Vec<&str> = files
+            .iter()
+            .map(|file_info| file_info.name.as_str())
+            .collect();
         assert!(file_names.contains(&"document.pdf"));
         assert!(file_names.contains(&"image.jpg"));
         assert!(file_names.contains(&"folder"));
@@ -291,8 +299,8 @@ fn test_vault_encrypted_file_table_persistence() {
 
 #[test]
 fn test_vault_wrong_password_file_table() {
-    use tempfile::tempdir;
     use chrono::Utc;
+    use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("test.vault");
@@ -313,7 +321,8 @@ fn test_vault_wrong_password_file_table() {
                 false,
                 vault.crypto(),
                 &subkeys.filename_key,
-            ).unwrap()
+            )
+            .unwrap()
         };
         vault.add_file_entry(entry).unwrap();
         vault.save_file_table().unwrap();
@@ -331,7 +340,8 @@ fn test_vault_wrong_password_file_table() {
     }
 
     // Verify correct password still works
-    let vault = Vault::open(&path, correct_password).expect("Failed to open vault with correct password");
+    let vault =
+        Vault::open(&path, correct_password).expect("Failed to open vault with correct password");
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].name, "secret.txt");
@@ -339,8 +349,8 @@ fn test_vault_wrong_password_file_table() {
 
 #[test]
 fn test_vault_sharing_integration() {
-    use tempfile::tempdir;
     use chrono::Utc;
+    use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("shared_test.vault");
@@ -359,7 +369,8 @@ fn test_vault_sharing_integration() {
             false,
             owner_vault.crypto(),
             &subkeys.filename_key,
-        ).unwrap()
+        )
+        .unwrap()
     };
     owner_vault.add_file_entry(entry).unwrap();
     owner_vault.save_file_table().unwrap();
@@ -368,11 +379,15 @@ fn test_vault_sharing_integration() {
     let recipient_keypair = Vault::generate_sharing_keypair().unwrap();
 
     // Add recipient to sharing
-    owner_vault.add_sharing_recipient(*recipient_keypair.public_key_bytes()).unwrap();
+    owner_vault
+        .add_sharing_recipient(*recipient_keypair.public_key_bytes())
+        .unwrap();
 
     // Verify recipient was added
     assert_eq!(owner_vault.sharing_recipient_count().unwrap(), 1);
-    assert!(owner_vault.has_sharing_recipient(recipient_keypair.public_key_bytes()).unwrap());
+    assert!(owner_vault
+        .has_sharing_recipient(recipient_keypair.public_key_bytes())
+        .unwrap());
 
     // Export sharing envelopes
     let envelopes_json = owner_vault.export_sharing_envelopes().unwrap();
@@ -386,7 +401,8 @@ fn test_vault_sharing_integration() {
         &path,
         recipient_keypair.private_key_bytes(),
         &envelopes_json,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Verify recipient can access files
     let files = recipient_vault.list_files().unwrap();
@@ -416,9 +432,15 @@ fn test_vault_sharing_multi_recipient() {
     let charlie_keypair = Vault::generate_sharing_keypair().unwrap();
 
     // Add all recipients
-    vault.add_sharing_recipient(*alice_keypair.public_key_bytes()).unwrap();
-    vault.add_sharing_recipient(*bob_keypair.public_key_bytes()).unwrap();
-    vault.add_sharing_recipient(*charlie_keypair.public_key_bytes()).unwrap();
+    vault
+        .add_sharing_recipient(*alice_keypair.public_key_bytes())
+        .unwrap();
+    vault
+        .add_sharing_recipient(*bob_keypair.public_key_bytes())
+        .unwrap();
+    vault
+        .add_sharing_recipient(*charlie_keypair.public_key_bytes())
+        .unwrap();
 
     // Verify all recipients were added
     assert_eq!(vault.sharing_recipient_count().unwrap(), 3);
@@ -432,20 +454,22 @@ fn test_vault_sharing_multi_recipient() {
     let envelopes_json = vault.export_sharing_envelopes().unwrap();
 
     // Remove Bob from sharing
-    assert!(vault.remove_sharing_recipient(bob_keypair.public_key_bytes()).unwrap());
+    assert!(vault
+        .remove_sharing_recipient(bob_keypair.public_key_bytes())
+        .unwrap());
     assert_eq!(vault.sharing_recipient_count().unwrap(), 2);
-    assert!(!vault.has_sharing_recipient(bob_keypair.public_key_bytes()).unwrap());
+    assert!(!vault
+        .has_sharing_recipient(bob_keypair.public_key_bytes())
+        .unwrap());
 
     // Export updated envelopes
     let updated_envelopes_json = vault.export_sharing_envelopes().unwrap();
     drop(vault);
 
     // Alice should still be able to access with original envelopes
-    let alice_vault = Vault::open_with_recipient_key(
-        &path,
-        alice_keypair.private_key_bytes(),
-        &envelopes_json,
-    ).unwrap();
+    let alice_vault =
+        Vault::open_with_recipient_key(&path, alice_keypair.private_key_bytes(), &envelopes_json)
+            .unwrap();
     assert!(alice_vault.is_open());
     drop(alice_vault);
 
@@ -462,7 +486,8 @@ fn test_vault_sharing_multi_recipient() {
         &path,
         charlie_keypair.private_key_bytes(),
         &updated_envelopes_json,
-    ).unwrap();
+    )
+    .unwrap();
     assert!(charlie_vault.is_open());
 }
 
@@ -476,17 +501,23 @@ fn test_vault_sharing_envelope_import_export() {
     // Create first vault instance
     let mut vault1 = Vault::create(&path, "password", CipherType::Aes256Gcm).unwrap();
     let recipient_keypair = Vault::generate_sharing_keypair().unwrap();
-    vault1.add_sharing_recipient(*recipient_keypair.public_key_bytes()).unwrap();
+    vault1
+        .add_sharing_recipient(*recipient_keypair.public_key_bytes())
+        .unwrap();
     let exported_envelopes = vault1.export_sharing_envelopes().unwrap();
     drop(vault1);
 
     // Create second vault instance and import envelopes
     let mut vault2 = Vault::open(&path, "password").unwrap();
-    vault2.import_sharing_envelopes(&exported_envelopes).unwrap();
+    vault2
+        .import_sharing_envelopes(&exported_envelopes)
+        .unwrap();
 
     // Verify import worked
     assert_eq!(vault2.sharing_recipient_count().unwrap(), 1);
-    assert!(vault2.has_sharing_recipient(recipient_keypair.public_key_bytes()).unwrap());
+    assert!(vault2
+        .has_sharing_recipient(recipient_keypair.public_key_bytes())
+        .unwrap());
 
     // Verify recipient can still access
     let final_envelopes = vault2.export_sharing_envelopes().unwrap();
@@ -496,14 +527,15 @@ fn test_vault_sharing_envelope_import_export() {
         &path,
         recipient_keypair.private_key_bytes(),
         &final_envelopes,
-    ).unwrap();
+    )
+    .unwrap();
     assert!(recipient_vault.is_open());
 }
 
 #[test]
 fn test_vault_metadata_protection() {
-    use tempfile::tempdir;
     use chrono::Utc;
+    use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("test.vault");
@@ -527,7 +559,8 @@ fn test_vault_metadata_protection() {
             false,
             vault.crypto(),
             &subkeys.filename_key,
-        ).unwrap()
+        )
+        .unwrap()
     };
 
     vault.add_file_entry(entry).unwrap();
@@ -539,10 +572,10 @@ fn test_vault_metadata_protection() {
 
     // Filename should not appear in plaintext
     assert!(!raw_string.contains(filename));
-    
+
     // Size should not appear in plaintext (convert to string representations)
     assert!(!raw_string.contains(&size.to_string()));
-    
+
     // Mode should not appear in plaintext
     assert!(!raw_string.contains(&mode.to_string()));
 
@@ -569,7 +602,7 @@ fn test_file_chunking_and_streaming() {
     let chunk_size = 4 * 1024 * 1024; // 4MB
     let test_data_size = chunk_size + (chunk_size / 2); // 6MB total
     let mut test_data = Vec::with_capacity(test_data_size);
-    
+
     // Fill with predictable pattern for verification
     for i in 0..test_data_size {
         test_data.push((i % 256) as u8);
@@ -583,7 +616,7 @@ fn test_file_chunking_and_streaming() {
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].name, "large_file.bin");
     assert_eq!(files[0].size, test_data_size as u64);
-    
+
     // Should have 2 chunks (4MB + 2MB)
     let file_entry = vault.find_file(&files[0].name).unwrap().unwrap();
     assert_eq!(file_entry.chunks.len(), 2);
@@ -600,9 +633,14 @@ fn test_file_chunking_and_streaming() {
 
     // Test cross-chunk range reading
     let cross_chunk_start = chunk_size - 1000;
-    let cross_chunk_data = vault.read_file_range("large_file.bin", cross_chunk_start as u64, 2000).unwrap();
+    let cross_chunk_data = vault
+        .read_file_range("large_file.bin", cross_chunk_start as u64, 2000)
+        .unwrap();
     assert_eq!(cross_chunk_data.len(), 2000);
-    assert_eq!(cross_chunk_data, test_data[cross_chunk_start..cross_chunk_start + 2000]);
+    assert_eq!(
+        cross_chunk_data,
+        test_data[cross_chunk_start..cross_chunk_start + 2000]
+    );
 }
 
 #[test]
@@ -663,8 +701,8 @@ fn test_file_streaming_api() {
 
 #[test]
 fn test_large_file_performance() {
-    use tempfile::tempdir;
     use std::time::Instant;
+    use tempfile::tempdir;
 
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("test.vault");
@@ -696,16 +734,34 @@ fn test_large_file_performance() {
 
     // Measure random access performance
     let random_start = Instant::now();
-    let _range1 = vault.read_file_range("large_file.bin", 1000000, 1000).unwrap();
-    let _range2 = vault.read_file_range("large_file.bin", 8000000, 1000).unwrap();
-    let _range3 = vault.read_file_range("large_file.bin", 15000000, 1000).unwrap();
+    let _range1 = vault
+        .read_file_range("large_file.bin", 1000000, 1000)
+        .unwrap();
+    let _range2 = vault
+        .read_file_range("large_file.bin", 8000000, 1000)
+        .unwrap();
+    let _range3 = vault
+        .read_file_range("large_file.bin", 15000000, 1000)
+        .unwrap();
     let random_duration = random_start.elapsed();
     println!("Random access (3x1KB) in {:?}", random_duration);
 
     // Performance should be reasonable (these are loose bounds for CI)
-    assert!(write_duration.as_secs() < 10, "Write took too long: {:?}", write_duration);
-    assert!(read_duration.as_secs() < 10, "Read took too long: {:?}", read_duration);
-    assert!(random_duration.as_secs() < 5, "Random access took too long: {:?}", random_duration);
+    assert!(
+        write_duration.as_secs() < 10,
+        "Write took too long: {:?}",
+        write_duration
+    );
+    assert!(
+        read_duration.as_secs() < 10,
+        "Read took too long: {:?}",
+        read_duration
+    );
+    assert!(
+        random_duration.as_secs() < 5,
+        "Random access took too long: {:?}",
+        random_duration
+    );
 }
 
 #[test]
@@ -723,15 +779,17 @@ fn test_chunk_encryption_uniqueness() {
     let chunk_size = vault.header().chunk_size as usize; // Use vault's chunk size
     let repeated_data = vec![0x42u8; chunk_size + (chunk_size / 2)]; // 1.5x chunk size to ensure 2 chunks
 
-    vault.write_file("repeated_data.bin", &repeated_data).unwrap();
+    vault
+        .write_file("repeated_data.bin", &repeated_data)
+        .unwrap();
 
     // Read raw vault file to verify chunks are encrypted differently
     let _raw_vault_data = std::fs::read(&path).unwrap();
-    
+
     // Find the file entry to get chunk information
     let files = vault.list_files().unwrap();
     let file_entry = vault.find_file(&files[0].name).unwrap().unwrap();
-    
+
     // Verify we have multiple chunks
     assert!(file_entry.chunks.len() >= 2);
 
@@ -743,21 +801,24 @@ fn test_chunk_encryption_uniqueness() {
             chunk.offset,
             chunk.size,
             12, // AES-GCM nonce size for this test
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         // Verify nonce is unique (store for comparison)
         for (existing_nonce, _) in &encrypted_chunks {
-            assert_ne!(nonce, *existing_nonce, "Nonces should be unique for each chunk");
+            assert_ne!(
+                nonce, *existing_nonce,
+                "Nonces should be unique for each chunk"
+            );
         }
-        
+
         encrypted_chunks.push((nonce, encrypted_data));
     }
 
     // Verify encrypted data is different even though plaintext is the same
     if encrypted_chunks.len() >= 2 {
         assert_ne!(
-            encrypted_chunks[0].1, 
-            encrypted_chunks[1].1,
+            encrypted_chunks[0].1, encrypted_chunks[1].1,
             "Encrypted chunks should be different even with same plaintext"
         );
     }
@@ -779,16 +840,16 @@ fn test_simple_file_write_read() {
 
     // Test small file (less than chunk size)
     let small_data = b"Hello, World! This is a small file.";
-    
+
     // Write file
     vault.write_file("small.txt", small_data).unwrap();
-    
+
     // Check file was added to file table
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].name, "small.txt");
     assert_eq!(files[0].size, small_data.len() as u64);
-    
+
     // Read file back
     let read_small = vault.read_file("small.txt").unwrap();
     assert_eq!(read_small, small_data);
@@ -823,8 +884,11 @@ fn test_empty_and_small_files() {
     // Verify all files exist
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 3);
-    
-    let filenames: Vec<&str> = files.iter().map(|file_info| file_info.name.as_str()).collect();
+
+    let filenames: Vec<&str> = files
+        .iter()
+        .map(|file_info| file_info.name.as_str())
+        .collect();
     assert!(filenames.contains(&"empty.txt"));
     assert!(filenames.contains(&"single.txt"));
     assert!(filenames.contains(&"small.txt"));
@@ -847,18 +911,19 @@ fn test_file_overwrite_and_replacement() {
     // Verify initial file
     let read_data = vault.read_file("test.txt").unwrap();
     assert_eq!(read_data, initial_data);
-    
+
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
 
     // Overwrite with larger file
-    let new_data = b"This is a much longer file content that should replace the previous content completely";
+    let new_data =
+        b"This is a much longer file content that should replace the previous content completely";
     vault.write_file("test.txt", new_data).unwrap();
 
     // Verify overwrite
     let read_new_data = vault.read_file("test.txt").unwrap();
     assert_eq!(read_new_data, new_data);
-    
+
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1); // Still only one file
     assert_eq!(files[0].size, new_data.len() as u64);
@@ -870,13 +935,11 @@ fn test_file_overwrite_and_replacement() {
     // Verify final overwrite
     let read_small_data = vault.read_file("test.txt").unwrap();
     assert_eq!(read_small_data, small_data);
-    
+
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].size, small_data.len() as u64);
 }
-
-
 
 // Note: Password change integration tests are disabled due to vault file format issues
 // that need to be resolved in the file chunking and streaming task.
@@ -888,14 +951,14 @@ fn test_file_overwrite_and_replacement() {
 fn test_recovery_key_hex_conversion() {
     let recovery_key = RecoveryKey::generate().unwrap();
     let hex_string = recovery_key.to_hex();
-    
+
     // Should be 64 hex characters
     assert_eq!(hex_string.len(), 64);
-    
+
     // Should be able to recreate from hex
     let recovered_key = RecoveryKey::from_hex(&hex_string).unwrap();
     assert_eq!(recovery_key.as_bytes(), recovered_key.as_bytes());
-    
+
     // Invalid hex should fail
     assert!(RecoveryKey::from_hex("invalid_hex").is_err());
     assert!(RecoveryKey::from_hex("123").is_err()); // Too short
@@ -955,17 +1018,17 @@ fn test_password_change_with_sharing() {
 
     // Create vault and set up sharing
     let mut vault = Vault::create(&path, original_password, CipherType::Aes256Gcm).unwrap();
-    
+
     // Add recipient
     let recipient_keypair = Vault::generate_sharing_keypair().unwrap();
     vault.add_sharing_recipient(*recipient_keypair.public_key_bytes()).unwrap();
-    
+
     // Add test file
     vault.write_file("shared.txt", b"Shared content").unwrap();
-    
+
     // Export envelopes before password change
     let envelopes_json = vault.export_sharing_envelopes().unwrap();
-    
+
     // Change password
     vault.change_password(original_password, new_password).unwrap();
     drop(vault);
@@ -976,7 +1039,7 @@ fn test_password_change_with_sharing() {
         recipient_keypair.private_key_bytes(),
         &envelopes_json,
     ).unwrap();
-    
+
     let content = recipient_vault.read_file("shared.txt").unwrap();
     assert_eq!(content, b"Shared content");
     */
@@ -1002,7 +1065,9 @@ fn test_password_change_error_cases() {
     assert!(vault.change_password(password, password).is_err());
 
     // Wrong old password should fail
-    assert!(vault.change_password("wrong_password", "new_password").is_err());
+    assert!(vault
+        .change_password("wrong_password", "new_password")
+        .is_err());
 }
 
 #[test]
@@ -1032,7 +1097,13 @@ fn test_recovery_key_error_cases() {
 
     // Wrong recovery key should fail
     let wrong_recovery_key = RecoveryKey::generate().unwrap();
-    assert!(Vault::recover_with_key(&path, &wrong_recovery_key, &wrapped_master_key, "new_password").is_err());
+    assert!(Vault::recover_with_key(
+        &path,
+        &wrong_recovery_key,
+        &wrapped_master_key,
+        "new_password"
+    )
+    .is_err());
 }
 
 #[test]
@@ -1049,7 +1120,9 @@ fn test_master_key_wrapping_integration() {
     let vault = Vault::create(&path, vault_password, CipherType::Aes256Gcm).unwrap();
 
     // Wrap master key for backup
-    let wrapped_key = vault.wrap_master_key_with_password(vault_password, backup_password).unwrap();
+    let wrapped_key = vault
+        .wrap_master_key_with_password(vault_password, backup_password)
+        .unwrap();
 
     // Verify wrapped key structure
     assert!(!wrapped_key.encrypted_key.is_empty());
@@ -1059,19 +1132,22 @@ fn test_master_key_wrapping_integration() {
     assert!(wrapped_key.kdf_params.memory > 0);
 
     // Create password manager to test unwrapping
-    let password_manager = PasswordManager::new(
-        crate::crypto::create_crypto_engine(CipherType::Aes256Gcm).unwrap()
-    );
+    let password_manager =
+        PasswordManager::new(crate::crypto::create_crypto_engine(CipherType::Aes256Gcm).unwrap());
 
     // Unwrap with correct password
-    let unwrapped_key = password_manager.unwrap_master_key(&wrapped_key, backup_password).unwrap();
-    
+    let unwrapped_key = password_manager
+        .unwrap_master_key(&wrapped_key, backup_password)
+        .unwrap();
+
     // Verify unwrapped key can derive correct subkeys
     let original_master_key = vault.get_master_key(vault_password).unwrap();
     assert_eq!(unwrapped_key, original_master_key);
 
     // Wrong password should fail
-    assert!(password_manager.unwrap_master_key(&wrapped_key, "wrong_password").is_err());
+    assert!(password_manager
+        .unwrap_master_key(&wrapped_key, "wrong_password")
+        .is_err());
 }
 
 // Disabled due to vault file format issues - see note above
@@ -1151,7 +1227,7 @@ fn test_vault_file_table_after_writing() {
 
     // Add just one small file
     vault.write_file("test.txt", b"Hello").unwrap();
-    
+
     // Explicitly save and close
     vault.save_file_table().unwrap();
     drop(vault);

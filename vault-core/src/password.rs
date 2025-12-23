@@ -9,8 +9,8 @@
 use std::path::Path;
 
 use crate::crypto::{
-    derive_key, derive_all_subkeys, generate_random_bytes, generate_nonce, 
-    CryptoEngine, MASTER_KEY_SIZE
+    derive_all_subkeys, derive_key, generate_nonce, generate_random_bytes, CryptoEngine,
+    MASTER_KEY_SIZE,
 };
 use crate::error::{VaultError, VaultResult};
 use crate::format::{KdfParams, VaultFormat};
@@ -31,7 +31,7 @@ impl RecoveryKey {
         let key_bytes = generate_random_bytes(RECOVERY_KEY_SIZE)?;
         let mut key_data = [0u8; RECOVERY_KEY_SIZE];
         key_data.copy_from_slice(&key_bytes);
-        
+
         Ok(RecoveryKey { key_data })
     }
 
@@ -47,7 +47,7 @@ impl RecoveryKey {
 
         let mut key_data = [0u8; RECOVERY_KEY_SIZE];
         key_data.copy_from_slice(bytes);
-        
+
         Ok(RecoveryKey { key_data })
     }
 
@@ -65,7 +65,7 @@ impl RecoveryKey {
     pub fn from_hex(hex_str: &str) -> VaultResult<Self> {
         let bytes = hex::decode(hex_str)
             .map_err(|e| VaultError::invalid_argument(format!("Invalid hex string: {}", e)))?;
-        
+
         Self::from_bytes(&bytes)
     }
 
@@ -191,7 +191,7 @@ impl PasswordManager {
 
         let mut master_key = [0u8; MASTER_KEY_SIZE];
         master_key.copy_from_slice(&decrypted_bytes);
-        
+
         Ok(master_key)
     }
 
@@ -237,7 +237,7 @@ impl PasswordManager {
         // Verify this is a recovery key wrapped master key
         if wrapped_key.kdf_params.memory != 0 {
             return Err(VaultError::invalid_argument(
-                "This wrapped key was not created with a recovery key"
+                "This wrapped key was not created with a recovery key",
             ));
         }
 
@@ -269,7 +269,7 @@ impl PasswordManager {
 
         let mut master_key = [0u8; MASTER_KEY_SIZE];
         master_key.copy_from_slice(&decrypted_bytes);
-        
+
         Ok(master_key)
     }
 
@@ -286,7 +286,9 @@ impl PasswordManager {
         }
 
         if old_password == new_password {
-            return Err(VaultError::invalid_argument("New password must be different from old password"));
+            return Err(VaultError::invalid_argument(
+                "New password must be different from old password",
+            ));
         }
 
         // Read current vault header
@@ -304,7 +306,7 @@ impl PasswordManager {
         // Verify old password is correct by attempting to decrypt file table
         let old_subkeys = derive_all_subkeys(&old_master_key)?;
         let crypto_engine = crate::crypto::create_crypto_engine(header.cipher.parse()?)?;
-        
+
         // Try to read file table to verify password
         let file_table = VaultFormat::read_encrypted_file_table(
             &vault_path,
@@ -312,7 +314,8 @@ impl PasswordManager {
             file_table_offset,
             crypto_engine.as_ref(),
             &old_subkeys,
-        ).map_err(|_| VaultError::InvalidPassword)?;
+        )
+        .map_err(|_| VaultError::InvalidPassword)?;
 
         // Read all chunk data before modifying the file
         let mut chunk_data = Vec::new();
@@ -380,7 +383,7 @@ impl PasswordManager {
 
         for (file_idx, file_chunks) in chunk_data.iter().enumerate() {
             updated_file_table.files[file_idx].chunks.clear();
-            
+
             for chunk_data in file_chunks {
                 // Generate new nonce
                 let new_nonce = generate_nonce(crypto_engine.nonce_size())?;
@@ -403,11 +406,13 @@ impl PasswordManager {
 
                 // Update chunk info
                 let total_chunk_size = new_nonce.len() + new_encrypted_chunk.len();
-                updated_file_table.files[file_idx].chunks.push(crate::format::ChunkInfo {
-                    offset: current_chunk_offset,
-                    size: total_chunk_size as u32,
-                    iv: new_nonce,
-                });
+                updated_file_table.files[file_idx]
+                    .chunks
+                    .push(crate::format::ChunkInfo {
+                        offset: current_chunk_offset,
+                        size: total_chunk_size as u32,
+                        iv: new_nonce,
+                    });
 
                 current_chunk_offset += total_chunk_size as u64;
             }
@@ -450,14 +455,15 @@ impl PasswordManager {
         // Verify password is correct by attempting to decrypt file table
         let subkeys = derive_all_subkeys(&master_key)?;
         let crypto_engine = crate::crypto::create_crypto_engine(header.cipher.parse()?)?;
-        
+
         let _file_table = VaultFormat::read_encrypted_file_table(
             &vault_path,
             &header,
             file_table_offset,
             crypto_engine.as_ref(),
             &subkeys,
-        ).map_err(|_| VaultError::InvalidPassword)?;
+        )
+        .map_err(|_| VaultError::InvalidPassword)?;
 
         // Generate recovery key
         let recovery_key = RecoveryKey::generate()?;
@@ -482,7 +488,8 @@ impl PasswordManager {
         }
 
         // Unwrap master key using recovery key
-        let old_master_key = self.unwrap_master_key_with_recovery(wrapped_master_key, recovery_key)?;
+        let old_master_key =
+            self.unwrap_master_key_with_recovery(wrapped_master_key, recovery_key)?;
 
         // Read current vault header
         let (mut header, file_table_offset) = VaultFormat::read_vault_header(&vault_path)?;
@@ -490,7 +497,7 @@ impl PasswordManager {
         // Derive old subkeys to decrypt existing data
         let old_subkeys = derive_all_subkeys(&old_master_key)?;
         let crypto_engine = crate::crypto::create_crypto_engine(header.cipher.parse()?)?;
-        
+
         // Read existing file table
         let file_table = VaultFormat::read_encrypted_file_table(
             &vault_path,
@@ -565,7 +572,7 @@ impl PasswordManager {
 
         for (file_idx, file_chunks) in chunk_data.iter().enumerate() {
             updated_file_table.files[file_idx].chunks.clear();
-            
+
             for chunk_data in file_chunks {
                 // Generate new nonce
                 let new_nonce = generate_nonce(crypto_engine.nonce_size())?;
@@ -588,11 +595,13 @@ impl PasswordManager {
 
                 // Update chunk info
                 let total_chunk_size = new_nonce.len() + new_encrypted_chunk.len();
-                updated_file_table.files[file_idx].chunks.push(crate::format::ChunkInfo {
-                    offset: current_chunk_offset,
-                    size: total_chunk_size as u32,
-                    iv: new_nonce,
-                });
+                updated_file_table.files[file_idx]
+                    .chunks
+                    .push(crate::format::ChunkInfo {
+                        offset: current_chunk_offset,
+                        size: total_chunk_size as u32,
+                        iv: new_nonce,
+                    });
 
                 current_chunk_offset += total_chunk_size as u64;
             }
@@ -686,12 +695,13 @@ impl AlgorithmRotationManager {
         for file_entry in &file_table.files {
             for chunk in &file_entry.chunks {
                 // Read and decrypt chunk with old algorithm
-                let (old_nonce, old_encrypted_data) = VaultFormat::read_chunk_from_vault_with_nonce_size(
-                    &vault_path,
-                    chunk.offset,
-                    chunk.size,
-                    self.old_crypto_engine.nonce_size(),
-                )?;
+                let (old_nonce, old_encrypted_data) =
+                    VaultFormat::read_chunk_from_vault_with_nonce_size(
+                        &vault_path,
+                        chunk.offset,
+                        chunk.size,
+                        self.old_crypto_engine.nonce_size(),
+                    )?;
 
                 let plaintext_data = self.old_crypto_engine.decrypt(
                     &old_subkeys.file_encryption_key,
@@ -745,8 +755,7 @@ impl AlgorithmRotationManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::crypto::{CipherType, create_crypto_engine};
-
+    use crate::crypto::{create_crypto_engine, CipherType};
 
     fn create_test_kdf_params() -> KdfParams {
         KdfParams {
@@ -771,10 +780,10 @@ mod tests {
     fn test_recovery_key_hex_conversion() {
         let recovery_key = RecoveryKey::generate().unwrap();
         let hex_str = recovery_key.to_hex();
-        
+
         // Should be 64 hex characters (32 bytes * 2)
         assert_eq!(hex_str.len(), 64);
-        
+
         // Should be able to recreate from hex
         let recovered_key = RecoveryKey::from_hex(&hex_str).unwrap();
         assert_eq!(recovery_key.as_bytes(), recovered_key.as_bytes());
@@ -958,13 +967,13 @@ mod tests {
     #[test]
     fn test_recovery_key_clearing() {
         let mut recovery_key = RecoveryKey::generate().unwrap();
-        
+
         // Verify key is not all zeros initially
         assert_ne!(recovery_key.as_bytes(), &[0u8; RECOVERY_KEY_SIZE]);
-        
+
         // Clear the key
         recovery_key.clear();
-        
+
         // Verify key is now all zeros
         assert_eq!(recovery_key.as_bytes(), &[0u8; RECOVERY_KEY_SIZE]);
     }

@@ -31,7 +31,7 @@ func FuzzVaultOpen(f *testing.F) {
 		// Call the function under test
 		// We expect this to fail for almost all inputs, but it MUST NOT panic or crash CGO
 		handle, err := vault.OpenVault(vaultPath, material)
-		
+
 		if err == nil {
 			// If it successfully opened (unlikely but possible if fuzzer generates valid vault),
 			// we must close it to avoid leaks.

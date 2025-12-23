@@ -19,7 +19,7 @@ func TestCLIIntegration(t *testing.T) {
 	// Build CLI binary for testing
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "dirlocker-test.exe")
-	
+
 	// Build the CLI binary
 	buildCmd := exec.Command("go", "build", "-o", binaryPath, "../cmd/cli")
 	buildCmd.Env = append(os.Environ(), "CGO_ENABLED=0") // Use stub implementation for tests
@@ -33,7 +33,7 @@ func TestCLIIntegration(t *testing.T) {
 	t.Run("CLI_Help", func(t *testing.T) {
 		output, err := runCLI(binaryPath, "--help")
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, output, "dirLocker is a cross-platform encrypted vault application")
 		assert.Contains(t, output, "Available Commands:")
 		assert.Contains(t, output, "create")
@@ -49,7 +49,7 @@ func TestCLIIntegration(t *testing.T) {
 	t.Run("CLI_Version", func(t *testing.T) {
 		output, err := runCLI(binaryPath, "--version")
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, output, "dirlocker version")
 	})
 
@@ -177,7 +177,7 @@ func TestCLIIntegration(t *testing.T) {
 func TestCLICommandValidation(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "dirlocker-test.exe")
-	
+
 	// Build the CLI binary
 	buildCmd := exec.Command("go", "build", "-o", binaryPath, "../cmd/cli")
 	buildCmd.Env = append(os.Environ(), "CGO_ENABLED=0")
@@ -219,7 +219,7 @@ func TestCLICommandValidation(t *testing.T) {
 func TestCLIErrorHandling(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "dirlocker-test.exe")
-	
+
 	// Build the CLI binary
 	buildCmd := exec.Command("go", "build", "-o", binaryPath, "../cmd/cli")
 	buildCmd.Env = append(os.Environ(), "CGO_ENABLED=0")
@@ -246,7 +246,7 @@ func TestCLIConfigIntegration(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "dirlocker-test.exe")
 	configPath := filepath.Join(tempDir, "config.json")
-	
+
 	// Build the CLI binary
 	buildCmd := exec.Command("go", "build", "-o", binaryPath, "../cmd/cli")
 	buildCmd.Env = append(os.Environ(), "CGO_ENABLED=0")
@@ -257,11 +257,11 @@ func TestCLIConfigIntegration(t *testing.T) {
 		output, err := runCLI(binaryPath, "--config", configPath, "list")
 		require.NoError(t, err)
 		assert.Contains(t, output, "No vaults are currently open")
-		
+
 		// Config file should be created automatically by LoadConfig
 		// Give it a moment to ensure file system operations complete
 		time.Sleep(100 * time.Millisecond)
-		
+
 		// Verify config file was created
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			t.Logf("Config file not found at %s, this is expected behavior as config is created lazily", configPath)
@@ -286,14 +286,14 @@ func runCLI(binaryPath string, args ...string) (string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	
+
 	err := cmd.Run()
 	output := stdout.String() + stderr.String()
-	
+
 	if err != nil {
 		return output, err
 	}
-	
+
 	return output, nil
 }
 
@@ -302,10 +302,10 @@ func runCLIWithError(binaryPath string, args ...string) (string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	
+
 	err := cmd.Run()
 	output := stdout.String() + stderr.String()
-	
+
 	return output, err
 }
 
@@ -315,10 +315,10 @@ func runCLIWithInput(binaryPath string, input string, args ...string) (string, e
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	cmd.Stdin = strings.NewReader(input)
-	
+
 	err := cmd.Run()
 	output := stdout.String() + stderr.String()
-	
+
 	return output, err
 }
 
@@ -326,7 +326,7 @@ func runCLIWithInput(binaryPath string, input string, args ...string) (string, e
 func TestCLIPerformance(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "dirlocker-test.exe")
-	
+
 	// Build the CLI binary
 	buildCmd := exec.Command("go", "build", "-o", binaryPath, "../cmd/cli")
 	buildCmd.Env = append(os.Environ(), "CGO_ENABLED=0")
@@ -337,7 +337,7 @@ func TestCLIPerformance(t *testing.T) {
 		start := time.Now()
 		_, err := runCLI(binaryPath, "--help")
 		duration := time.Since(start)
-		
+
 		require.NoError(t, err)
 		assert.Less(t, duration, 2*time.Second, "CLI startup should be fast")
 	})
@@ -346,7 +346,7 @@ func TestCLIPerformance(t *testing.T) {
 		start := time.Now()
 		_, err := runCLI(binaryPath, "list")
 		duration := time.Since(start)
-		
+
 		require.NoError(t, err)
 		assert.Less(t, duration, 1*time.Second, "Simple commands should be fast")
 	})
@@ -356,7 +356,7 @@ func TestCLIPerformance(t *testing.T) {
 func TestCLIDocumentation(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "dirlocker-test.exe")
-	
+
 	// Build the CLI binary
 	buildCmd := exec.Command("go", "build", "-o", binaryPath, "../cmd/cli")
 	buildCmd.Env = append(os.Environ(), "CGO_ENABLED=0")
@@ -364,7 +364,7 @@ func TestCLIDocumentation(t *testing.T) {
 	require.NoError(t, err)
 
 	commands := []string{
-		"create", "open", "close", "list", "info", "password", 
+		"create", "open", "close", "list", "info", "password",
 		"recovery", "share", "mount", "extract", "push", "repair", "config",
 	}
 
@@ -372,7 +372,7 @@ func TestCLIDocumentation(t *testing.T) {
 		t.Run(fmt.Sprintf("Help_%s", cmd), func(t *testing.T) {
 			output, err := runCLI(binaryPath, cmd, "--help")
 			require.NoError(t, err)
-			
+
 			// Verify help contains essential information
 			assert.Contains(t, output, "Usage:")
 			assert.Contains(t, output, "Flags:")
@@ -393,7 +393,7 @@ func TestCLIDocumentation(t *testing.T) {
 			t.Run(fmt.Sprintf("Help_%s_%s", parent, sub), func(t *testing.T) {
 				output, err := runCLI(binaryPath, parent, sub, "--help")
 				require.NoError(t, err)
-				
+
 				assert.Contains(t, output, "Usage:")
 				assert.NotEmpty(t, strings.TrimSpace(output))
 			})

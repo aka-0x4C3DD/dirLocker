@@ -62,7 +62,7 @@ The vault must be open before extracting files.`,
 				// Extract all files
 				fmt.Printf("Extracting all files from vault: %s\n", vaultPath)
 				fmt.Printf("Output directory: %s\n", outputDir)
-				
+
 				// This is a placeholder for the actual extraction implementation
 				// which will use the vault handle to list and extract files
 				fmt.Printf("Extract all functionality will be implemented when file operations are available.\n")
@@ -71,20 +71,20 @@ The vault must be open before extracting files.`,
 				// Extract specific files
 				fmt.Printf("Extracting %d file(s) from vault: %s\n", len(filePaths), vaultPath)
 				fmt.Printf("Output directory: %s\n", outputDir)
-				
+
 				for _, filePath := range filePaths {
 					outputPath := filepath.Join(outputDir, filePath)
 					if !preserveDir {
 						outputPath = filepath.Join(outputDir, filepath.Base(filePath))
 					}
-					
+
 					fmt.Printf("  %s -> %s\n", filePath, outputPath)
-					
+
 					// This is a placeholder for the actual extraction implementation
 					// which will use the vault handle to read and extract the file
 					logger.Info("Would extract file", "source", filePath, "dest", outputPath)
 				}
-				
+
 				fmt.Printf("File extraction functionality will be implemented when file operations are available.\n")
 			}
 

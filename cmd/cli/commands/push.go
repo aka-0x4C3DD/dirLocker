@@ -82,12 +82,12 @@ The vault must be open before adding files.`,
 func addFileToVault(managedVault *vault.ManagedVault, filePath string, preserveDir bool, logger *logging.Logger) error {
 	// This is a placeholder for the actual file addition implementation
 	// which will use the vault handle to write the file content
-	
+
 	vaultFilePath := filePath
 	if !preserveDir {
 		vaultFilePath = filepath.Base(filePath)
 	}
-	
+
 	logger.Info("Would add file to vault", "source", filePath, "vault_path", vaultFilePath)
 	return nil
 }
@@ -95,12 +95,12 @@ func addFileToVault(managedVault *vault.ManagedVault, filePath string, preserveD
 func addDirectoryToVault(managedVault *vault.ManagedVault, dirPath string, preserveDir bool, logger *logging.Logger) error {
 	// This is a placeholder for the actual directory addition implementation
 	// which will recursively walk the directory and add all files
-	
+
 	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if !info.IsDir() {
 			vaultFilePath := path
 			if !preserveDir {
@@ -110,10 +110,10 @@ func addDirectoryToVault(managedVault *vault.ManagedVault, dirPath string, prese
 				}
 				vaultFilePath = relPath
 			}
-			
+
 			logger.Info("Would add file to vault", "source", path, "vault_path", vaultFilePath)
 		}
-		
+
 		return nil
 	})
 }

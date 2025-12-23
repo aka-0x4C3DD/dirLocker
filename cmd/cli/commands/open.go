@@ -37,14 +37,14 @@ The vault will remain open until explicitly closed or the application exits.`,
 
 			// Open the vault
 			logger.Info("Opening vault", "path", vaultPath)
-			
+
 			managedVault, err := vaultManager.OpenVault(vaultPath, password)
 			if err != nil {
 				return fmt.Errorf("failed to open vault: %w", err)
 			}
 
 			fmt.Printf("Successfully opened vault: %s\n", vaultPath)
-			
+
 			// Display vault information
 			path, openedAt, _, isShared := managedVault.GetInfo()
 			fmt.Printf("Path: %s\n", path)
@@ -54,7 +54,7 @@ The vault will remain open until explicitly closed or the application exits.`,
 			} else {
 				fmt.Println("Type: Personal vault")
 			}
-			
+
 			return nil
 		},
 	}

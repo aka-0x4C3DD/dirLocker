@@ -8,10 +8,12 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 use uuid::Uuid;
 
-use crate::crypto::{CipherType, CryptoEngine, derive_key, derive_all_subkeys, SubKeys, generate_nonce};
+use crate::crypto::{
+    derive_all_subkeys, derive_key, generate_nonce, CipherType, CryptoEngine, SubKeys,
+};
 use crate::error::{VaultError, VaultResult};
 use crate::format::{FileTable, KdfParams, VaultFormat, VaultHeader};
-use crate::password::{PasswordManager, RecoveryKey, WrappedMasterKey, AlgorithmRotationManager};
+use crate::password::{AlgorithmRotationManager, PasswordManager, RecoveryKey, WrappedMasterKey};
 use crate::sharing::{SharingManager, X25519KeyPair};
 
 // Re-export format types for convenience
@@ -149,7 +151,8 @@ impl FileStream {
         if data.len() != length {
             return Err(VaultError::internal_error(format!(
                 "Could not read exact amount: requested {}, got {}",
-                length, data.len()
+                length,
+                data.len()
             )));
         }
         Ok(data)
@@ -279,7 +282,7 @@ impl Vault {
         // First pass to get approximate size
         let temp_header_json = serde_json::to_string(&temp_header)?;
         let approx_header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
-        
+
         // Simple layout: Header -> FileTable -> Chunks -> MetadataSections (at end)
         let file_table_offset = approx_header_size;
         let chunk_data_start_offset = file_table_offset + temp_header.file_table_reserved_size;
@@ -287,7 +290,7 @@ impl Vault {
         // Create header with calculated offsets
         let mut header = VaultHeader {
             metadata_sections_offset: 0, // Will be set when metadata sections are added
-            metadata_sections_size: 0, // No metadata sections yet
+            metadata_sections_size: 0,   // No metadata sections yet
             file_table_offset,
             chunk_data_start_offset,
             ..temp_header
@@ -296,7 +299,7 @@ impl Vault {
         // Second pass with updated header to get exact size
         let final_header_json = serde_json::to_string(&header)?;
         let final_header_size = 4 + 1 + 4 + final_header_json.len() as u64;
-        
+
         // Recalculate with exact header size
         header.file_table_offset = final_header_size;
         header.chunk_data_start_offset = final_header_size + header.file_table_reserved_size;
@@ -306,7 +309,13 @@ impl Vault {
 
         // Write empty encrypted file table
         let empty_file_table = FileTable::new();
-        VaultFormat::write_encrypted_file_table(&path, &header, &empty_file_table, crypto.as_ref(), &subkeys)?;
+        VaultFormat::write_encrypted_file_table(
+            &path,
+            &header,
+            &empty_file_table,
+            crypto.as_ref(),
+            &subkeys,
+        )?;
 
         let vault = Vault {
             handle: 0, // Will be set by registry
@@ -375,7 +384,7 @@ impl Vault {
         };
 
         let mut deniability_mgr = crate::deniability::DeniabilityManager::new(header.clone());
-        
+
         // Load hidden tables metadata if present
         if header.hidden_tables_offset > 0 {
             let _ = deniability_mgr.load_from_vault(&path, &subkeys.file_encryption_key);
@@ -383,8 +392,10 @@ impl Vault {
         }
 
         // Load metadata sections by scanning the end of the file
-        let metadata_sections = Some(Self::scan_for_metadata_sections(&path, crypto.as_ref(), &subkeys.metadata_key)
-            .unwrap_or_else(|_| crate::format::MetadataSections::new()));
+        let metadata_sections = Some(
+            Self::scan_for_metadata_sections(&path, crypto.as_ref(), &subkeys.metadata_key)
+                .unwrap_or_else(|_| crate::format::MetadataSections::new()),
+        );
 
         let vault = Vault {
             handle: 0, // Will be set by registry
@@ -466,10 +477,14 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_table = self.file_table.as_ref()
+        let file_table = self
+            .file_table
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         let mut files = Vec::new();
@@ -493,14 +508,19 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_table = self.file_table.as_ref()
+        let file_table = self
+            .file_table
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         for entry in &file_table.files {
-            let entry_filename = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
+            let entry_filename =
+                entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
             if entry_filename == filename {
                 return Ok(Some(entry));
             }
@@ -520,10 +540,14 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_table = self.file_table.as_ref()
+        let file_table = self
+            .file_table
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         VaultFormat::write_encrypted_file_table_atomic(
@@ -539,11 +563,11 @@ impl Vault {
     }
 
     /// Save the vault header to disk (updates hidden table metadata)
-    /// 
+    ///
     /// NOTE: This method is currently disabled to prevent vault corruption.
     /// The issue is that updating the header changes its size, which shifts
     /// the file table offset and corrupts the vault structure.
-    /// 
+    ///
     /// For now, hidden tables metadata is not persisted across vault sessions.
     /// This is documented as a known limitation.
     #[allow(dead_code)]
@@ -554,16 +578,19 @@ impl Vault {
 
         // DISABLED: This causes vault corruption by changing header size
         // which shifts file table offset. For now, don't persist hidden tables.
-        
+
         // Save hidden tables metadata to separate location
         if let Some(ref mut deniability_mgr) = self.deniability_manager {
-            let master_key = self.subkeys.as_ref()
+            let master_key = self
+                .subkeys
+                .as_ref()
                 .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?
-                .file_encryption_key.clone();
-            
+                .file_encryption_key
+                .clone();
+
             // Only save metadata to separate location, don't update header
             deniability_mgr.save_to_vault(&self.path, &master_key)?;
-            
+
             // DON'T update header - this causes corruption
             // self.header = deniability_mgr.get_updated_header();
         }
@@ -580,7 +607,12 @@ impl Vault {
     }
 
     /// Write file data to vault with option to defer file table save
-    pub fn write_file_with_options(&mut self, filename: &str, data: &[u8], save_file_table: bool) -> VaultResult<()> {
+    pub fn write_file_with_options(
+        &mut self,
+        filename: &str,
+        data: &[u8],
+        save_file_table: bool,
+    ) -> VaultResult<()> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
@@ -596,7 +628,9 @@ impl Vault {
         }
 
         // Get subkeys after potential mutation
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?
             .clone();
 
@@ -642,11 +676,7 @@ impl Vault {
             )?;
 
             // Add chunk info to file entry
-            file_entry.add_chunk(
-                current_offset,
-                total_chunk_size as u32,
-                nonce,
-            );
+            file_entry.add_chunk(current_offset, total_chunk_size as u32, nonce);
         } else {
             // Handle non-empty files
             for (_chunk_index, chunk_data) in data.chunks(chunk_size).enumerate() {
@@ -676,11 +706,7 @@ impl Vault {
                 )?;
 
                 // Add chunk info to file entry
-                file_entry.add_chunk(
-                    current_offset,
-                    total_chunk_size as u32,
-                    nonce,
-                );
+                file_entry.add_chunk(current_offset, total_chunk_size as u32, nonce);
             }
         }
 
@@ -716,10 +742,13 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_entry = self.find_file(filename)?
+        let file_entry = self
+            .find_file(filename)?
             .ok_or_else(|| VaultError::file_not_found(filename.to_string()))?;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         let mut file_data = Vec::with_capacity(file_entry.size as usize);
@@ -748,12 +777,18 @@ impl Vault {
     }
 
     /// Read a range of bytes from a file without loading the entire file
-    pub fn read_file_range(&self, filename: &str, offset: u64, length: u64) -> VaultResult<Vec<u8>> {
+    pub fn read_file_range(
+        &self,
+        filename: &str,
+        offset: u64,
+        length: u64,
+    ) -> VaultResult<Vec<u8>> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_entry = self.find_file(filename)?
+        let file_entry = self
+            .find_file(filename)?
             .ok_or_else(|| VaultError::file_not_found(filename.to_string()))?;
 
         if offset >= file_entry.size {
@@ -763,7 +798,9 @@ impl Vault {
         let end_offset = std::cmp::min(offset + length, file_entry.size);
         let actual_length = end_offset - offset;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         let chunk_size = self.header.chunk_size as u64;
@@ -824,7 +861,8 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_entry = self.find_file(filename)?
+        let file_entry = self
+            .find_file(filename)?
             .ok_or_else(|| VaultError::file_not_found(filename.to_string()))?;
 
         Ok(FileStream::new(
@@ -838,7 +876,9 @@ impl Vault {
 
     /// Calculate the next available offset for chunk storage using space management
     fn calculate_next_chunk_offset(&mut self, required_size: u64) -> VaultResult<u64> {
-        let file_table = self.file_table.as_mut()
+        let file_table = self
+            .file_table
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
         // Use the new space management system
@@ -847,14 +887,19 @@ impl Vault {
 
     /// Find file index by name
     fn find_file_index(&self, filename: &str) -> VaultResult<Option<usize>> {
-        let file_table = self.file_table.as_ref()
+        let file_table = self
+            .file_table
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         for (index, entry) in file_table.files.iter().enumerate() {
-            let entry_filename = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
+            let entry_filename =
+                entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
             if entry_filename == filename {
                 return Ok(Some(index));
             }
@@ -868,7 +913,7 @@ impl Vault {
         if let Some(ref mut file_table) = self.file_table {
             if index < file_table.files.len() {
                 let removed_file = file_table.files.remove(index);
-                
+
                 // Reclaim space from deleted chunks
                 VaultFormat::reclaim_deleted_space(
                     &self.path,
@@ -887,10 +932,14 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_table = self.file_table.as_mut()
+        let file_table = self
+            .file_table
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         VaultFormat::defragment_vault(
@@ -913,7 +962,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let file_table = self.file_table.as_ref()
+        let file_table = self
+            .file_table
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
         let file_metadata = std::fs::metadata(&self.path)?;
@@ -945,18 +996,21 @@ impl Vault {
     /// Check if the vault would benefit from defragmentation
     pub fn needs_defragmentation(&self) -> VaultResult<bool> {
         let usage = self.get_space_usage()?;
-        
+
         // Suggest defragmentation if:
         // 1. More than 10% free space AND more than 5 fragmented regions
         // 2. More than 20 fragmented regions regardless of free space
         let free_space_ratio = usage.free_space as f64 / usage.total_file_size as f64;
-        
-        Ok((free_space_ratio > 0.1 && usage.fragmentation_count > 5) ||
-           usage.fragmentation_count > 20)
+
+        Ok((free_space_ratio > 0.1 && usage.fragmentation_count > 5)
+            || usage.fragmentation_count > 20)
     }
 
     /// Validate the integrity of this vault
-    pub fn validate_integrity(&self, password: &str) -> VaultResult<crate::integrity::VaultValidationResult> {
+    pub fn validate_integrity(
+        &self,
+        password: &str,
+    ) -> VaultResult<crate::integrity::VaultValidationResult> {
         crate::integrity::VaultIntegrityChecker::validate_vault(&self.path, password)
     }
 
@@ -980,22 +1034,31 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
-        let sharing_manager = self.sharing_manager.as_mut()
+        let sharing_manager = self
+            .sharing_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         sharing_manager.add_recipient(recipient_public_key, subkeys, self.crypto.as_ref())
     }
 
     /// Remove a recipient from secure sharing
-    pub fn remove_sharing_recipient(&mut self, recipient_public_key: &[u8; 32]) -> VaultResult<bool> {
+    pub fn remove_sharing_recipient(
+        &mut self,
+        recipient_public_key: &[u8; 32],
+    ) -> VaultResult<bool> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let sharing_manager = self.sharing_manager.as_mut()
+        let sharing_manager = self
+            .sharing_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         Ok(sharing_manager.remove_recipient(recipient_public_key))
@@ -1007,7 +1070,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let sharing_manager = self.sharing_manager.as_ref()
+        let sharing_manager = self
+            .sharing_manager
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         Ok(sharing_manager.list_recipients())
@@ -1019,7 +1084,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let sharing_manager = self.sharing_manager.as_ref()
+        let sharing_manager = self
+            .sharing_manager
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         Ok(sharing_manager.has_recipient(recipient_public_key))
@@ -1031,7 +1098,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let sharing_manager = self.sharing_manager.as_ref()
+        let sharing_manager = self
+            .sharing_manager
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         Ok(sharing_manager.recipient_count())
@@ -1043,7 +1112,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let sharing_manager = self.sharing_manager.as_ref()
+        let sharing_manager = self
+            .sharing_manager
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         sharing_manager.export_envelopes()
@@ -1055,7 +1126,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let sharing_manager = self.sharing_manager.as_mut()
+        let sharing_manager = self
+            .sharing_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Sharing manager not available"))?;
 
         sharing_manager.import_envelopes(json)
@@ -1083,12 +1156,13 @@ impl Vault {
         let crypto = crate::crypto::create_crypto_engine(cipher_type)?;
 
         // Import sharing envelopes
-        let envelope_collection = crate::sharing::ShareEnvelopeCollection::import_json(envelopes_json)?;
+        let envelope_collection =
+            crate::sharing::ShareEnvelopeCollection::import_json(envelopes_json)?;
 
         // Verify vault UUID matches
         if envelope_collection.vault_uuid != header.vault_uuid {
             return Err(VaultError::crypto_error(
-                "Envelope collection doesn't match vault UUID"
+                "Envelope collection doesn't match vault UUID",
             ));
         }
 
@@ -1096,7 +1170,8 @@ impl Vault {
         let sharing_manager = SharingManager::from_collection(envelope_collection)?;
 
         // Decrypt vault subkeys using recipient's private key
-        let subkeys = sharing_manager.decrypt_for_recipient(recipient_private_key, crypto.as_ref())?;
+        let subkeys =
+            sharing_manager.decrypt_for_recipient(recipient_private_key, crypto.as_ref())?;
 
         // Try to decrypt and parse file table
         let file_table = match VaultFormat::read_encrypted_file_table(
@@ -1141,9 +1216,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let password_manager = PasswordManager::new(
-            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
-        );
+        let password_manager = PasswordManager::new(crate::crypto::create_crypto_engine(
+            self.crypto.cipher_type(),
+        )?);
 
         password_manager.change_password(&self.path, old_password, new_password, None)
     }
@@ -1159,22 +1234,30 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let password_manager = PasswordManager::new(
-            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
-        );
+        let password_manager = PasswordManager::new(crate::crypto::create_crypto_engine(
+            self.crypto.cipher_type(),
+        )?);
 
-        password_manager.change_password(&self.path, old_password, new_password, Some(new_kdf_params))
+        password_manager.change_password(
+            &self.path,
+            old_password,
+            new_password,
+            Some(new_kdf_params),
+        )
     }
 
     /// Generate a recovery key for this vault
-    pub fn generate_recovery_key(&self, password: &str) -> VaultResult<(RecoveryKey, WrappedMasterKey)> {
+    pub fn generate_recovery_key(
+        &self,
+        password: &str,
+    ) -> VaultResult<(RecoveryKey, WrappedMasterKey)> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let password_manager = PasswordManager::new(
-            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
-        );
+        let password_manager = PasswordManager::new(crate::crypto::create_crypto_engine(
+            self.crypto.cipher_type(),
+        )?);
 
         password_manager.setup_recovery_key(&self.path, password)
     }
@@ -1196,11 +1279,16 @@ impl Vault {
         let (header, _) = VaultFormat::read_vault_header(path)?;
         let cipher_type: CipherType = header.cipher.parse()?;
 
-        let password_manager = PasswordManager::new(
-            crate::crypto::create_crypto_engine(cipher_type)?
-        );
+        let password_manager =
+            PasswordManager::new(crate::crypto::create_crypto_engine(cipher_type)?);
 
-        password_manager.recover_with_recovery_key(path, recovery_key, wrapped_master_key, new_password, None)
+        password_manager.recover_with_recovery_key(
+            path,
+            recovery_key,
+            wrapped_master_key,
+            new_password,
+            None,
+        )
     }
 
     /// Recover vault access with custom KDF parameters
@@ -1221,9 +1309,8 @@ impl Vault {
         let (header, _) = VaultFormat::read_vault_header(path)?;
         let cipher_type: CipherType = header.cipher.parse()?;
 
-        let password_manager = PasswordManager::new(
-            crate::crypto::create_crypto_engine(cipher_type)?
-        );
+        let password_manager =
+            PasswordManager::new(crate::crypto::create_crypto_engine(cipher_type)?);
 
         password_manager.recover_with_recovery_key(
             path,
@@ -1271,16 +1358,20 @@ impl Vault {
     }
 
     /// Wrap the current master key with a password (for backup purposes)
-    pub fn wrap_master_key_with_password(&self, current_password: &str, wrapping_password: &str) -> VaultResult<WrappedMasterKey> {
+    pub fn wrap_master_key_with_password(
+        &self,
+        current_password: &str,
+        wrapping_password: &str,
+    ) -> VaultResult<WrappedMasterKey> {
         if !self.is_open {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
         let master_key = self.get_master_key(current_password)?;
-        
-        let password_manager = PasswordManager::new(
-            crate::crypto::create_crypto_engine(self.crypto.cipher_type())?
-        );
+
+        let password_manager = PasswordManager::new(crate::crypto::create_crypto_engine(
+            self.crypto.cipher_type(),
+        )?);
 
         password_manager.wrap_master_key(&master_key, wrapping_password, &self.header.kdf_params)
     }
@@ -1310,27 +1401,29 @@ impl Vault {
         }
 
         // Find the file entry
-        let file_table = self.file_table.as_mut().ok_or_else(|| {
-            VaultError::invalid_argument("File table not available")
-        })?;
+        let file_table = self
+            .file_table
+            .as_mut()
+            .ok_or_else(|| VaultError::invalid_argument("File table not available"))?;
 
-        let subkeys = self.subkeys.as_ref().ok_or_else(|| {
-            VaultError::invalid_argument("Subkeys not available")
-        })?;
+        let subkeys = self
+            .subkeys
+            .as_ref()
+            .ok_or_else(|| VaultError::invalid_argument("Subkeys not available"))?;
 
         // Find and remove the file entry
         let mut found_index = None;
         for (index, entry) in file_table.files.iter().enumerate() {
-            let decrypted_name = entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
+            let decrypted_name =
+                entry.decrypt_filename(self.crypto.as_ref(), &subkeys.filename_key)?;
             if decrypted_name == filename {
                 found_index = Some(index);
                 break;
             }
         }
 
-        let index = found_index.ok_or_else(|| {
-            VaultError::file_not_found(&format!("File not found: {}", filename))
-        })?;
+        let index = found_index
+            .ok_or_else(|| VaultError::file_not_found(&format!("File not found: {}", filename)))?;
 
         // Remove the file entry
         file_table.files.remove(index);
@@ -1349,13 +1442,18 @@ impl Vault {
 
         // Validate directory name
         if dirname.is_empty() {
-            return Err(VaultError::invalid_argument("Directory name cannot be empty"));
+            return Err(VaultError::invalid_argument(
+                "Directory name cannot be empty",
+            ));
         }
 
         // Check if directory already exists
         match self.find_file(dirname) {
             Ok(Some(_)) => {
-                return Err(VaultError::invalid_argument(&format!("Directory already exists: {}", dirname)));
+                return Err(VaultError::invalid_argument(&format!(
+                    "Directory already exists: {}",
+                    dirname
+                )));
             }
             Ok(None) => {
                 // Directory doesn't exist, proceed with creation
@@ -1367,9 +1465,10 @@ impl Vault {
         }
 
         // Create directory entry
-        let subkeys = self.subkeys.as_ref().ok_or_else(|| {
-            VaultError::internal_error("Subkeys not available")
-        })?;
+        let subkeys = self
+            .subkeys
+            .as_ref()
+            .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
         let dir_entry = crate::format::FileEntry::new(
             dirname,
@@ -1382,9 +1481,10 @@ impl Vault {
         )?;
 
         // Add to file table
-        let file_table = self.file_table.as_mut().ok_or_else(|| {
-            VaultError::internal_error("File table not available")
-        })?;
+        let file_table = self
+            .file_table
+            .as_mut()
+            .ok_or_else(|| VaultError::internal_error("File table not available"))?;
 
         file_table.files.push(dir_entry);
 
@@ -1407,14 +1507,16 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_mut()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         let table_id = deniability_mgr.add_hidden_table(password, cipher_type, is_decoy)?;
-        
+
         // TODO: Save the updated header once persistence is fully implemented
         // self.save_header()?;
-        
+
         Ok(table_id)
     }
 
@@ -1424,16 +1526,18 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_mut()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         let removed = deniability_mgr.remove_hidden_table(table_id)?;
-        
+
         // TODO: Save the updated header once persistence is fully implemented
         // if removed {
         //     self.save_header()?;
         // }
-        
+
         Ok(removed)
     }
 
@@ -1443,7 +1547,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_ref()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         Ok(deniability_mgr.table_count())
@@ -1455,7 +1561,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_ref()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         Ok(deniability_mgr.list_table_ids())
@@ -1467,7 +1575,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_mut()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         deniability_mgr.set_active_table(table_id)
@@ -1508,7 +1618,8 @@ impl Vault {
                 let file_table = deniability_mgr.read_hidden_table(&path, &table_id, password)?;
 
                 // Get the table metadata to determine cipher
-                let metadata = deniability_mgr.get_table_metadata(&table_id)
+                let metadata = deniability_mgr
+                    .get_table_metadata(&table_id)
                     .ok_or_else(|| VaultError::internal_error("Table metadata not found"))?;
 
                 let cipher_type: CipherType = metadata.cipher.parse()?;
@@ -1561,14 +1672,16 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_mut()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         let table_id = deniability_mgr.create_decoy_table(password, cipher_type)?;
-        
+
         // TODO: Save the updated header once persistence is fully implemented
         // self.save_header()?;
-        
+
         Ok(table_id)
     }
 
@@ -1578,14 +1691,16 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let deniability_mgr = self.deniability_manager.as_mut()
+        let deniability_mgr = self
+            .deniability_manager
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Deniability manager not available"))?;
 
         deniability_mgr.wipe_revealing_metadata();
-        
+
         // TODO: Save the updated header once persistence is fully implemented
         // self.save_header()?;
-        
+
         Ok(())
     }
 
@@ -1604,7 +1719,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let metadata_sections = self.metadata_sections.as_mut()
+        let metadata_sections = self
+            .metadata_sections
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
 
         // Find existing section or add new one
@@ -1614,8 +1731,10 @@ impl Vault {
         };
 
         // Remove existing section of the same type
-        metadata_sections.sections.retain(|s| s.section_type != section_type);
-        
+        metadata_sections
+            .sections
+            .retain(|s| s.section_type != section_type);
+
         // Add new section
         metadata_sections.sections.push(section);
 
@@ -1634,7 +1753,9 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let metadata_sections = self.metadata_sections.as_ref()
+        let metadata_sections = self
+            .metadata_sections
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
 
         // Find section by type
@@ -1656,11 +1777,15 @@ impl Vault {
             return Err(VaultError::invalid_argument("Vault is not open"));
         }
 
-        let metadata_sections = self.metadata_sections.as_mut()
+        let metadata_sections = self
+            .metadata_sections
+            .as_mut()
             .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
 
         let initial_len = metadata_sections.sections.len();
-        metadata_sections.sections.retain(|s| s.section_type != *section_type);
+        metadata_sections
+            .sections
+            .retain(|s| s.section_type != *section_type);
         let removed = metadata_sections.sections.len() < initial_len;
 
         if removed {
@@ -1694,29 +1819,29 @@ impl Vault {
         metadata_key: &[u8],
     ) -> VaultResult<crate::format::MetadataSections> {
         let file_data = std::fs::read(path)?;
-        
+
         let nonce_size = crypto_engine.nonce_size();
         let min_encrypted_size = nonce_size + crypto_engine.tag_size();
-        
+
         // Since we append metadata sections at the end, we should look backwards from the end
         // Try to find the start of the encrypted metadata sections
         if file_data.len() < min_encrypted_size {
             return Ok(crate::format::MetadataSections::new());
         }
-        
+
         // Try to find metadata sections by looking for the encrypted data pattern
         // Since we know the structure: nonce + encrypted_data, we can search for valid decryptions
-        
+
         // Try different starting positions from the end, working backwards
         let search_limit = std::cmp::min(4096, file_data.len()); // Search last 4KB
-        
+
         for start_pos in (file_data.len().saturating_sub(search_limit)..file_data.len()).rev() {
             if start_pos + min_encrypted_size > file_data.len() {
                 continue;
             }
-            
+
             let data_slice = &file_data[start_pos..];
-            
+
             // Try to decrypt this slice as metadata sections
             match VaultFormat::decrypt_metadata_sections(data_slice, crypto_engine, metadata_key) {
                 Ok(sections) => {
@@ -1727,17 +1852,21 @@ impl Vault {
                 Err(_) => continue, // Try next position
             }
         }
-        
+
         // No metadata sections found
         Ok(crate::format::MetadataSections::new())
     }
 
     /// Save metadata sections to disk (append at end of file)
     fn save_metadata_sections(&mut self) -> VaultResult<()> {
-        let subkeys = self.subkeys.as_ref()
+        let subkeys = self
+            .subkeys
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Subkeys not available"))?;
 
-        let metadata_sections = self.metadata_sections.as_ref()
+        let metadata_sections = self
+            .metadata_sections
+            .as_ref()
             .ok_or_else(|| VaultError::internal_error("Metadata sections not available"))?;
 
         // If no metadata sections, just update the size to 0 in memory
@@ -1761,7 +1890,7 @@ impl Vault {
 
         // Get current file size to determine where to append metadata sections
         let file_size = std::fs::metadata(&self.path)?.len();
-        
+
         // If we already have metadata sections, we'll overwrite them
         let metadata_offset = if self.header.metadata_sections_offset > 0 {
             self.header.metadata_sections_offset
@@ -1774,10 +1903,8 @@ impl Vault {
         self.header.metadata_sections_size = new_size;
 
         // Write metadata sections at the calculated offset
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .open(&self.path)?;
-        
+        let mut file = std::fs::OpenOptions::new().write(true).open(&self.path)?;
+
         file.seek(std::io::SeekFrom::Start(metadata_offset))?;
         file.write_all(&encrypted_data)?;
         file.flush()?;
@@ -1785,8 +1912,6 @@ impl Vault {
         // Truncate file if the new metadata sections are smaller than the old ones
         let new_file_size = metadata_offset + new_size;
         file.set_len(new_file_size)?;
-        
-
 
         Ok(())
     }
@@ -1824,5 +1949,3 @@ pub fn remove_vault(handle: VaultHandle) -> Option<Arc<Mutex<Vault>>> {
     let mut registry = VAULT_REGISTRY.lock().unwrap();
     registry.as_mut()?.remove_vault(handle)
 }
-
-

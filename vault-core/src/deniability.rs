@@ -24,7 +24,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::crypto::{CipherType, derive_key, derive_all_subkeys};
+use crate::crypto::{derive_all_subkeys, derive_key, CipherType};
 use crate::error::{VaultError, VaultResult};
 use crate::format::{FileTable, VaultHeader};
 
@@ -72,9 +72,9 @@ impl DeniabilityManager {
             active_table_id: None,
         }
     }
-    
+
     /// Load hidden tables metadata from vault file
-    /// 
+    ///
     /// NOTE: Currently disabled because hidden tables are not persisted.
     /// This is a known limitation of the current implementation.
     pub fn load_from_vault<P: AsRef<Path>>(
@@ -83,7 +83,7 @@ impl DeniabilityManager {
         _master_key: &[u8],
     ) -> VaultResult<()> {
         // DISABLED: Hidden tables metadata is not persisted to prevent vault corruption
-        
+
         if self.vault_header.hidden_tables_offset == 0 {
             // No hidden tables (expected since we don't persist them)
             return Ok(());
@@ -91,9 +91,11 @@ impl DeniabilityManager {
 
         // Even if the header indicates hidden tables exist, we don't load them
         // because the persistence mechanism is disabled to prevent corruption.
-        
-        log::warn!("Hidden tables metadata loading is disabled - tables only exist in current session");
-        
+
+        log::warn!(
+            "Hidden tables metadata loading is disabled - tables only exist in current session"
+        );
+
         // Clear any existing hidden tables since we can't load persisted ones
         self.hidden_tables.clear();
         self.active_table_id = None;
@@ -102,7 +104,7 @@ impl DeniabilityManager {
     }
 
     /// Save hidden tables metadata to vault file
-    /// 
+    ///
     /// NOTE: Currently disabled to prevent vault corruption.
     /// Hidden tables metadata is not persisted across vault sessions.
     /// This is a known limitation documented in the deniability features.
@@ -114,10 +116,10 @@ impl DeniabilityManager {
         // DISABLED: Saving hidden tables metadata causes vault corruption
         // because it requires updating the vault header, which changes the
         // header size and shifts file table offsets.
-        
+
         // For now, hidden tables only exist in memory during the vault session.
         // This is documented as a limitation of the current implementation.
-        
+
         if self.hidden_tables.is_empty() {
             return Ok(());
         }
@@ -127,12 +129,12 @@ impl DeniabilityManager {
         // 1. Reserve space in header for hidden tables metadata
         // 2. Store metadata in a separate file
         // 3. Use a different vault format that supports dynamic header sizes
-        
+
         log::warn!("Hidden tables metadata persistence is disabled to prevent vault corruption");
-        
+
         Ok(())
     }
-    
+
     /// Get the vault header (no longer stores hidden tables directly)
     pub fn get_updated_header(&self) -> VaultHeader {
         self.vault_header.clone()
@@ -172,7 +174,7 @@ impl DeniabilityManager {
         let metadata = HiddenFileTableMetadata {
             table_id,
             offset,
-            size: 0, // Will be updated when table is written
+            size: 0,                    // Will be updated when table is written
             reserved_size: 1024 * 1024, // 1MB reserved
             cipher: cipher_type.to_string(),
             kdf_params,
@@ -186,14 +188,18 @@ impl DeniabilityManager {
 
     /// Remove a hidden file table
     pub fn remove_hidden_table(&mut self, table_id: &Uuid) -> VaultResult<bool> {
-        if let Some(index) = self.hidden_tables.iter().position(|t| &t.table_id == table_id) {
+        if let Some(index) = self
+            .hidden_tables
+            .iter()
+            .position(|t| &t.table_id == table_id)
+        {
             self.hidden_tables.remove(index);
-            
+
             // Clear active table if it was removed
             if self.active_table_id.as_ref() == Some(table_id) {
                 self.active_table_id = None;
             }
-            
+
             Ok(true)
         } else {
             Ok(false)
@@ -253,7 +259,8 @@ impl DeniabilityManager {
         file_table: &FileTable,
         password: &str,
     ) -> VaultResult<()> {
-        let metadata = self.get_table_metadata(table_id)
+        let metadata = self
+            .get_table_metadata(table_id)
             .ok_or_else(|| VaultError::invalid_argument("File table not found"))?
             .clone();
 
@@ -288,21 +295,23 @@ impl DeniabilityManager {
         )?;
 
         // Write to vault file at the specified offset
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .open(vault_path)?;
+        let mut file = std::fs::OpenOptions::new().write(true).open(vault_path)?;
 
         use std::io::{Seek, Write};
         file.seek(std::io::SeekFrom::Start(metadata.offset))?;
-        
+
         // Write nonce
         file.write_all(&nonce)?;
-        
+
         // Write encrypted data
         file.write_all(&encrypted_table)?;
 
         // Update metadata with actual size
-        if let Some(table_meta) = self.hidden_tables.iter_mut().find(|t| &t.table_id == table_id) {
+        if let Some(table_meta) = self
+            .hidden_tables
+            .iter_mut()
+            .find(|t| &t.table_id == table_id)
+        {
             table_meta.size = (nonce.len() + encrypted_table.len()) as u64;
         }
 
@@ -316,7 +325,8 @@ impl DeniabilityManager {
         table_id: &Uuid,
         password: &str,
     ) -> VaultResult<FileTable> {
-        let metadata = self.get_table_metadata(table_id)
+        let metadata = self
+            .get_table_metadata(table_id)
             .ok_or_else(|| VaultError::invalid_argument("File table not found"))?;
 
         // Derive key from password
@@ -336,7 +346,7 @@ impl DeniabilityManager {
 
         // Read encrypted data from vault
         let mut file = std::fs::File::open(vault_path)?;
-        
+
         use std::io::{Read, Seek};
         file.seek(std::io::SeekFrom::Start(metadata.offset))?;
 
@@ -349,12 +359,12 @@ impl DeniabilityManager {
             // Hidden table hasn't been written yet
             return Err(VaultError::invalid_argument("Hidden table not initialized"));
         }
-        
+
         let nonce_size = crypto.nonce_size() as u64;
         if metadata.size < nonce_size {
             return Err(VaultError::corrupted_vault("Invalid hidden table size"));
         }
-        
+
         let encrypted_size = metadata.size - nonce_size;
         let mut encrypted_data = vec![0u8; encrypted_size as usize];
         file.read_exact(&mut encrypted_data)?;
@@ -386,7 +396,7 @@ impl DeniabilityManager {
             match self.read_hidden_table(vault_path.as_ref(), &metadata.table_id, password) {
                 Ok(_) => return Ok(Some(metadata.table_id)),
                 Err(VaultError::CryptoError { .. }) => continue, // Wrong password, try next
-                Err(e) => return Err(e), // Other error
+                Err(e) => return Err(e),                         // Other error
             }
         }
 
@@ -489,7 +499,7 @@ mod tests {
     fn test_deniability_manager_creation() {
         let header = create_test_header();
         let manager = DeniabilityManager::new(header);
-        
+
         assert_eq!(manager.table_count(), 0);
         assert!(manager.active_table_id().is_none());
     }
@@ -499,11 +509,9 @@ mod tests {
         let header = create_test_header();
         let mut manager = DeniabilityManager::new(header);
 
-        let table_id = manager.add_hidden_table(
-            "hidden_password",
-            CipherType::Aes256Gcm,
-            false,
-        ).unwrap();
+        let table_id = manager
+            .add_hidden_table("hidden_password", CipherType::Aes256Gcm, false)
+            .unwrap();
 
         assert_eq!(manager.table_count(), 1);
         assert!(manager.get_table_metadata(&table_id).is_some());
@@ -516,20 +524,13 @@ mod tests {
 
         // Add maximum number of tables
         for i in 0..MAX_FILE_TABLES {
-            let result = manager.add_hidden_table(
-                &format!("password_{}", i),
-                CipherType::Aes256Gcm,
-                false,
-            );
+            let result =
+                manager.add_hidden_table(&format!("password_{}", i), CipherType::Aes256Gcm, false);
             assert!(result.is_ok());
         }
 
         // Try to add one more - should fail
-        let result = manager.add_hidden_table(
-            "extra_password",
-            CipherType::Aes256Gcm,
-            false,
-        );
+        let result = manager.add_hidden_table("extra_password", CipherType::Aes256Gcm, false);
         assert!(result.is_err());
     }
 
@@ -538,11 +539,9 @@ mod tests {
         let header = create_test_header();
         let mut manager = DeniabilityManager::new(header);
 
-        let table_id = manager.add_hidden_table(
-            "password",
-            CipherType::Aes256Gcm,
-            false,
-        ).unwrap();
+        let table_id = manager
+            .add_hidden_table("password", CipherType::Aes256Gcm, false)
+            .unwrap();
 
         assert_eq!(manager.table_count(), 1);
 
@@ -556,11 +555,9 @@ mod tests {
         let header = create_test_header();
         let mut manager = DeniabilityManager::new(header);
 
-        let table_id = manager.add_hidden_table(
-            "password",
-            CipherType::Aes256Gcm,
-            false,
-        ).unwrap();
+        let table_id = manager
+            .add_hidden_table("password", CipherType::Aes256Gcm, false)
+            .unwrap();
 
         manager.set_active_table(table_id).unwrap();
         assert_eq!(manager.active_table_id(), Some(table_id));

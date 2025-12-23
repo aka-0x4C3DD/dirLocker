@@ -181,7 +181,7 @@ impl CryptoEngine for XChaCha20Poly1305Engine {
         plaintext: &[u8],
         aad: &[u8],
     ) -> VaultResult<Vec<u8>> {
-        use chacha20poly1305::{aead::Aead, XChaCha20Poly1305, KeyInit, XNonce};
+        use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
 
         if key.len() != 32 {
             return Err(VaultError::crypto_error(
@@ -218,7 +218,7 @@ impl CryptoEngine for XChaCha20Poly1305Engine {
         ciphertext: &[u8],
         aad: &[u8],
     ) -> VaultResult<Vec<u8>> {
-        use chacha20poly1305::{aead::Aead, XChaCha20Poly1305, KeyInit, XNonce};
+        use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
 
         if key.len() != 32 {
             return Err(VaultError::crypto_error(

@@ -29,7 +29,7 @@ The vault will be encrypted using the chosen cipher algorithm.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			vaultName := args[0]
-			
+
 			// Determine output path
 			if outputPath == "" {
 				outputPath = vaultName
@@ -86,14 +86,14 @@ The vault will be encrypted using the chosen cipher algorithm.`,
 
 			// Create the vault
 			logger.Info("Creating vault", "name", vaultName, "path", outputPath, "cipher", cipher)
-			
+
 			if err := vaultManager.CreateVaultWithParams(outputPath, password, cipherType, kdfParams); err != nil {
 				return fmt.Errorf("failed to create vault: %w", err)
 			}
 
 			fmt.Printf("Successfully created vault: %s\n", outputPath)
 			fmt.Printf("Cipher: %s\n", cipher)
-			
+
 			return nil
 		},
 	}

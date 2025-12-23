@@ -4,15 +4,15 @@
 //! [Magic][Version][HeaderLen][HeaderJSON][FileTable][Chunks...]
 
 use std::fs::{File, OpenOptions};
-use std::io::{BufReader, BufWriter, Read, Write, Seek};
+use std::io::{BufReader, BufWriter, Read, Seek, Write};
 use std::path::Path;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::crypto::{generate_nonce, CryptoEngine, SubKeys};
 use crate::error::{VaultError, VaultResult};
-use crate::crypto::{CryptoEngine, SubKeys, generate_nonce};
 
 /// Magic bytes for vault files: "VLT1"
 pub const VAULT_MAGIC: &[u8; 4] = b"VLT1";
@@ -115,7 +115,8 @@ impl FileTable {
     /// Add a free space region for reuse
     pub fn add_free_space(&mut self, offset: u64, size: u64) {
         if size > 0 {
-            self.free_space_regions.push(FreeSpaceRegion { offset, size });
+            self.free_space_regions
+                .push(FreeSpaceRegion { offset, size });
             self.consolidate_free_space();
         }
     }
@@ -126,7 +127,7 @@ impl FileTable {
         for (index, region) in self.free_space_regions.iter().enumerate() {
             if region.size >= required_size {
                 let allocated_offset = region.offset;
-                
+
                 // Remove or shrink the region
                 if region.size == required_size {
                     self.free_space_regions.remove(index);
@@ -136,11 +137,11 @@ impl FileTable {
                         size: region.size - required_size,
                     };
                 }
-                
+
                 return Some(allocated_offset);
             }
         }
-        
+
         None
     }
 
@@ -166,7 +167,7 @@ impl FileTable {
                 current = region.clone();
             }
         }
-        
+
         consolidated.push(current);
         self.free_space_regions = consolidated;
     }
@@ -210,7 +211,8 @@ impl FileEntry {
         filename_key: &[u8],
     ) -> VaultResult<Self> {
         // Encrypt filename
-        let (name_encrypted, iv) = VaultFormat::encrypt_filename(filename, crypto_engine, filename_key)?;
+        let (name_encrypted, iv) =
+            VaultFormat::encrypt_filename(filename, crypto_engine, filename_key)?;
 
         Ok(FileEntry {
             name_encrypted,
@@ -340,12 +342,9 @@ impl MetadataSections {
     pub fn set_section(&mut self, section_type: MetadataSectionType, data: Vec<u8>) {
         // Remove existing section of the same type
         self.sections.retain(|s| s.section_type != section_type);
-        
+
         // Add new section
-        self.sections.push(MetadataSection {
-            section_type,
-            data,
-        });
+        self.sections.push(MetadataSection { section_type, data });
     }
 
     /// Get a metadata section by type
@@ -376,7 +375,7 @@ impl MetadataSections {
     /// Calculate the total serialized size of all sections
     pub fn calculate_serialized_size(&self) -> usize {
         let mut size = 4; // Section count (u32)
-        
+
         for section in &self.sections {
             let type_str = section.section_type.as_str();
             size += 4; // Type length (u32)
@@ -384,7 +383,7 @@ impl MetadataSections {
             size += 4; // Data length (u32)
             size += section.data.len(); // Encrypted data
         }
-        
+
         size
     }
 }
@@ -396,10 +395,10 @@ impl VaultFormat {
     /// Write a new vault file with the given header and empty file table
     pub fn create_vault_file<P: AsRef<Path>>(path: P, header: &VaultHeader) -> VaultResult<()> {
         let path = path.as_ref();
-        
+
         // Use atomic write operation - write to temp file first
         let temp_path = Self::get_temp_path(path)?;
-        
+
         {
             let file = File::create(&temp_path)?;
             let mut writer = BufWriter::new(file);
@@ -434,16 +433,18 @@ impl VaultFormat {
     fn get_temp_path<P: AsRef<Path>>(original_path: P) -> VaultResult<std::path::PathBuf> {
         let original = original_path.as_ref();
         let mut temp_path = original.to_path_buf();
-        
+
         // Add random suffix to avoid conflicts
         let random_suffix: u64 = rand::random();
-        let temp_name = format!("{}.tmp.{}", 
-            original.file_name()
+        let temp_name = format!(
+            "{}.tmp.{}",
+            original
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("vault"),
             random_suffix
         );
-        
+
         temp_path.set_file_name(temp_name);
         Ok(temp_path)
     }
@@ -457,13 +458,13 @@ impl VaultFormat {
 
     /// Calculate header AAD hash for consistency checking
     fn calculate_header_aad_hash(header: &VaultHeader) -> VaultResult<String> {
-        use sha2::{Sha256, Digest};
-        
+        use sha2::{Digest, Sha256};
+
         let header_json = Self::serialize_header_for_aad(header)?;
         let mut hasher = Sha256::new();
         hasher.update(header_json.as_bytes());
         let hash = hasher.finalize();
-        
+
         Ok(hex::encode(hash))
     }
 
@@ -475,7 +476,14 @@ impl VaultFormat {
         crypto_engine: &dyn CryptoEngine,
         subkeys: &SubKeys,
     ) -> VaultResult<()> {
-        Self::write_encrypted_file_table_atomic(path, header, file_table, crypto_engine, subkeys, true)
+        Self::write_encrypted_file_table_atomic(
+            path,
+            header,
+            file_table,
+            crypto_engine,
+            subkeys,
+            true,
+        )
     }
 
     /// Write an encrypted file table with optional atomic operations
@@ -488,17 +496,18 @@ impl VaultFormat {
         use_atomic: bool,
     ) -> VaultResult<()> {
         let path = path.as_ref();
-        
+
         // Ensure file table has correct AAD hash
         let mut updated_file_table = file_table.clone();
         updated_file_table.header_aad_hash = Self::calculate_header_aad_hash(header)?;
-        
+
         // Serialize file table to JSON
         let file_table_json = serde_json::to_string(&updated_file_table)?;
         let file_table_bytes = file_table_json.as_bytes();
 
         // Check if file table fits in reserved space
-        let total_encrypted_size = crypto_engine.nonce_size() + file_table_bytes.len() + crypto_engine.tag_size();
+        let total_encrypted_size =
+            crypto_engine.nonce_size() + file_table_bytes.len() + crypto_engine.tag_size();
         if total_encrypted_size as u64 > header.file_table_reserved_size {
             return Err(VaultError::internal_error(format!(
                 "File table size {} exceeds reserved space {}. Defragmentation required.",
@@ -514,12 +523,8 @@ impl VaultFormat {
         let aad = header_aad.as_bytes();
 
         // Encrypt file table using file_encryption_key
-        let encrypted_file_table = crypto_engine.encrypt(
-            &subkeys.file_encryption_key,
-            &nonce,
-            file_table_bytes,
-            aad,
-        )?;
+        let encrypted_file_table =
+            crypto_engine.encrypt(&subkeys.file_encryption_key, &nonce, file_table_bytes, aad)?;
 
         if use_atomic {
             // Use atomic write operation
@@ -540,18 +545,16 @@ impl VaultFormat {
         encrypted_file_table: &[u8],
     ) -> VaultResult<()> {
         let path = path.as_ref();
-        
+
         // Create temporary file for atomic operation
         let temp_path = Self::get_temp_path(path)?;
-        
+
         // Copy original file to temp
         std::fs::copy(path, &temp_path)?;
-        
+
         // Modify the temp file
         {
-            let mut file = std::fs::OpenOptions::new()
-                .write(true)
-                .open(&temp_path)?;
+            let mut file = std::fs::OpenOptions::new().write(true).open(&temp_path)?;
 
             // Seek to file table position
             file.seek(std::io::SeekFrom::Start(header.file_table_offset))?;
@@ -573,10 +576,10 @@ impl VaultFormat {
             file.flush()?;
             file.sync_all()?; // Ensure data is written to disk
         }
-        
+
         // Atomic rename
         std::fs::rename(&temp_path, path)?;
-        
+
         Ok(())
     }
 
@@ -588,11 +591,9 @@ impl VaultFormat {
         encrypted_file_table: &[u8],
     ) -> VaultResult<()> {
         let path = path.as_ref();
-        
+
         // Open file for writing at file table position
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .open(path)?;
+        let mut file = std::fs::OpenOptions::new().write(true).open(path)?;
 
         // Seek to file table position
         file.seek(std::io::SeekFrom::Start(header.file_table_offset))?;
@@ -626,7 +627,7 @@ impl VaultFormat {
     ) -> VaultResult<FileTable> {
         let file = File::open(path)?;
         let file_size = file.metadata()?.len();
-        
+
         // Check if there's any data after the header
         if file_size <= file_table_offset {
             // No file table data yet - return new empty file table
@@ -636,11 +637,16 @@ impl VaultFormat {
         let mut reader = BufReader::new(file);
 
         // Seek to file table position
-        reader.get_mut().seek(std::io::SeekFrom::Start(file_table_offset))?;
+        reader
+            .get_mut()
+            .seek(std::io::SeekFrom::Start(file_table_offset))?;
 
         // Determine how much data to read based on reserved space or remaining file size
         let max_read_size = if header.file_table_reserved_size > 0 {
-            std::cmp::min(header.file_table_reserved_size, file_size - file_table_offset)
+            std::cmp::min(
+                header.file_table_reserved_size,
+                file_size - file_table_offset,
+            )
         } else {
             file_size - file_table_offset
         };
@@ -668,8 +674,9 @@ impl VaultFormat {
         // Find the actual encrypted file table by looking for non-zero data
         // (the rest is padding zeros)
         let mut actual_encrypted_size = encrypted_data.len();
-        while actual_encrypted_size > crypto_engine.tag_size() && 
-              encrypted_data[actual_encrypted_size - 1] == 0 {
+        while actual_encrypted_size > crypto_engine.tag_size()
+            && encrypted_data[actual_encrypted_size - 1] == 0
+        {
             actual_encrypted_size -= 1;
         }
 
@@ -686,24 +693,20 @@ impl VaultFormat {
         let aad = header_aad.as_bytes();
 
         // Decrypt file table using file_encryption_key
-        let decrypted_bytes = crypto_engine.decrypt(
-            &subkeys.file_encryption_key,
-            &nonce,
-            &encrypted_data,
-            aad,
-        )?;
+        let decrypted_bytes =
+            crypto_engine.decrypt(&subkeys.file_encryption_key, &nonce, &encrypted_data, aad)?;
 
         // Parse JSON
         let file_table_json = std::str::from_utf8(&decrypted_bytes)?;
-        let file_table: FileTable = serde_json::from_str(file_table_json)
-            .unwrap_or_else(|_| FileTable::new()); // Fallback to empty if parsing fails
+        let file_table: FileTable =
+            serde_json::from_str(file_table_json).unwrap_or_else(|_| FileTable::new()); // Fallback to empty if parsing fails
 
         // Verify AAD hash consistency if present
         if !file_table.header_aad_hash.is_empty() {
             let expected_hash = Self::calculate_header_aad_hash(header)?;
             if file_table.header_aad_hash != expected_hash {
                 return Err(VaultError::corrupted_vault(
-                    "File table AAD hash mismatch - possible corruption or tampering"
+                    "File table AAD hash mismatch - possible corruption or tampering",
                 ));
             }
         }
@@ -776,57 +779,53 @@ impl VaultFormat {
     /// Update the vault header in an existing vault file
     pub fn update_vault_header<P: AsRef<Path>>(path: P, header: &VaultHeader) -> VaultResult<()> {
         let path = path.as_ref();
-        
+
         // Read the current file to preserve everything after the header
         let file_data = std::fs::read(path)?;
-        
+
         // Calculate the old header size
-        let old_header_len = u32::from_be_bytes([
-            file_data[5],
-            file_data[6],
-            file_data[7],
-            file_data[8],
-        ]) as usize;
-        
+        let old_header_len =
+            u32::from_be_bytes([file_data[5], file_data[6], file_data[7], file_data[8]]) as usize;
+
         let old_header_end = 4 + 1 + 4 + old_header_len; // magic + version + len + header
-        
+
         // Serialize new header (use compact format to minimize size changes)
         let new_header_json = serde_json::to_string(header)?;
         let new_header_bytes = new_header_json.as_bytes();
         let new_header_len = new_header_bytes.len() as u32;
         let _new_header_end = 4 + 1 + 4 + new_header_len;
-        
+
         // Check if header size changed
         if new_header_len != old_header_len as u32 {
-            return Err(VaultError::internal_error(
-                format!("Header size changed from {} to {} bytes, this is not supported", 
-                       old_header_len, new_header_len)
-            ));
+            return Err(VaultError::internal_error(format!(
+                "Header size changed from {} to {} bytes, this is not supported",
+                old_header_len, new_header_len
+            )));
         }
-        
+
         // Build new file content
         let mut new_file_data = Vec::new();
-        
+
         // Write magic bytes
         new_file_data.extend_from_slice(VAULT_MAGIC);
-        
+
         // Write version
         new_file_data.push(VAULT_VERSION);
-        
+
         // Write new header length
         new_file_data.extend_from_slice(&new_header_len.to_be_bytes());
-        
+
         // Write new header
         new_file_data.extend_from_slice(new_header_bytes);
-        
+
         // Header size didn't change, just copy everything after the header
         new_file_data.extend_from_slice(&file_data[old_header_end..]);
-        
+
         // Write atomically using temp file
         let temp_path = Self::get_temp_path(path)?;
         std::fs::write(&temp_path, &new_file_data)?;
         std::fs::rename(&temp_path, path)?;
-        
+
         Ok(())
     }
 
@@ -956,7 +955,7 @@ impl VaultFormat {
     /// Derive a deterministic nonce for filename encryption
     /// This ensures the same filename always produces the same encrypted result
     fn derive_filename_nonce(filename: &str, nonce_size: usize) -> VaultResult<Vec<u8>> {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
 
         // Hash the filename to create a deterministic nonce
         let mut hasher = Sha256::new();
@@ -992,8 +991,6 @@ impl VaultFormat {
         // Seek to the specified offset
         file.seek(SeekFrom::Start(offset))?;
 
-
-
         // Write nonce first, then encrypted chunk
         file.write_all(nonce)?;
         file.write_all(encrypted_chunk)?;
@@ -1013,7 +1010,7 @@ impl VaultFormat {
 
         let file = File::open(path)?;
         let mut reader = BufReader::new(file);
-        
+
         // Seek to the chunk offset
         reader.get_mut().seek(SeekFrom::Start(offset))?;
 
@@ -1025,12 +1022,13 @@ impl VaultFormat {
         // We need to determine nonce size from the encrypted data structure
         // Try both common nonce sizes: AES-GCM (12 bytes) and XChaCha20-Poly1305 (24 bytes)
         let possible_nonce_sizes = [12, 24];
-        
+
         for &nonce_size in &possible_nonce_sizes {
-            if total_size as usize > nonce_size + 16 { // nonce + minimum tag size
+            if total_size as usize > nonce_size + 16 {
+                // nonce + minimum tag size
                 let nonce = chunk_data[..nonce_size].to_vec();
                 let encrypted_data = chunk_data[nonce_size..].to_vec();
-                
+
                 // Basic validation: encrypted data should be at least tag_size (16 bytes)
                 if encrypted_data.len() >= 16 {
                     return Ok((nonce, encrypted_data));
@@ -1056,7 +1054,7 @@ impl VaultFormat {
 
         let file = File::open(path)?;
         let mut reader = BufReader::new(file);
-        
+
         // Seek to the chunk offset
         reader.get_mut().seek(SeekFrom::Start(offset))?;
 
@@ -1107,7 +1105,7 @@ impl VaultFormat {
         let file = File::open(path)?;
         let file_size = file.metadata()?.len();
         let chunk_data_start = Self::calculate_chunk_data_start_offset(header);
-        
+
         // Ensure we don't allocate before the chunk data area
         Ok(std::cmp::max(file_size, chunk_data_start))
     }
@@ -1121,7 +1119,7 @@ impl VaultFormat {
         subkeys: &SubKeys,
     ) -> VaultResult<()> {
         let path = path.as_ref();
-        
+
         if file_table.files.is_empty() {
             // No files to defragment
             file_table.free_space_regions.clear();
@@ -1161,9 +1159,7 @@ impl VaultFormat {
 
         // Truncate file to remove unused space at the end
         {
-            let file = std::fs::OpenOptions::new()
-                .write(true)
-                .open(&temp_path)?;
+            let file = std::fs::OpenOptions::new().write(true).open(&temp_path)?;
             file.set_len(new_offset)?;
         }
 
@@ -1188,13 +1184,17 @@ impl VaultFormat {
 
         // If we have too much fragmentation, suggest defragmentation
         let total_free = file_table.total_free_space();
-        let fragmentation_ratio = file_table.free_space_regions.len() as f64 / (total_free as f64 / 1024.0 / 1024.0).max(1.0);
-        
+        let fragmentation_ratio = file_table.free_space_regions.len() as f64
+            / (total_free as f64 / 1024.0 / 1024.0).max(1.0);
+
         if fragmentation_ratio > 10.0 && total_free > 10 * 1024 * 1024 {
             // High fragmentation with significant free space - could benefit from defragmentation
             // This is just a hint - actual defragmentation should be triggered by the application
-            log::info!("Vault has high fragmentation ({} regions, {} MB free). Consider defragmentation.", 
-                      file_table.free_space_regions.len(), total_free / 1024 / 1024);
+            log::info!(
+                "Vault has high fragmentation ({} regions, {} MB free). Consider defragmentation.",
+                file_table.free_space_regions.len(),
+                total_free / 1024 / 1024
+            );
         }
 
         Ok(())
@@ -1244,10 +1244,15 @@ impl VaultFormat {
 
         // Read section count
         if cursor + 4 > data.len() {
-            return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated section count"));
+            return Err(VaultError::corrupted_vault(
+                "Invalid metadata sections: truncated section count",
+            ));
         }
         let section_count = u32::from_be_bytes([
-            data[cursor], data[cursor + 1], data[cursor + 2], data[cursor + 3]
+            data[cursor],
+            data[cursor + 1],
+            data[cursor + 2],
+            data[cursor + 3],
         ]);
         cursor += 4;
 
@@ -1255,37 +1260,53 @@ impl VaultFormat {
         for _ in 0..section_count {
             // Read type length
             if cursor + 4 > data.len() {
-                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated type length"));
+                return Err(VaultError::corrupted_vault(
+                    "Invalid metadata sections: truncated type length",
+                ));
             }
             let type_len = u32::from_be_bytes([
-                data[cursor], data[cursor + 1], data[cursor + 2], data[cursor + 3]
+                data[cursor],
+                data[cursor + 1],
+                data[cursor + 2],
+                data[cursor + 3],
             ]) as usize;
             cursor += 4;
 
             // Read type string
             if cursor + type_len > data.len() {
-                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated type string"));
+                return Err(VaultError::corrupted_vault(
+                    "Invalid metadata sections: truncated type string",
+                ));
             }
-            let type_str = std::str::from_utf8(&data[cursor..cursor + type_len])
-                .map_err(|_| VaultError::corrupted_vault("Invalid metadata sections: invalid type string UTF-8"))?;
+            let type_str = std::str::from_utf8(&data[cursor..cursor + type_len]).map_err(|_| {
+                VaultError::corrupted_vault("Invalid metadata sections: invalid type string UTF-8")
+            })?;
             cursor += type_len;
 
             // Parse section type
-            let section_type = MetadataSectionType::from_str(type_str)
-                .ok_or_else(|| VaultError::corrupted_vault(format!("Unknown metadata section type: {}", type_str)))?;
+            let section_type = MetadataSectionType::from_str(type_str).ok_or_else(|| {
+                VaultError::corrupted_vault(format!("Unknown metadata section type: {}", type_str))
+            })?;
 
             // Read data length
             if cursor + 4 > data.len() {
-                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated data length"));
+                return Err(VaultError::corrupted_vault(
+                    "Invalid metadata sections: truncated data length",
+                ));
             }
             let data_len = u32::from_be_bytes([
-                data[cursor], data[cursor + 1], data[cursor + 2], data[cursor + 3]
+                data[cursor],
+                data[cursor + 1],
+                data[cursor + 2],
+                data[cursor + 3],
             ]) as usize;
             cursor += 4;
 
             // Read data
             if cursor + data_len > data.len() {
-                return Err(VaultError::corrupted_vault("Invalid metadata sections: truncated section data"));
+                return Err(VaultError::corrupted_vault(
+                    "Invalid metadata sections: truncated section data",
+                ));
             }
             let section_data = data[cursor..cursor + data_len].to_vec();
             cursor += data_len;
@@ -1341,7 +1362,9 @@ impl VaultFormat {
 
         let nonce_size = crypto_engine.nonce_size();
         if encrypted_data.len() < nonce_size {
-            return Err(VaultError::corrupted_vault("Invalid metadata sections: too short for nonce"));
+            return Err(VaultError::corrupted_vault(
+                "Invalid metadata sections: too short for nonce",
+            ));
         }
 
         // Extract nonce and encrypted data
@@ -1375,7 +1398,9 @@ impl VaultFormat {
         let mut reader = BufReader::new(file);
 
         // Seek to metadata sections position
-        reader.get_mut().seek(std::io::SeekFrom::Start(header.metadata_sections_offset))?;
+        reader
+            .get_mut()
+            .seek(std::io::SeekFrom::Start(header.metadata_sections_offset))?;
 
         // Read encrypted metadata sections
         let mut encrypted_data = vec![0u8; header.metadata_sections_size as usize];
@@ -1399,12 +1424,11 @@ impl VaultFormat {
         }
 
         // Encrypt metadata sections
-        let encrypted_data = Self::encrypt_metadata_sections(sections, crypto_engine, metadata_key)?;
+        let encrypted_data =
+            Self::encrypt_metadata_sections(sections, crypto_engine, metadata_key)?;
 
         // Open file for writing at the metadata sections offset
-        let mut file = OpenOptions::new()
-            .write(true)
-            .open(path)?;
+        let mut file = OpenOptions::new().write(true).open(path)?;
 
         // Seek to metadata sections position
         file.seek(std::io::SeekFrom::Start(header.metadata_sections_offset))?;
@@ -1422,7 +1446,7 @@ impl VaultFormat {
         metadata_sections_size: u64,
     ) -> VaultResult<()> {
         let (mut header, _) = Self::read_vault_header(&path)?;
-        
+
         // Calculate metadata sections offset if not set
         if header.metadata_sections_offset == 0 {
             let temp_header_json = serde_json::to_string_pretty(&header)?;
@@ -1481,7 +1505,7 @@ impl VaultFormat {
         // Calculate new offsets for metadata sections format
         let temp_header_json = serde_json::to_string_pretty(&header)?;
         let header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
-        
+
         // For now, create empty metadata sections area
         header.metadata_sections_offset = header_size;
         header.metadata_sections_size = 0; // Empty for now
@@ -1806,37 +1830,37 @@ fn test_vault_format_with_known_test_vectors() {
 #[test]
 fn test_space_management_and_allocation() {
     let mut file_table = FileTable::new();
-    
+
     // Test initial state
     assert_eq!(file_table.total_free_space(), 0);
     assert_eq!(file_table.free_space_regions.len(), 0);
-    
+
     // Add some free space regions
     file_table.add_free_space(1000, 500);
     file_table.add_free_space(2000, 300);
     file_table.add_free_space(1500, 200); // Adjacent to first region
-    
+
     // Should consolidate adjacent regions
     assert_eq!(file_table.total_free_space(), 1000);
     assert_eq!(file_table.free_space_regions.len(), 2);
-    
+
     // Test allocation
     let offset1 = file_table.allocate_space(100).unwrap();
     assert_eq!(offset1, 1000); // Should use first region
     assert_eq!(file_table.total_free_space(), 900);
-    
+
     let offset2 = file_table.allocate_space(600).unwrap();
     assert_eq!(offset2, 1100); // Should use remaining space from first region
     assert_eq!(file_table.total_free_space(), 300);
-    
+
     // Should only have second region left
     assert_eq!(file_table.free_space_regions.len(), 1);
     assert_eq!(file_table.free_space_regions[0].offset, 2000);
     assert_eq!(file_table.free_space_regions[0].size, 300);
-    
+
     // Test allocation that's too large
     assert!(file_table.allocate_space(500).is_none());
-    
+
     // Test exact allocation
     let offset3 = file_table.allocate_space(300).unwrap();
     assert_eq!(offset3, 2000);
@@ -1846,42 +1870,42 @@ fn test_space_management_and_allocation() {
 
 #[test]
 fn test_atomic_file_operations() {
-    use tempfile::tempdir;
     use std::sync::{Arc, Mutex};
     use std::thread;
-    
+    use tempfile::tempdir;
+
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("atomic_test.vault");
-    
+
     // Create initial vault
     let mut header = tests::create_test_header();
-    
+
     // Calculate proper file table offset
     let temp_header_json = serde_json::to_string_pretty(&header).unwrap();
     let approx_header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
     header.file_table_offset = approx_header_size;
     header.chunk_data_start_offset = approx_header_size + header.file_table_reserved_size;
-    
+
     // Second pass with updated header to get exact size
     let final_header_json = serde_json::to_string_pretty(&header).unwrap();
     let final_header_size = 4 + 1 + 4 + final_header_json.len() as u64;
     header.file_table_offset = final_header_size;
     header.chunk_data_start_offset = final_header_size + header.file_table_reserved_size;
-    
+
     VaultFormat::create_vault_file(&path, &header).unwrap();
-    
+
     // Test concurrent access doesn't corrupt the file
     let path_arc = Arc::new(path.clone());
     let header_arc = Arc::new(header);
     let success_count = Arc::new(Mutex::new(0));
-    
+
     let mut handles = vec![];
-    
+
     for i in 0..5 {
         let path_clone = Arc::clone(&path_arc);
         let header_clone = Arc::clone(&header_arc);
         let success_clone = Arc::clone(&success_count);
-        
+
         let handle = thread::spawn(move || {
             // Create a file table with some data
             let mut file_table = FileTable::new();
@@ -1894,29 +1918,38 @@ fn test_atomic_file_operations() {
                 mode: 0o644,
                 is_dir: false,
             });
-            
+
             // Try to write file table (this should be atomic)
-            let crypto = crate::crypto::create_crypto_engine(crate::crypto::CipherType::Aes256Gcm).unwrap();
+            let crypto =
+                crate::crypto::create_crypto_engine(crate::crypto::CipherType::Aes256Gcm).unwrap();
             let subkeys = crate::crypto::derive_all_subkeys(&[0u8; 32]).unwrap();
-            
-            if VaultFormat::write_encrypted_file_table(&*path_clone, &*header_clone, &file_table, crypto.as_ref(), &subkeys).is_ok() {
+
+            if VaultFormat::write_encrypted_file_table(
+                &*path_clone,
+                &*header_clone,
+                &file_table,
+                crypto.as_ref(),
+                &subkeys,
+            )
+            .is_ok()
+            {
                 let mut count = success_clone.lock().unwrap();
                 *count += 1;
             }
         });
-        
+
         handles.push(handle);
     }
-    
+
     // Wait for all threads
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     // Verify file is still readable and not corrupted
     let (read_header, _) = VaultFormat::read_vault_header(&path).unwrap();
     assert_eq!(read_header.vault_uuid, header_arc.vault_uuid);
-    
+
     // At least one write should have succeeded
     let final_count = *success_count.lock().unwrap();
     assert!(final_count > 0);
@@ -1925,99 +1958,115 @@ fn test_atomic_file_operations() {
 #[test]
 fn test_aad_consistency() {
     use tempfile::tempdir;
-    
+
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("aad_test.vault");
-    
+
     let mut header = tests::create_test_header();
-    
+
     // Calculate proper file table offset - need to account for the updated header
     // First pass to get approximate size
     let temp_header_json = serde_json::to_string_pretty(&header).unwrap();
     let approx_header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
     header.file_table_offset = approx_header_size;
     header.chunk_data_start_offset = approx_header_size + header.file_table_reserved_size;
-    
+
     // Second pass with updated header to get exact size
     let final_header_json = serde_json::to_string_pretty(&header).unwrap();
     let final_header_size = 4 + 1 + 4 + final_header_json.len() as u64;
     header.file_table_offset = final_header_size;
     header.chunk_data_start_offset = final_header_size + header.file_table_reserved_size;
-    
+
     VaultFormat::create_vault_file(&path, &header).unwrap();
-    
+
     // Verify we can read the header back before writing file table
     let (read_header_before, _) = VaultFormat::read_vault_header(&path).unwrap();
     assert_eq!(read_header_before.vault_uuid, header.vault_uuid);
-    
+
     // Create file table with AAD hash
     let mut file_table = FileTable::new();
     file_table.header_aad_hash = VaultFormat::calculate_header_aad_hash(&header).unwrap();
-    
+
     let crypto = crate::crypto::create_crypto_engine(crate::crypto::CipherType::Aes256Gcm).unwrap();
     let subkeys = crate::crypto::derive_all_subkeys(&[0u8; 32]).unwrap();
-    
+
     // Write file table
-    VaultFormat::write_encrypted_file_table(&path, &header, &file_table, crypto.as_ref(), &subkeys).unwrap();
-    
+    VaultFormat::write_encrypted_file_table(&path, &header, &file_table, crypto.as_ref(), &subkeys)
+        .unwrap();
+
     // Read it back
     let (read_header, file_table_offset) = VaultFormat::read_vault_header(&path).unwrap();
-    let read_file_table = VaultFormat::read_encrypted_file_table(&path, &read_header, file_table_offset, crypto.as_ref(), &subkeys).unwrap();
-    
+    let read_file_table = VaultFormat::read_encrypted_file_table(
+        &path,
+        &read_header,
+        file_table_offset,
+        crypto.as_ref(),
+        &subkeys,
+    )
+    .unwrap();
+
     // AAD hash should match
     assert_eq!(read_file_table.header_aad_hash, file_table.header_aad_hash);
-    
+
     // Test with modified header (should fail AAD check)
     let mut modified_header = header.clone();
     modified_header.chunk_size = 8 * 1024 * 1024; // Different chunk size
-    
-    let result = VaultFormat::read_encrypted_file_table(&path, &modified_header, file_table_offset, crypto.as_ref(), &subkeys);
+
+    let result = VaultFormat::read_encrypted_file_table(
+        &path,
+        &modified_header,
+        file_table_offset,
+        crypto.as_ref(),
+        &subkeys,
+    );
     assert!(result.is_err()); // Should fail due to AAD mismatch
 }
 
 #[test]
 fn test_file_persistence_after_operations() {
     use tempfile::tempdir;
-    
+
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("persistence_test.vault");
-    
+
     // Create vault with proper space management
-    let mut vault = crate::vault::Vault::create(&path, "test_password", crate::crypto::CipherType::Aes256Gcm).unwrap();
-    
+    let mut vault =
+        crate::vault::Vault::create(&path, "test_password", crate::crypto::CipherType::Aes256Gcm)
+            .unwrap();
+
     // Add multiple files with different sizes
     let small_content = b"Small file content";
     let medium_content = vec![42u8; 1024]; // 1KB
     let large_content = vec![123u8; 5 * 1024 * 1024]; // 5MB (multiple chunks)
-    
+
     vault.write_file("small.txt", small_content).unwrap();
     vault.write_file("medium.txt", &medium_content).unwrap();
     vault.write_file("large.txt", &large_content).unwrap();
-    
+
     // Verify files are persisted
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 3);
-    
+
     // Check space usage
     let usage = vault.get_space_usage().unwrap();
     assert_eq!(usage.file_count, 3);
     assert!(usage.used_space > 0);
-    
+
     // Close and reopen vault
     drop(vault);
     let vault = crate::vault::Vault::open(&path, "test_password").unwrap();
-    
+
     // Verify all files are still there and readable
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 3);
-    
+
     // Verify content
     let read_small = vault.read_file("small.txt").unwrap();
     assert_eq!(read_small, small_content);
-    
+
     let read_medium = vault.read_file("medium.txt").unwrap();
     assert_eq!(read_medium, medium_content);
-    
+
     let read_large = vault.read_file("large.txt").unwrap();
     assert_eq!(read_large, large_content);
 }
@@ -2025,39 +2074,43 @@ fn test_file_persistence_after_operations() {
 #[test]
 fn test_defragmentation_functionality() {
     use tempfile::tempdir;
-    
+
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("defrag_test.vault");
-    
+
     // Create vault and add files
-    let mut vault = crate::vault::Vault::create(&path, "test_password", crate::crypto::CipherType::Aes256Gcm).unwrap();
-    
+    let mut vault =
+        crate::vault::Vault::create(&path, "test_password", crate::crypto::CipherType::Aes256Gcm)
+            .unwrap();
+
     // Add several files
     for i in 0..5 {
         let content = vec![i as u8; 1024];
-        vault.write_file(&format!("file_{}.txt", i), &content).unwrap();
+        vault
+            .write_file(&format!("file_{}.txt", i), &content)
+            .unwrap();
     }
-    
+
     let initial_usage = vault.get_space_usage().unwrap();
     assert_eq!(initial_usage.file_count, 5);
-    
+
     // Remove some files to create fragmentation
     // Note: We need to implement file deletion first, but for now we can test the defrag logic
-    
+
     // Test defragmentation
     let _needs_defrag_before = vault.needs_defragmentation().unwrap();
     vault.defragment().unwrap();
-    
+
     // Verify files are still accessible after defragmentation
     let files = vault.list_files().unwrap();
     assert_eq!(files.len(), 5);
-    
+
     for i in 0..5 {
         let filename = format!("file_{}.txt", i);
         let content = vault.read_file(&filename).unwrap();
         assert_eq!(content, vec![i as u8; 1024]);
     }
-    
+
     let final_usage = vault.get_space_usage().unwrap();
     assert_eq!(final_usage.file_count, 5);
 }
@@ -2068,10 +2121,10 @@ fn test_chunk_offset_calculation() {
     header.file_table_offset = 1000;
     header.file_table_reserved_size = 1024 * 1024; // 1MB
     header.chunk_data_start_offset = 0; // Will be calculated
-    
+
     let calculated_offset = VaultFormat::calculate_chunk_data_start_offset(&header);
     assert_eq!(calculated_offset, 1000 + 1024 * 1024); // file_table_offset + reserved_size
-    
+
     // Test with explicit chunk_data_start_offset
     header.chunk_data_start_offset = 2000000;
     let explicit_offset = VaultFormat::calculate_chunk_data_start_offset(&header);
@@ -2081,10 +2134,10 @@ fn test_chunk_offset_calculation() {
 #[test]
 fn test_backward_compatibility() {
     use tempfile::tempdir;
-    
+
     let temp_dir = tempdir().unwrap();
     let path = temp_dir.path().join("compat_test.vault");
-    
+
     // Create a header without the new fields (simulating old format)
     let old_header_json = r#"{
         "cipher": "aes-256-gcm",
@@ -2103,25 +2156,26 @@ fn test_backward_compatibility() {
         "created_at": "2024-01-01T00:00:00Z",
         "platform_hint": "test"
     }"#;
-    
+
     // Manually create a file with old format
     {
         use std::io::Write;
         let mut file = std::fs::File::create(&path).unwrap();
         file.write_all(b"VLT1").unwrap(); // Magic
         file.write_all(&[0x01]).unwrap(); // Version
-        file.write_all(&(old_header_json.len() as u32).to_be_bytes()).unwrap(); // Header length
+        file.write_all(&(old_header_json.len() as u32).to_be_bytes())
+            .unwrap(); // Header length
         file.write_all(old_header_json.as_bytes()).unwrap(); // Header
     }
-    
+
     // Should be able to read the old format
     let (header, _) = VaultFormat::read_vault_header(&path).unwrap();
-    
+
     // New fields should have default values
     assert_eq!(header.file_table_reserved_size, 1024 * 1024); // Default 1MB
     assert_eq!(header.chunk_data_start_offset, 0); // Default 0
     assert_eq!(header.file_table_version, 1); // Default 1
-    
+
     // Should be able to validate
     VaultFormat::validate_header(&header).unwrap();
 }
@@ -2268,7 +2322,7 @@ fn test_malformed_header_rejection() {
 
 #[test]
 fn test_filename_encryption_deterministic() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
     let filename_key = generate_random_bytes(32).unwrap();
@@ -2276,16 +2330,22 @@ fn test_filename_encryption_deterministic() {
     let filename = "test_file.txt";
 
     // Encrypt the same filename multiple times
-    let (encrypted1, nonce1) = VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
-    let (encrypted2, nonce2) = VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
+    let (encrypted1, nonce1) =
+        VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
+    let (encrypted2, nonce2) =
+        VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
 
     // Should produce identical results (deterministic)
     assert_eq!(encrypted1, encrypted2);
     assert_eq!(nonce1, nonce2);
 
     // Decrypt both and verify they match
-    let decrypted1 = VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key).unwrap();
-    let decrypted2 = VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key).unwrap();
+    let decrypted1 =
+        VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key)
+            .unwrap();
+    let decrypted2 =
+        VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key)
+            .unwrap();
 
     assert_eq!(decrypted1, filename);
     assert_eq!(decrypted2, filename);
@@ -2294,7 +2354,7 @@ fn test_filename_encryption_deterministic() {
 
 #[test]
 fn test_filename_encryption_different_names() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
     let filename_key = generate_random_bytes(32).unwrap();
@@ -2303,16 +2363,22 @@ fn test_filename_encryption_different_names() {
     let filename2 = "file2.txt";
 
     // Encrypt different filenames
-    let (encrypted1, nonce1) = VaultFormat::encrypt_filename(filename1, engine.as_ref(), &filename_key).unwrap();
-    let (encrypted2, nonce2) = VaultFormat::encrypt_filename(filename2, engine.as_ref(), &filename_key).unwrap();
+    let (encrypted1, nonce1) =
+        VaultFormat::encrypt_filename(filename1, engine.as_ref(), &filename_key).unwrap();
+    let (encrypted2, nonce2) =
+        VaultFormat::encrypt_filename(filename2, engine.as_ref(), &filename_key).unwrap();
 
     // Should produce different results
     assert_ne!(encrypted1, encrypted2);
     assert_ne!(nonce1, nonce2);
 
     // Decrypt and verify
-    let decrypted1 = VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key).unwrap();
-    let decrypted2 = VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key).unwrap();
+    let decrypted1 =
+        VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key)
+            .unwrap();
+    let decrypted2 =
+        VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key)
+            .unwrap();
 
     assert_eq!(decrypted1, filename1);
     assert_eq!(decrypted2, filename2);
@@ -2320,7 +2386,7 @@ fn test_filename_encryption_different_names() {
 
 #[test]
 fn test_filename_encryption_different_keys() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
     let filename_key1 = generate_random_bytes(32).unwrap();
@@ -2329,8 +2395,10 @@ fn test_filename_encryption_different_keys() {
     let filename = "test_file.txt";
 
     // Encrypt with different keys
-    let (encrypted1, nonce1) = VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key1).unwrap();
-    let (encrypted2, nonce2) = VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key2).unwrap();
+    let (encrypted1, nonce1) =
+        VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key1).unwrap();
+    let (encrypted2, nonce2) =
+        VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key2).unwrap();
 
     // Should produce different results even with same filename
     assert_ne!(encrypted1, encrypted2);
@@ -2338,38 +2406,51 @@ fn test_filename_encryption_different_keys() {
     assert_eq!(nonce1, nonce2);
 
     // Decrypt with correct keys
-    let decrypted1 = VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key1).unwrap();
-    let decrypted2 = VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key2).unwrap();
+    let decrypted1 =
+        VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key1)
+            .unwrap();
+    let decrypted2 =
+        VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key2)
+            .unwrap();
 
     assert_eq!(decrypted1, filename);
     assert_eq!(decrypted2, filename);
 
     // Decrypt with wrong keys should fail
-    assert!(VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key2).is_err());
-    assert!(VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key1).is_err());
+    assert!(
+        VaultFormat::decrypt_filename(&encrypted1, &nonce1, engine.as_ref(), &filename_key2)
+            .is_err()
+    );
+    assert!(
+        VaultFormat::decrypt_filename(&encrypted2, &nonce2, engine.as_ref(), &filename_key1)
+            .is_err()
+    );
 }
 
 #[test]
 fn test_filename_encryption_unicode() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
     let filename_key = generate_random_bytes(32).unwrap();
 
     let unicode_filenames = [
-        "файл.txt",           // Cyrillic
-        "文件.txt",           // Chinese
-        "ファイル.txt",        // Japanese
-        "🔒secure_file.txt",  // Emoji
-        "café_résumé.pdf",    // Accented characters
+        "файл.txt",          // Cyrillic
+        "文件.txt",          // Chinese
+        "ファイル.txt",      // Japanese
+        "🔒secure_file.txt", // Emoji
+        "café_résumé.pdf",   // Accented characters
     ];
 
     for filename in &unicode_filenames {
         // Encrypt
-        let (encrypted, nonce) = VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
+        let (encrypted, nonce) =
+            VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
 
         // Decrypt
-        let decrypted = VaultFormat::decrypt_filename(&encrypted, &nonce, engine.as_ref(), &filename_key).unwrap();
+        let decrypted =
+            VaultFormat::decrypt_filename(&encrypted, &nonce, engine.as_ref(), &filename_key)
+                .unwrap();
 
         assert_eq!(decrypted, *filename);
     }
@@ -2377,7 +2458,7 @@ fn test_filename_encryption_unicode() {
 
 #[test]
 fn test_file_entry_creation_and_validation() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
     use chrono::Utc;
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
@@ -2397,7 +2478,8 @@ fn test_file_entry_creation_and_validation() {
         false, // not a directory
         engine.as_ref(),
         &filename_key,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Validate entry
     assert!(entry.validate().is_ok());
@@ -2409,13 +2491,15 @@ fn test_file_entry_creation_and_validation() {
     assert!(!entry.iv.is_empty());
 
     // Decrypt filename
-    let decrypted_name = entry.decrypt_filename(engine.as_ref(), &filename_key).unwrap();
+    let decrypted_name = entry
+        .decrypt_filename(engine.as_ref(), &filename_key)
+        .unwrap();
     assert_eq!(decrypted_name, filename);
 }
 
 #[test]
 fn test_file_entry_directory() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
     use chrono::Utc;
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
@@ -2434,7 +2518,8 @@ fn test_file_entry_directory() {
         true, // is a directory
         engine.as_ref(),
         &filename_key,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Validate entry
     assert!(entry.validate().is_ok());
@@ -2443,13 +2528,15 @@ fn test_file_entry_directory() {
     assert_eq!(entry.chunks.len(), 0);
 
     // Decrypt dirname
-    let decrypted_name = entry.decrypt_filename(engine.as_ref(), &filename_key).unwrap();
+    let decrypted_name = entry
+        .decrypt_filename(engine.as_ref(), &filename_key)
+        .unwrap();
     assert_eq!(decrypted_name, dirname);
 }
 
 #[test]
 fn test_file_entry_with_chunks() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes, generate_nonce};
+    use crate::crypto::{create_crypto_engine, generate_nonce, generate_random_bytes, CipherType};
     use chrono::Utc;
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
@@ -2469,7 +2556,8 @@ fn test_file_entry_with_chunks() {
         false,
         engine.as_ref(),
         &filename_key,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Add chunks
     for i in 0..num_chunks {
@@ -2493,7 +2581,7 @@ fn test_file_entry_with_chunks() {
 
 #[test]
 fn test_file_entry_validation_errors() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
     use chrono::Utc;
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
@@ -2508,7 +2596,8 @@ fn test_file_entry_validation_errors() {
         false,
         engine.as_ref(),
         &filename_key,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Test empty encrypted filename
     entry.name_encrypted.clear();
@@ -2523,7 +2612,8 @@ fn test_file_entry_validation_errors() {
         false,
         engine.as_ref(),
         &filename_key,
-    ).unwrap();
+    )
+    .unwrap();
     entry.iv.clear();
     assert!(entry.validate().is_err());
 
@@ -2536,19 +2626,20 @@ fn test_file_entry_validation_errors() {
         false,
         engine.as_ref(),
         &filename_key,
-    ).unwrap();
+    )
+    .unwrap();
     // File has size > 0 but no chunks - should pass validation at this stage
     assert!(entry.validate().is_ok());
 }
 
 #[test]
 fn test_encrypted_file_table_operations() {
-    use crate::crypto::{create_crypto_engine, CipherType, derive_all_subkeys, derive_key};
-    use tempfile::NamedTempFile;
+    use crate::crypto::{create_crypto_engine, derive_all_subkeys, derive_key, CipherType};
     use chrono::Utc;
+    use tempfile::NamedTempFile;
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
-    
+
     // Create test subkeys
     let password = "test_password";
     let salt = vec![1u8; 32];
@@ -2557,13 +2648,13 @@ fn test_encrypted_file_table_operations() {
 
     // Create test header with proper offsets
     let mut header = tests::create_test_header();
-    
+
     // Calculate proper file table offset
     let temp_header_json = serde_json::to_string_pretty(&header).unwrap();
     let approx_header_size = 4 + 1 + 4 + temp_header_json.len() as u64;
     header.file_table_offset = approx_header_size;
     header.chunk_data_start_offset = approx_header_size + header.file_table_reserved_size;
-    
+
     // Second pass with updated header to get exact size
     let final_header_json = serde_json::to_string_pretty(&header).unwrap();
     let final_header_size = 4 + 1 + 4 + final_header_json.len() as u64;
@@ -2589,7 +2680,8 @@ fn test_encrypted_file_table_operations() {
             *is_dir,
             engine.as_ref(),
             &subkeys.filename_key,
-        ).unwrap();
+        )
+        .unwrap();
         file_table.files.push(entry);
     }
 
@@ -2601,13 +2693,8 @@ fn test_encrypted_file_table_operations() {
     VaultFormat::create_vault_file(path, &header).unwrap();
 
     // Write encrypted file table
-    VaultFormat::write_encrypted_file_table(
-        path,
-        &header,
-        &file_table,
-        engine.as_ref(),
-        &subkeys,
-    ).unwrap();
+    VaultFormat::write_encrypted_file_table(path, &header, &file_table, engine.as_ref(), &subkeys)
+        .unwrap();
 
     // Read back encrypted file table using the header's file_table_offset
     let decrypted_table = VaultFormat::read_encrypted_file_table(
@@ -2616,14 +2703,17 @@ fn test_encrypted_file_table_operations() {
         header.file_table_offset,
         engine.as_ref(),
         &subkeys,
-    ).unwrap();
+    )
+    .unwrap();
 
     // Verify file table contents
     assert_eq!(decrypted_table.files.len(), 3);
 
     // Decrypt and verify filenames
     for (i, entry) in decrypted_table.files.iter().enumerate() {
-        let decrypted_name = entry.decrypt_filename(engine.as_ref(), &subkeys.filename_key).unwrap();
+        let decrypted_name = entry
+            .decrypt_filename(engine.as_ref(), &subkeys.filename_key)
+            .unwrap();
         assert_eq!(decrypted_name, files[i].0);
         assert_eq!(entry.size, files[i].1);
         assert_eq!(entry.is_dir, files[i].2);
@@ -2632,11 +2722,11 @@ fn test_encrypted_file_table_operations() {
 
 #[test]
 fn test_file_table_authentication() {
-    use crate::crypto::{create_crypto_engine, CipherType, derive_all_subkeys, derive_key};
+    use crate::crypto::{create_crypto_engine, derive_all_subkeys, derive_key, CipherType};
     use tempfile::NamedTempFile;
 
     let engine = create_crypto_engine(CipherType::Aes256Gcm).unwrap();
-    
+
     // Create test subkeys
     let password = "test_password";
     let salt = vec![1u8; 32];
@@ -2655,13 +2745,8 @@ fn test_file_table_authentication() {
 
     // Create vault file and write encrypted file table
     VaultFormat::create_vault_file(path, &header).unwrap();
-    VaultFormat::write_encrypted_file_table(
-        path,
-        &header,
-        &file_table,
-        engine.as_ref(),
-        &subkeys,
-    ).unwrap();
+    VaultFormat::write_encrypted_file_table(path, &header, &file_table, engine.as_ref(), &subkeys)
+        .unwrap();
 
     // Create modified header (should cause authentication failure)
     let mut modified_header = header.clone();
@@ -2685,7 +2770,7 @@ fn test_file_table_authentication() {
 
 #[test]
 fn test_cross_cipher_filename_encryption() {
-    use crate::crypto::{create_crypto_engine, CipherType, generate_random_bytes};
+    use crate::crypto::{create_crypto_engine, generate_random_bytes, CipherType};
 
     let ciphers = [CipherType::Aes256Gcm, CipherType::XChaCha20Poly1305];
     let filename = "test_file.txt";
@@ -2695,10 +2780,13 @@ fn test_cross_cipher_filename_encryption() {
         let engine = create_crypto_engine(*cipher).unwrap();
 
         // Encrypt filename
-        let (encrypted, nonce) = VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
+        let (encrypted, nonce) =
+            VaultFormat::encrypt_filename(filename, engine.as_ref(), &filename_key).unwrap();
 
         // Decrypt filename
-        let decrypted = VaultFormat::decrypt_filename(&encrypted, &nonce, engine.as_ref(), &filename_key).unwrap();
+        let decrypted =
+            VaultFormat::decrypt_filename(&encrypted, &nonce, engine.as_ref(), &filename_key)
+                .unwrap();
 
         assert_eq!(decrypted, filename);
         assert_eq!(nonce.len(), engine.nonce_size());
