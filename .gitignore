@@ -164,6 +164,8 @@ Thumbs.db
 /logs/*.log
 dirlocker.log
 vault.log
+*_log*.txt
+tests_*.txt
 
 # -----------------------------------------------------------------------------
 # Sensitive Data and Secrets
