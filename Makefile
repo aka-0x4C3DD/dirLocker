@@ -58,6 +58,23 @@ build-gui: resources
 	# CGO_ENABLED=1 is required for linking against the Rust core
 	export CGO_ENABLED=1 && go build -o $(BINARY_DIR)/dirlocker-gui$(EXTENSION) ./cmd/gui
 
+package-windows: build-gui
+	$(call print_step,Packaging for Windows (MSI))
+ifeq ($(IS_WINDOWS),1)
+	@mkdir -p dist
+	@mkdir -p build/windows
+	@if command -v candle >/dev/null 2>&1; then \
+		echo "Compiling WiX installer..."; \
+		candle -out dist/installer.wixobj build/windows/installer.wxs; \
+		echo "Linking MSI..."; \
+		light -ext WixUIExtension -out dist/dirLocker.msi dist/installer.wixobj; \
+		echo -e "$(green)MSI Installer created at dist/dirLocker.msi$(reset)"; \
+	else \
+		echo "Warning: WiX Toolset (candle/light) not found. Skipping MSI generation."; \
+	fi
+endif
+
+
 package-linux: build-gui
 	$(call print_step,Packaging for Linux)
 	@mkdir -p $(BINARY_DIR)/linux/share/applications
