@@ -1,179 +1,145 @@
-# dirLocker
+<div align="center">
 
-A cross-platform encrypted file vault application with advanced cryptographic features, file hiding capabilities, and filesystem mounting support.
+# 🔒 dirLocker
+### secure • cross-platform • invisible
 
-## Features
+[![CI Status](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?style=flat-square&logo=github)](https://github.com/aka-0x4C3DD/dirLocker/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat-square&logo=go)](go.mod)
+[![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=flat-square&logo=rust)](vault-core/Cargo.toml)
+[![Platform](https://img.shields.io/badge/platform-win%20%7C%20linux%20%7C%20macos-lightgrey?style=flat-square)](README.md)
 
-- **Encrypted Vaults**: Create secure encrypted containers using AES-256-GCM or XChaCha20-Poly1305
-- **File Hiding**: Make files completely invisible to the operating system
-- **Filesystem Mounting**: Mount vaults as virtual drives (FUSE, Dokany, WinFSP)
-- **Secure Sharing**: Share vault access using X25519 key exchange
-- **Recovery Keys**: Generate recovery keys for vault access restoration
-- **Cross-Platform**: Windows, Linux, and macOS support
-- **CLI & GUI**: Both command-line and graphical interfaces
+[Getting Started](#-quick-start) • [Features](#-features) • [Documentation](docs/) • [Contributing](#-contributing)
 
-## Project Structure
+</div>
 
-```
-dirLocker/
-├── bin/                    # Compiled executables (gitignored)
-├── cmd/                    # Application entry points
-│   ├── cli/               # Command-line interface
-│   ├── gui/               # Graphical interface (Fyne)
-│   ├── fuse/              # FUSE filesystem daemon
-│   ├── dokany/            # Dokany filesystem (Windows)
-│   └── winfsp/            # WinFSP filesystem (Windows)
-├── pkg/                    # Public Go packages
-│   ├── vault/             # Vault management API
-│   ├── config/            # Configuration management
-│   ├── logging/           # Secure logging
-│   ├── filehider/         # File hiding system
-│   ├── mount/             # Filesystem mounting
-│   └── iconmanager/       # Icon management
-├── internal/               # Private Go packages
-│   ├── cli/               # CLI implementations
-│   ├── gui/               # GUI implementations
-│   ├── core/              # Core business logic
-│   ├── vault/             # Low-level vault operations
-│   ├── fuse/              # FUSE implementation
-│   ├── dokany/            # Dokany implementation
-│   └── winfsp/            # WinFSP implementation
-├── vault-core/             # Rust cryptographic core library
-│   ├── src/               # Rust source code
-│   └── target/            # Rust build artifacts (gitignored)
-├── tests/                  # Integration tests
-├── docs/                   # Documentation
-│   ├── implementation/    # Implementation summaries
-│   └── *.md              # Architecture and design docs
-├── scripts/                # Build scripts
-├── tools/                  # Python development tools
-├── examples/               # Example code
-├── .kiro/                  # Kiro IDE configuration
-│   ├── settings/          # IDE settings
-│   ├── specs/             # Feature specifications
-│   └── steering/          # Steering rules
-└── log/                    # Application logs (gitignored)
-```
+---
 
-## Quick Start
+## 💫 About
+**dirLocker** is a state-of-the-art encrypted file vault application designed for paranoia-level security and seamless usability. It combines a high-performance Rust cryptographic core with a flexible Go application layer to deliver military-grade encryption, plausible deniability, and cross-platform native interfaces.
+
+Whether you need to secure personal documents, hide sensitive data, or share secrets securely, dirLocker provides a fortress for your digital assets.
+
+## ✨ Features
+
+| Feature | Description |
+| :--- | :--- |
+| **🔐 Strong Encryption** | AES-256-GCM and XChaCha20-Poly1305 (Pure Rust Core) |
+| **👻 Plausible Deniability** | Advanced file hiding capabilities make vaults invisible to the OS |
+| **📂 Virtual Drive** | Mount vaults as native drives using FUSE, Dokany, or WinFSP |
+| **🤝 Secure Sharing** | Share access securely via X25519 authenticated key exchange |
+| **🔑 Recovery System** | Cryptographic recovery keys ensure you never lose access |
+| **🖥️ Cross-Platform** | Native CLI and GUI experiences for Windows, Linux, and macOS |
+
+## 🚀 Quick Start
 
 ### Prerequisites
+*   **Rust**: 1.70+
+*   **Go**: 1.24+
+*   **GCC**: Required for CGO
 
-- **Rust**: 1.70+ (for building vault-core)
-- **Go**: 1.24+ (for building applications)
-- **Python**: 3.13+ (for development tools)
-- **CGO**: Enabled for Rust-Go integration
+### 🛠️ Building
 
-### Building
-
-#### Windows (MinGW)
-
-```cmd
-REM Build Rust core
+**Windows (PowerShell)**
+```powershell
+# 1. Build Rust Core
 cd vault-core
 cargo build --release --target x86_64-pc-windows-gnu
 
-REM Build Go applications
+# 2. Build Go App
 cd ..
-set CGO_ENABLED=1
+$env:CGO_ENABLED="1"
 go build -o bin/dirlocker-cli.exe ./cmd/cli
 go build -o bin/dirlocker-gui.exe ./cmd/gui
 ```
 
-#### Linux/macOS
-
+**Linux / macOS**
 ```bash
-# Build Rust core
-cd vault-core
-cargo build --release
+# 1. Build Rust Core
+cd vault-core && cargo build --release
 
-# Build Go applications
+# 2. Build Go App
 cd ..
 export CGO_ENABLED=1
 go build -o bin/dirlocker ./cmd/cli
 go build -o bin/dirlocker-gui ./cmd/gui
 ```
 
-### Usage
+## 🎮 Usage
 
-#### CLI
-
+### Command Line Interface
 ```bash
-# Create a vault
-./bin/dirlocker-cli create myvault.vault
+# Create a new vault
+./bin/dirlocker create secure.vault
 
-# Open and list contents
-./bin/dirlocker-cli list myvault.vault
+# Open and interact
+./bin/dirlocker open secure.vault
 
-# Hide a file
-./bin/dirlocker-cli hide /path/to/file
-
-# Mount a vault
-./bin/dirlocker-cli mount myvault.vault /mnt/vault
+# Mount as a drive (Windows)
+./bin/dirlocker mount secure.vault Z:
 ```
 
-#### GUI
-
+### Graphical Interface
+Simply verify the build and launch:
 ```bash
-# Launch the GUI application
 ./bin/dirlocker-gui
 ```
 
-## Architecture
+## 🏗️ Architecture
 
-dirLocker uses a layered architecture:
+The project follows a robust layered architecture:
 
-1. **Rust Core Library** (`vault-core/`): Cryptographic operations and vault format
-2. **Go Application Layer** (`pkg/`, `internal/`): Business logic and platform integration
-3. **User Interfaces** (`cmd/`): CLI and GUI applications
-4. **Platform Integration**: Filesystem mounting (FUSE, Dokany, WinFSP)
-
-## Security Features
-
-- **AES-256-GCM**: Hardware-accelerated encryption
-- **XChaCha20-Poly1305**: Pure Rust implementation
-- **Argon2id**: Strong key derivation
-- **X25519**: Elliptic curve key exchange
-- **HKDF**: Key expansion and subkey derivation
-- **AEAD**: Authenticated encryption for all data
-- **Plausible Deniability**: Hidden file tables
-
-## Documentation
-
-- [Architecture Documentation](docs/)
-- [Implementation Summaries](docs/implementation/)
-- [Filesystem Mounting](docs/FILESYSTEM_MOUNTING.md)
-- [Vault Corruption Fixes](docs/VAULT_CORRUPTION_FIXES.md)
-- [Feature Specifications](.kiro/specs/)
-
-## Development
-
-### Running Tests
-
-```bash
-# Go tests
-go test ./pkg/...
-go test ./internal/...
-go test ./tests/...
-
-# Rust tests
-cd vault-core
-cargo test
+```mermaid
+graph TD
+    UI[🖥️ GUI / CLI] --> Go[🐹 Go Application Layer]
+    Go --> Bindings[🔗 CGO Bindings]
+    Bindings --> Rust[🦀 Rust Vault Core]
+    Rust --> Crypto[🔒 Ring / ChaCha20]
 ```
 
-### Development Tools
+*   **Rust Core**: Handles all low-level crypto, file format parsing, and memory security.
+*   **Go Layer**: Manages OS integration, file mounting, and high-level logic.
+*   **Interfaces**: Fyne-based GUI and Cobra-based CLI.
 
-```bash
-# Python tools (MCP integration)
-cd tools
-uv sync
-uv run python main.py
+## 📂 Project Structure
+
+```text
+dirLocker/
+├── 🦀 vault-core/        # Rust cryptographic engine
+├── 🐹 pkg/               # Public Go APIs (Vault, Config, Mount)
+├── 🖥️ cmd/               # Entry points (CLI, GUI)
+├── 🔧 internal/          # Private implementation logic
+├── 📜 scripts/           # Build & Packaging automation
+├── 🧪 tests/             # Integration Test Suite
+└── 📄 docs/              # Comprehensive Documentation
 ```
 
-## License
+## 🧪 Testing
 
-See [LICENSE](LICENSE) file for details.
+We maintain a comprehensive test suite covering unit, integration, and fuzz testing.
 
-## Contributing
+```bash
+# Run the full suite (requires CGO)
+export CGO_ENABLED=1
+go test -tags cgo -v ./...
+```
 
-Contributions are welcome! Please see the [specifications](.kiro/specs/) for planned features and implementation details.
+## 🤝 Contributing
+
+Contributions are welcome! Check out our [Feature Specifications](.kiro/specs/) to see what's planned.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## 📜 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+---
+
+<div align="center">
+Made with ❤️ by aka-0x4C3DD
+</div>
