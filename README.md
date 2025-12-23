@@ -9,7 +9,7 @@
 [![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=flat-square&logo=rust)](vault-core/Cargo.toml)
 [![Platform](https://img.shields.io/badge/platform-win%20%7C%20linux%20%7C%20macos-lightgrey?style=flat-square)](README.md)
 
-[Getting Started](#-quick-start) • [Features](#-features) • [Documentation](docs/) • [Contributing](#-contributing)
+[Getting Started](#-quick-start) • [Features](#-features) • [Dev Guide](docs/development.md) • [Architecture](docs/architecture.md) • [Contributing](#-contributing)
 
 </div>
 
