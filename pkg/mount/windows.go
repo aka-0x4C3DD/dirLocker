@@ -332,8 +332,16 @@ func (w *WindowsMounter) isRunningAsAdmin() bool {
 }
 
 func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// Create command to run our Dokany filesystem implementation
+	// Create command to run our Dokany filesystem implementation via helper
+	exePath, err := os.Executable()
+	if err != nil {
+		w.logger.Error("Failed to get executable path", "error", err)
+		// Fallback to "dirlocker" if we can't find the executable
+		exePath = "dirlocker"
+	}
+
 	args := []string{
+		"mount-helper", "dokany",
 		"--vault", vault.GetPath(),
 		"--drive", options.MountPoint,
 	}
@@ -346,13 +354,25 @@ func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *Moun
 		args = append(args, "--debug")
 	}
 
-	// Use our Dokany filesystem implementation
-	return exec.Command("dirlocker-dokany.exe", args...)
+	if w.requiresElevation() && !w.isRunningAsAdmin() {
+		// If elevation is required but not present, we can't easily elevate from here
+		// The caller should have ensured elevation, or we'll fail
+		w.logger.Warn("Mounting requires elevation but process is not running as admin")
+	}
+
+	return exec.Command(exePath, args...)
 }
 
 func (w *WindowsMounter) createWinFSPCommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// Create command to run our WinFSP filesystem implementation
+	// Create command to run our WinFSP filesystem implementation via helper
+	exePath, err := os.Executable()
+	if err != nil {
+		w.logger.Error("Failed to get executable path", "error", err)
+		exePath = "dirlocker"
+	}
+
 	args := []string{
+		"mount-helper", "winfsp",
 		"--vault", vault.GetPath(),
 		"--drive", options.MountPoint,
 	}
@@ -365,8 +385,7 @@ func (w *WindowsMounter) createWinFSPCommand(vault VaultInterface, options *Moun
 		args = append(args, "--debug")
 	}
 
-	// Use our WinFSP filesystem implementation
-	return exec.Command("dirlocker-winfsp.exe", args...)
+	return exec.Command(exePath, args...)
 }
 
 func (w *WindowsMounter) unmountDokany(mountPoint string) error {

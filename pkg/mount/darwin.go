@@ -315,8 +315,15 @@ func (m *MacOSMounter) isMountPointMounted(mountPoint string) bool {
 }
 
 func (m *MacOSMounter) createFUSECommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
-	// Create command to run our FUSE filesystem implementation
+	// Create command to run our FUSE filesystem implementation via helper
+	exePath, err := os.Executable()
+	if err != nil {
+		m.logger.Error("Failed to get executable path", "error", err)
+		exePath = "dirlocker"
+	}
+
 	args := []string{
+		"mount-helper", "fuse",
 		"--vault", vault.GetPath(),
 		"--mountpoint", options.MountPoint,
 	}
@@ -344,8 +351,7 @@ func (m *MacOSMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		args = append(args, "--fuse-option", fmt.Sprintf("entry_timeout=%d", timeout))
 	}
 
-	// Use our FUSE filesystem implementation
-	return exec.Command("dirlocker-fuse", args...)
+	return exec.Command(exePath, args...)
 }
 
 func (m *MacOSMounter) gracefulUnmount(mountPoint string) error {

@@ -11,6 +11,12 @@
 *.dll
 *.so
 *.dylib
+*.test
+*.out
+*.syso
+*.vault
+dist/
+vendor/
 
 # Specific build outputs
 /cli.exe
