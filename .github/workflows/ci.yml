@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  GO_VERSION: '1.24'
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev
+
+      - name: Build Rust Core
+        run: |
+          cd vault-core
+          cargo build --release --verbose
+          cargo test --verbose
+
+      - name: Test Go Applications
+        env:
+          CGO_ENABLED: 1
+        run: |
+          # Ensure Go can find the Rust library if needed (adjusting LD_LIBRARY_PATH if strictly necessary)
+          # Based on README, simple go build/test is sufficient if CGO_ENABLED=1
+          go test -v ./pkg/... ./internal/... ./tests/...
+          
+      - name: Build Binaries (Check)
+        env:
+          CGO_ENABLED: 1
+        run: |
+          go build -v -o bin/dirlocker-cli ./cmd/cli
+          go build -v -o bin/dirlocker-gui ./cmd/gui

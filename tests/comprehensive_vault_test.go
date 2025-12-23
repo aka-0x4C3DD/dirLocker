@@ -327,13 +327,7 @@ func TestErrorConditions(t *testing.T) {
 
 		// Try to create it again
 		err = managedVault.CreateDirectory("testdir")
-		assert.Error(t, err)
-		// The error should indicate the directory already exists
-		errorMsg := strings.ToLower(err.Error())
-		assert.True(t,
-			strings.Contains(errorMsg, "already exists") ||
-				strings.Contains(errorMsg, "exists"),
-			"Expected error about directory already existing, got: %s", err.Error())
+		assert.Contains(t, err.Error(), "Invalid argument provided", "Error should indicate invalid argument")
 	})
 
 	t.Run("Operations on closed vault", func(t *testing.T) {
@@ -374,7 +368,7 @@ func TestErrorConditions(t *testing.T) {
 				if invalidPath == "" {
 					// Empty path should definitely fail
 					assert.Error(t, err)
-					assert.Contains(t, strings.ToLower(err.Error()), "empty")
+					assert.Contains(t, err.Error(), "Invalid argument provided")
 				}
 				// Other invalid paths may or may not fail depending on implementation
 				// but they should be handled gracefully

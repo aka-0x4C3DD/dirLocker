@@ -169,7 +169,7 @@ func TestSystemTray(t *testing.T) {
 // TestVaultOperations tests vault operations through the GUI
 func TestVaultOperations(t *testing.T) {
 	// Skip if CGO is disabled - for now, always skip since vault operations are not fully implemented
-	t.Skip("Vault operations not fully implemented in GUI yet")
+	// t.Skip("Vault operations not fully implemented in GUI yet")
 
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "dirlocker_gui_test_*")
@@ -211,7 +211,7 @@ func TestVaultOperations(t *testing.T) {
 	mainWindow.createVault(vaultPath, password, vault.CipherXChaCha20Poly1305, 65536, 3, 1)
 
 	// Wait for async operation
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Verify vault was created
 	_, err = os.Stat(vaultPath)
@@ -221,7 +221,7 @@ func TestVaultOperations(t *testing.T) {
 	mainWindow.openVault(vaultPath, password)
 
 	// Wait for async operation
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// Verify vault is in the list
 	openVaults := vaultManager.ListOpenVaults()

@@ -1,5 +1,5 @@
-//go:build windows
-// +build windows
+//go:build cgo && windows
+// +build cgo,windows
 
 package mount
 

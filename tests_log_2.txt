@@ -1,0 +1,379 @@
+=== RUN   TestCLIIntegration
+=== RUN   TestCLIIntegration/CLI_Help
+=== RUN   TestCLIIntegration/CLI_Version
+=== RUN   TestCLIIntegration/CLI_CreateVault
+=== RUN   TestCLIIntegration/CLI_ListVaults
+=== RUN   TestCLIIntegration/CLI_ShareCommands
+=== RUN   TestCLIIntegration/CLI_MountCommands
+=== RUN   TestCLIIntegration/CLI_ExtractCommand
+=== RUN   TestCLIIntegration/CLI_PushCommand
+=== RUN   TestCLIIntegration/CLI_PasswordCommand
+=== RUN   TestCLIIntegration/CLI_RecoveryCommand
+=== RUN   TestCLIIntegration/CLI_RepairCommand
+=== RUN   TestCLIIntegration/CLI_ConfigCommand
+=== RUN   TestCLIIntegration/CLI_InvalidCommand
+=== RUN   TestCLIIntegration/CLI_GlobalFlags
+--- PASS: TestCLIIntegration (2.38s)
+    --- PASS: TestCLIIntegration/CLI_Help (0.15s)
+    --- PASS: TestCLIIntegration/CLI_Version (0.04s)
+    --- PASS: TestCLIIntegration/CLI_CreateVault (0.08s)
+    --- PASS: TestCLIIntegration/CLI_ListVaults (0.04s)
+    --- PASS: TestCLIIntegration/CLI_ShareCommands (0.08s)
+    --- PASS: TestCLIIntegration/CLI_MountCommands (0.08s)
+    --- PASS: TestCLIIntegration/CLI_ExtractCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_PushCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_PasswordCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_RecoveryCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_RepairCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_ConfigCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_InvalidCommand (0.04s)
+    --- PASS: TestCLIIntegration/CLI_GlobalFlags (0.08s)
+=== RUN   TestCLICommandValidation
+=== RUN   TestCLICommandValidation/CreateCommand_MissingArgs
+=== RUN   TestCLICommandValidation/CreateCommand_InvalidCipher
+=== RUN   TestCLICommandValidation/MountCommand_MissingMountPoint
+=== RUN   TestCLICommandValidation/ExtractCommand_MissingArgs
+=== RUN   TestCLICommandValidation/PushCommand_MissingArgs
+--- PASS: TestCLICommandValidation (1.54s)
+    --- PASS: TestCLICommandValidation/CreateCommand_MissingArgs (0.14s)
+    --- PASS: TestCLICommandValidation/CreateCommand_InvalidCipher (0.04s)
+    --- PASS: TestCLICommandValidation/MountCommand_MissingMountPoint (0.04s)
+    --- PASS: TestCLICommandValidation/ExtractCommand_MissingArgs (0.04s)
+    --- PASS: TestCLICommandValidation/PushCommand_MissingArgs (0.04s)
+=== RUN   TestCLIErrorHandling
+=== RUN   TestCLIErrorHandling/NonexistentVault
+=== RUN   TestCLIErrorHandling/InvalidVaultPath
+--- PASS: TestCLIErrorHandling (1.44s)
+    --- PASS: TestCLIErrorHandling/NonexistentVault (0.15s)
+    --- PASS: TestCLIErrorHandling/InvalidVaultPath (0.04s)
+=== RUN   TestCLIConfigIntegration
+=== RUN   TestCLIConfigIntegration/CustomConfigPath
+    cli_integration_test.go:267: Config file not found at C:\Users\0X00SY~1\AppData\Local\Temp\TestCLIConfigIntegration632916376\001\config.json, this is expected behavior as config is created lazily
+=== RUN   TestCLIConfigIntegration/ConfigCommand
+--- PASS: TestCLIConfigIntegration (1.55s)
+    --- PASS: TestCLIConfigIntegration/CustomConfigPath (0.24s)
+    --- PASS: TestCLIConfigIntegration/ConfigCommand (0.04s)
+=== RUN   TestCLIPerformance
+=== RUN   TestCLIPerformance/StartupTime
+=== RUN   TestCLIPerformance/CommandResponseTime
+--- PASS: TestCLIPerformance (1.44s)
+    --- PASS: TestCLIPerformance/StartupTime (0.15s)
+    --- PASS: TestCLIPerformance/CommandResponseTime (0.04s)
+=== RUN   TestCLIDocumentation
+=== RUN   TestCLIDocumentation/Help_create
+=== RUN   TestCLIDocumentation/Help_open
+=== RUN   TestCLIDocumentation/Help_close
+=== RUN   TestCLIDocumentation/Help_list
+=== RUN   TestCLIDocumentation/Help_info
+=== RUN   TestCLIDocumentation/Help_password
+=== RUN   TestCLIDocumentation/Help_recovery
+=== RUN   TestCLIDocumentation/Help_share
+=== RUN   TestCLIDocumentation/Help_mount
+=== RUN   TestCLIDocumentation/Help_extract
+=== RUN   TestCLIDocumentation/Help_push
+=== RUN   TestCLIDocumentation/Help_repair
+=== RUN   TestCLIDocumentation/Help_config
+=== RUN   TestCLIDocumentation/Help_share_keygen
+=== RUN   TestCLIDocumentation/Help_share_add
+=== RUN   TestCLIDocumentation/Help_share_remove
+=== RUN   TestCLIDocumentation/Help_share_export
+=== RUN   TestCLIDocumentation/Help_mount_vault
+=== RUN   TestCLIDocumentation/Help_mount_unmount
+=== RUN   TestCLIDocumentation/Help_recovery_generate
+=== RUN   TestCLIDocumentation/Help_recovery_recover
+=== RUN   TestCLIDocumentation/Help_config_show
+=== RUN   TestCLIDocumentation/Help_config_set
+=== RUN   TestCLIDocumentation/Help_config_reset
+--- PASS: TestCLIDocumentation (2.49s)
+    --- PASS: TestCLIDocumentation/Help_create (0.14s)
+    --- PASS: TestCLIDocumentation/Help_open (0.05s)
+    --- PASS: TestCLIDocumentation/Help_close (0.05s)
+    --- PASS: TestCLIDocumentation/Help_list (0.05s)
+    --- PASS: TestCLIDocumentation/Help_info (0.05s)
+    --- PASS: TestCLIDocumentation/Help_password (0.04s)
+    --- PASS: TestCLIDocumentation/Help_recovery (0.04s)
+    --- PASS: TestCLIDocumentation/Help_share (0.04s)
+    --- PASS: TestCLIDocumentation/Help_mount (0.04s)
+    --- PASS: TestCLIDocumentation/Help_extract (0.04s)
+    --- PASS: TestCLIDocumentation/Help_push (0.04s)
+    --- PASS: TestCLIDocumentation/Help_repair (0.04s)
+    --- PASS: TestCLIDocumentation/Help_config (0.04s)
+    --- PASS: TestCLIDocumentation/Help_share_keygen (0.04s)
+    --- PASS: TestCLIDocumentation/Help_share_add (0.04s)
+    --- PASS: TestCLIDocumentation/Help_share_remove (0.04s)
+    --- PASS: TestCLIDocumentation/Help_share_export (0.04s)
+    --- PASS: TestCLIDocumentation/Help_mount_vault (0.04s)
+    --- PASS: TestCLIDocumentation/Help_mount_unmount (0.04s)
+    --- PASS: TestCLIDocumentation/Help_recovery_generate (0.04s)
+    --- PASS: TestCLIDocumentation/Help_recovery_recover (0.04s)
+    --- PASS: TestCLIDocumentation/Help_config_show (0.04s)
+    --- PASS: TestCLIDocumentation/Help_config_set (0.04s)
+    --- PASS: TestCLIDocumentation/Help_config_reset (0.04s)
+=== RUN   TestCLIPlaceholder
+    cli_test.go:11: CLI unit tests placeholder
+--- PASS: TestCLIPlaceholder (0.00s)
+=== RUN   TestDataIntegrity
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\data_integrity_test2492973631\\integrity_test.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\data_integrity_test2492973631\\integrity_test.vault"
+    comprehensive_vault_test.go:54: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:54
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestDataIntegrity
+time="2025-12-24T01:43:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestDataIntegrity (0.00s)
+=== RUN   TestConcurrentOperations
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_test3646039249\\concurrent_test.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_test3646039249\\concurrent_test.vault"
+    comprehensive_vault_test.go:150: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:150
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestConcurrentOperations
+time="2025-12-24T01:43:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestConcurrentOperations (0.00s)
+=== RUN   TestSpecialCharactersInFilenames
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\special_chars_test1580454486\\special_chars.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\special_chars_test1580454486\\special_chars.vault"
+    comprehensive_vault_test.go:227: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:227
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestSpecialCharactersInFilenames
+time="2025-12-24T01:43:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestSpecialCharactersInFilenames (0.00s)
+=== RUN   TestErrorConditions
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\error_conditions_test2014798411\\error_test.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\error_conditions_test2014798411\\error_test.vault"
+    comprehensive_vault_test.go:306: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:306
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestErrorConditions
+time="2025-12-24T01:43:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestErrorConditions (0.00s)
+=== RUN   TestRecoveryKeyValidation
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test3976166746\\recovery_validation.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test3976166746\\recovery_validation.vault"
+    comprehensive_vault_test.go:403: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:403
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestRecoveryKeyValidation
+time="2025-12-24T01:43:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestRecoveryKeyValidation (0.00s)
+=== RUN   TestPerformance
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\performance_test992655221\\performance.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\performance_test992655221\\performance.vault"
+    comprehensive_vault_test.go:501: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:501
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestPerformance
+time="2025-12-24T01:43:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestPerformance (0.00s)
+=== RUN   TestMemoryUsage
+time="2025-12-24T01:43:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:43:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test94186966\\memory_test_0.vault"
+time="2025-12-24T01:43:17+05:30" level=error msg="Failed to create vault" error="CGO not available - vault operations require Rust core library" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test94186966\\memory_test_0.vault"
+    comprehensive_vault_test.go:591: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:591
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestMemoryUsage
+--- FAIL: TestMemoryUsage (0.00s)
+=== RUN   TestFFIIntegration
+=== RUN   TestFFIIntegration/CreateVault
+    ffi_integration_test.go:22: CreateVault error (may be expected): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:26: CGO should be available now, but got CGO not available error
+=== RUN   TestFFIIntegration/OpenVault
+    ffi_integration_test.go:60: Skipping OpenVault test - CreateVault failed: CGO not available - vault operations require Rust core library
+=== RUN   TestFFIIntegration/GenerateSharingKeyPair
+    ffi_integration_test.go:67: GenerateSharingKeyPair error (may be expected): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:70: CGO should be available now, but got CGO not available error
+=== RUN   TestFFIIntegration/RecoveryKeyFromHex
+    ffi_integration_test.go:82: RecoveryKeyFromHex error (may be expected): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:85: CGO should be available now, but got CGO not available error
+=== RUN   TestFFIIntegration/RecoverWithKey
+    ffi_integration_test.go:99: RecoverWithKey error (expected): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:102: CGO should be available now, but got CGO not available error
+=== RUN   TestFFIIntegration/OpenWithRecipientKey
+    ffi_integration_test.go:115: OpenWithRecipientKey error (expected): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:118: CGO should be available now, but got CGO not available error
+--- FAIL: TestFFIIntegration (0.00s)
+    --- FAIL: TestFFIIntegration/CreateVault (0.00s)
+    --- PASS: TestFFIIntegration/OpenVault (0.00s)
+    --- FAIL: TestFFIIntegration/GenerateSharingKeyPair (0.00s)
+    --- FAIL: TestFFIIntegration/RecoveryKeyFromHex (0.00s)
+    --- FAIL: TestFFIIntegration/RecoverWithKey (0.00s)
+    --- FAIL: TestFFIIntegration/OpenWithRecipientKey (0.00s)
+=== RUN   TestVaultHandleMethods
+    ffi_integration_test.go:133: Could not create vault for handle testing: CGO not available - vault operations require Rust core library
+=== RUN   TestVaultHandleMethods/ChangePassword
+    ffi_integration_test.go:140: ChangePassword error (expected with nil handle): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:143: CGO should be available now, but got CGO not available error
+--- FAIL: TestVaultHandleMethods (0.00s)
+    --- FAIL: TestVaultHandleMethods/ChangePassword (0.00s)
+=== RUN   TestRecoveryKeyMethods
+    ffi_integration_test.go:269: Could not create recovery key for testing: CGO not available - vault operations require Rust core library
+=== RUN   TestRecoveryKeyMethods/ToHex
+    ffi_integration_test.go:277: ToHex error (may be expected): CGO not available - vault operations require Rust core library
+    ffi_integration_test.go:280: CGO should be available now, but got CGO not available error
+--- FAIL: TestRecoveryKeyMethods (0.00s)
+    --- FAIL: TestRecoveryKeyMethods/ToHex (0.00s)
+=== RUN   TestFileHidingWorkflow
+    file_hiding_comprehensive_test.go:39: Creating test files...
+    file_hiding_comprehensive_test.go:45: Created test file: financial_data.xlsx (204800 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: backup.zip (1048576 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: document.pdf (512000 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: photo.jpg (2097152 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: secret_notes.txt (85 bytes)
+    file_hiding_comprehensive_test.go:49: Verifying files are visible before hiding...
+    file_hiding_comprehensive_test.go:56: Hiding files...
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\financial_data.xlsx
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\backup.zip
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\document.pdf
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\photo.jpg
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\secret_notes.txt
+    file_hiding_comprehensive_test.go:66: Verifying files are hidden...
+    file_hiding_comprehensive_test.go:92: Listing hidden files...
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\document.pdf (size: 512000, hidden at: 2025-12-24T01:43:17+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\financial_data.xlsx (size: 204800, hidden at: 2025-12-24T01:43:17+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\photo.jpg (size: 2097152, hidden at: 2025-12-24T01:43:18+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\secret_notes.txt (size: 85, hidden at: 2025-12-24T01:43:18+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\backup.zip (size: 1048576, hidden at: 2025-12-24T01:43:17+05:30)
+    file_hiding_comprehensive_test.go:114: Testing individual file reveal...
+    file_hiding_comprehensive_test.go:131: Successfully revealed and verified file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test2233047209\financial_data.xlsx
+    file_hiding_comprehensive_test.go:138: Revealing all remaining hidden files...
+    file_hiding_comprehensive_test.go:146: Verifying all files are revealed and intact...
+    file_hiding_comprehensive_test.go:164: File hiding workflow test completed successfully
+--- PASS: TestFileHidingWorkflow (0.53s)
+=== RUN   TestFileHidingEdgeCases
+=== RUN   TestFileHidingEdgeCases/EmptyFile
+=== RUN   TestFileHidingEdgeCases/LargeFile
+    file_hiding_comprehensive_test.go:222: Hiding 10MB file took: 44.841ms
+    file_hiding_comprehensive_test.go:228: Revealing 10MB file took: 53.9032ms
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_spaces.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file-with-dashes.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_underscores.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file.with.dots.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file(with)parentheses.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file[with]brackets.txt
+=== RUN   TestFileHidingEdgeCases/NonExistentFile
+=== RUN   TestFileHidingEdgeCases/DirectoryHiding
+    file_hiding_comprehensive_test.go:303: Directory hiding is supported
+=== RUN   TestFileHidingEdgeCases/ConcurrentHiding
+--- PASS: TestFileHidingEdgeCases (1.87s)
+    --- PASS: TestFileHidingEdgeCases/EmptyFile (0.10s)
+    --- PASS: TestFileHidingEdgeCases/LargeFile (0.11s)
+    --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames (0.56s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_spaces.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file-with-dashes.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_underscores.txt (0.10s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file.with.dots.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file(with)parentheses.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file[with]brackets.txt (0.09s)
+    --- PASS: TestFileHidingEdgeCases/NonExistentFile (0.03s)
+    --- PASS: TestFileHidingEdgeCases/DirectoryHiding (0.09s)
+    --- PASS: TestFileHidingEdgeCases/ConcurrentHiding (0.97s)
+=== RUN   TestFileHidingPersistence
+    file_hiding_comprehensive_test.go:394: Hiding files with first hider instance...
+    file_hiding_comprehensive_test.go:406: Creating second hider instance (simulating restart)...
+    file_hiding_comprehensive_test.go:430: Revealing files with second hider instance...
+    file_hiding_comprehensive_test.go:453: File hiding persistence test completed successfully
+--- PASS: TestFileHidingPersistence (0.36s)
+=== RUN   TestFileHidingErrorRecovery
+=== RUN   TestFileHidingErrorRecovery/PartialHidingFailure
+=== RUN   TestFileHidingErrorRecovery/RevealNonHiddenFile
+=== RUN   TestFileHidingErrorRecovery/CorruptedHiddenFileRegistry
+    file_hiding_comprehensive_test.go:537: Reveal succeeded despite corruption - system recovered gracefully
+--- PASS: TestFileHidingErrorRecovery (0.24s)
+    --- PASS: TestFileHidingErrorRecovery/PartialHidingFailure (0.10s)
+    --- PASS: TestFileHidingErrorRecovery/RevealNonHiddenFile (0.03s)
+    --- PASS: TestFileHidingErrorRecovery/CorruptedHiddenFileRegistry (0.11s)
+=== RUN   TestFileHidingPerformance
+=== RUN   TestFileHidingPerformance/ManySmallFiles
+    file_hiding_comprehensive_test.go:564: Creating test files...
+    file_hiding_comprehensive_test.go:574: Hiding files...
+    file_hiding_comprehensive_test.go:581: Hiding 100 files took: 4.8902291s (avg: 48.902291ms per file)
+    file_hiding_comprehensive_test.go:589: Listing 100 hidden files took: 28.6822ms
+    file_hiding_comprehensive_test.go:598: Revealing 100 files took: 4.9090195s (avg: 49.090195ms per file)
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance/Size_1MB
+    file_hiding_comprehensive_test.go:636: Hiding 1MB file took: 37.9221ms (26.37 MB/s)
+    file_hiding_comprehensive_test.go:645: Revealing 1MB file took: 58.3038ms (17.15 MB/s)
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance/Size_5MB
+    file_hiding_comprehensive_test.go:636: Hiding 5MB file took: 42.1784ms (118.54 MB/s)
+    file_hiding_comprehensive_test.go:645: Revealing 5MB file took: 50.9434ms (98.15 MB/s)
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance/Size_10MB
+    file_hiding_comprehensive_test.go:636: Hiding 10MB file took: 45.5464ms (219.56 MB/s)
+    file_hiding_comprehensive_test.go:645: Revealing 10MB file took: 56.981ms (175.50 MB/s)
+--- PASS: TestFileHidingPerformance (10.26s)
+    --- PASS: TestFileHidingPerformance/ManySmallFiles (9.92s)
+    --- PASS: TestFileHidingPerformance/LargeFilesPerformance (0.33s)
+        --- PASS: TestFileHidingPerformance/LargeFilesPerformance/Size_1MB (0.10s)
+        --- PASS: TestFileHidingPerformance/LargeFilesPerformance/Size_5MB (0.10s)
+        --- PASS: TestFileHidingPerformance/LargeFilesPerformance/Size_10MB (0.12s)
+=== RUN   TestVaultManagerIntegration
+=== RUN   TestVaultManagerIntegration/CreateVault
+    integration_test.go:35: 
+        	Error Trace:	G:/projects/dirLocker/tests/integration_test.go:35
+        	Error:      	Received unexpected error:
+        	            	failed to create vault: CGO not available - vault operations require Rust core library
+        	Test:       	TestVaultManagerIntegration/CreateVault
+=== RUN   TestVaultManagerIntegration/OpenVault
+    integration_test.go:50: 
+        	Error Trace:	G:/projects/dirLocker/tests/integration_test.go:50
+        	Error:      	Received unexpected error:
+        	            	vault file does not exist: C:\Users\0X00SY~1\AppData\Local\Temp\TestVaultManagerIntegration3741056035\001\test.vault
+        	Test:       	TestVaultManagerIntegration/OpenVault
+=== RUN   TestVaultManagerIntegration/GetVault
+    integration_test.go:67: 
+        	Error Trace:	G:/projects/dirLocker/tests/integration_test.go:67
+        	Error:      	Should be true
+        	Test:       	TestVaultManagerIntegration/GetVault
+    integration_test.go:68: 
+        	Error Trace:	G:/projects/dirLocker/tests/integration_test.go:68
+        	Error:      	Expected value not to be nil.
+        	Test:       	TestVaultManagerIntegration/GetVault
+--- FAIL: TestVaultManagerIntegration (0.01s)
+    --- FAIL: TestVaultManagerIntegration/CreateVault (0.00s)
+    --- FAIL: TestVaultManagerIntegration/OpenVault (0.00s)
+    --- FAIL: TestVaultManagerIntegration/GetVault (0.01s)
+panic: runtime error: invalid memory address or nil pointer dereference [recovered, repanicked]
+[signal 0xc0000005 code=0x1 addr=0x5c pc=0x7ff66e792e6d]
+
+goroutine 225 [running]:
+testing.tRunner.func1.2({0x7ff66e837680, 0x7ff66eb9acf0})
+	C:/Program Files/Go/src/testing/testing.go:1872 +0x239
+testing.tRunner.func1()
+	C:/Program Files/Go/src/testing/testing.go:1875 +0x35b
+panic({0x7ff66e837680?, 0x7ff66eb9acf0?})
+	C:/Program Files/Go/src/runtime/panic.go:783 +0x132
+sync/atomic.(*Int32).Add(...)
+	C:/Program Files/Go/src/sync/atomic/type.go:94
+sync.(*RWMutex).RLock(...)
+	C:/Program Files/Go/src/sync/rwmutex.go:72
+dirLocker/pkg/vault.(*ManagedVault).GetInfo(0x989680?)
+	G:/projects/dirLocker/pkg/vault/manager.go:523 +0x4d
+dirLocker/tests.TestVaultManagerIntegration.func3(0xc000373340)
+	G:/projects/dirLocker/tests/integration_test.go:72 +0x85
+testing.tRunner(0xc000373340, 0xc00008e540)
+	C:/Program Files/Go/src/testing/testing.go:1934 +0xc3
+created by testing.(*T).Run in goroutine 221
+	C:/Program Files/Go/src/testing/testing.go:1997 +0x44b
+FAIL	dirLocker/tests	24.793s
+FAIL

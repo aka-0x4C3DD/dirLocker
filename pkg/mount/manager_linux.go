@@ -1,5 +1,5 @@
-//go:build linux
-// +build linux
+//go:build cgo && linux
+// +build cgo,linux
 
 package mount
 

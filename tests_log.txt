@@ -1,0 +1,1181 @@
+=== RUN   TestCLIIntegration
+    cli_integration_test.go:27: 
+        	Error Trace:	G:/projects/dirLocker/tests/cli_integration_test.go:27
+        	Error:      	Received unexpected error:
+        	            	exit status 1
+        	Test:       	TestCLIIntegration
+        	Messages:   	Failed to build CLI binary
+--- FAIL: TestCLIIntegration (1.09s)
+=== RUN   TestCLICommandValidation
+    cli_integration_test.go:185: 
+        	Error Trace:	G:/projects/dirLocker/tests/cli_integration_test.go:185
+        	Error:      	Received unexpected error:
+        	            	exit status 1
+        	Test:       	TestCLICommandValidation
+--- FAIL: TestCLICommandValidation (0.72s)
+=== RUN   TestCLIErrorHandling
+    cli_integration_test.go:227: 
+        	Error Trace:	G:/projects/dirLocker/tests/cli_integration_test.go:227
+        	Error:      	Received unexpected error:
+        	            	exit status 1
+        	Test:       	TestCLIErrorHandling
+--- FAIL: TestCLIErrorHandling (0.72s)
+=== RUN   TestCLIConfigIntegration
+    cli_integration_test.go:254: 
+        	Error Trace:	G:/projects/dirLocker/tests/cli_integration_test.go:254
+        	Error:      	Received unexpected error:
+        	            	exit status 1
+        	Test:       	TestCLIConfigIntegration
+--- FAIL: TestCLIConfigIntegration (0.80s)
+=== RUN   TestCLIPerformance
+    cli_integration_test.go:334: 
+        	Error Trace:	G:/projects/dirLocker/tests/cli_integration_test.go:334
+        	Error:      	Received unexpected error:
+        	            	exit status 1
+        	Test:       	TestCLIPerformance
+--- FAIL: TestCLIPerformance (0.76s)
+=== RUN   TestCLIDocumentation
+    cli_integration_test.go:364: 
+        	Error Trace:	G:/projects/dirLocker/tests/cli_integration_test.go:364
+        	Error:      	Received unexpected error:
+        	            	exit status 1
+        	Test:       	TestCLIDocumentation
+--- FAIL: TestCLIDocumentation (0.74s)
+=== RUN   TestCLIPlaceholder
+    cli_test.go:11: CLI unit tests placeholder
+--- PASS: TestCLIPlaceholder (0.00s)
+=== RUN   TestDataIntegrity
+time="2025-12-24T01:40:02+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:40:02+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:40:02+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\data_integrity_test2676927973\\integrity_test.vault"
+time="2025-12-24T01:40:02+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\data_integrity_test2676927973\\integrity_test.vault"
+time="2025-12-24T01:40:02+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\data_integrity_test2676927973\\integrity_test.vault"
+time="2025-12-24T01:40:02+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\data_integrity_test2676927973\\integrity_test.vault"
+=== RUN   TestDataIntegrity/Empty_file
+=== RUN   TestDataIntegrity/Small_text_file
+=== RUN   TestDataIntegrity/Binary_data
+=== RUN   TestDataIntegrity/Unicode_text
+=== RUN   TestDataIntegrity/Large_file_(1MB)
+time="2025-12-24T01:40:02+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:40:02+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestDataIntegrity (0.34s)
+    --- PASS: TestDataIntegrity/Empty_file (0.01s)
+    --- PASS: TestDataIntegrity/Small_text_file (0.02s)
+    --- PASS: TestDataIntegrity/Binary_data (0.01s)
+    --- PASS: TestDataIntegrity/Unicode_text (0.01s)
+    --- PASS: TestDataIntegrity/Large_file_(1MB) (0.02s)
+=== RUN   TestConcurrentOperations
+time="2025-12-24T01:40:02+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:40:02+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:40:02+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_test124181694\\concurrent_test.vault"
+time="2025-12-24T01:40:03+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_test124181694\\concurrent_test.vault"
+time="2025-12-24T01:40:03+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_test124181694\\concurrent_test.vault"
+time="2025-12-24T01:40:03+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_test124181694\\concurrent_test.vault"
+time="2025-12-24T01:40:03+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:40:03+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestConcurrentOperations (0.99s)
+=== RUN   TestSpecialCharactersInFilenames
+time="2025-12-24T01:40:03+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:40:03+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:40:03+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\special_chars_test1139332440\\special_chars.vault"
+time="2025-12-24T01:40:03+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\special_chars_test1139332440\\special_chars.vault"
+time="2025-12-24T01:40:03+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\special_chars_test1139332440\\special_chars.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\special_chars_test1139332440\\special_chars.vault"
+=== RUN   TestSpecialCharactersInFilenames/Filename:_normal_file.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file_with_spaces.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file-with-dashes.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file_with_underscores.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file.with.dots.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_файл_на_русском.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_文件名_中文.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_ファイル名_日本語.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_emoji_file_🚀_test.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file(with)parentheses.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file[with]brackets.txt
+=== RUN   TestSpecialCharactersInFilenames/Filename:_file{with}braces.txt
+time="2025-12-24T01:40:04+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestSpecialCharactersInFilenames (0.42s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_normal_file.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file_with_spaces.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file-with-dashes.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file_with_underscores.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file.with.dots.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_файл_на_русском.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_文件名_中文.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_ファイル名_日本語.txt (0.02s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_emoji_file_🚀_test.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file(with)parentheses.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file[with]brackets.txt (0.01s)
+    --- PASS: TestSpecialCharactersInFilenames/Filename:_file{with}braces.txt (0.01s)
+=== RUN   TestErrorConditions
+time="2025-12-24T01:40:04+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:40:04+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:40:04+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\error_conditions_test3179648308\\error_test.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\error_conditions_test3179648308\\error_test.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\error_conditions_test3179648308\\error_test.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\error_conditions_test3179648308\\error_test.vault"
+=== RUN   TestErrorConditions/Extract_non-existent_file
+=== RUN   TestErrorConditions/Delete_non-existent_file
+=== RUN   TestErrorConditions/Create_directory_that_already_exists
+    comprehensive_vault_test.go:333: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:333
+        	Error:      	Should be true
+        	Test:       	TestErrorConditions/Create_directory_that_already_exists
+        	Messages:   	Expected error about directory already existing, got: vault error 7: Invalid argument provided
+=== RUN   TestErrorConditions/Operations_on_closed_vault
+=== RUN   TestErrorConditions/Invalid_file_paths
+=== RUN   TestErrorConditions/Invalid_file_paths/Invalid_path:_""
+    comprehensive_vault_test.go:377: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:377
+        	Error:      	"vault error 7: invalid argument provided" does not contain "empty"
+        	Test:       	TestErrorConditions/Invalid_file_paths/Invalid_path:_""
+=== RUN   TestErrorConditions/Invalid_file_paths/Invalid_path:_"../escape"
+=== RUN   TestErrorConditions/Invalid_file_paths/Invalid_path:_"/absolute"
+=== RUN   TestErrorConditions/Invalid_file_paths/Invalid_path:_"path\x00"
+time="2025-12-24T01:40:04+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully closed all vaults"
+--- FAIL: TestErrorConditions (0.31s)
+    --- PASS: TestErrorConditions/Extract_non-existent_file (0.00s)
+    --- PASS: TestErrorConditions/Delete_non-existent_file (0.00s)
+    --- FAIL: TestErrorConditions/Create_directory_that_already_exists (0.00s)
+    --- PASS: TestErrorConditions/Operations_on_closed_vault (0.00s)
+    --- FAIL: TestErrorConditions/Invalid_file_paths (0.04s)
+        --- FAIL: TestErrorConditions/Invalid_file_paths/Invalid_path:_"" (0.00s)
+        --- PASS: TestErrorConditions/Invalid_file_paths/Invalid_path:_"../escape" (0.01s)
+        --- PASS: TestErrorConditions/Invalid_file_paths/Invalid_path:_"/absolute" (0.01s)
+        --- PASS: TestErrorConditions/Invalid_file_paths/Invalid_path:_"path\x00" (0.01s)
+=== RUN   TestRecoveryKeyValidation
+time="2025-12-24T01:40:04+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:40:04+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:40:04+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+=== RUN   TestRecoveryKeyValidation/Generate_recovery_key_with_correct_password
+time="2025-12-24T01:40:04+05:30" level=info msg="Generating recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+time="2025-12-24T01:40:04+05:30" level=info msg="Successfully generated recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+=== RUN   TestRecoveryKeyValidation/Generate_recovery_key_with_wrong_password
+time="2025-12-24T01:40:04+05:30" level=info msg="Generating recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+time="2025-12-24T01:40:05+05:30" level=info msg="Successfully generated recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_validation_test1656499170\\recovery_validation.vault"
+    comprehensive_vault_test.go:458: WARNING: Recovery key generation does not validate passwords - this is a security concern
+=== RUN   TestRecoveryKeyValidation/Recovery_key_hex_validation
+=== RUN   TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_""
+=== RUN   TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"invalid"
+=== RUN   TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+=== RUN   TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcde"
+=== RUN   TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef0"
+time="2025-12-24T01:40:05+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:40:05+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestRecoveryKeyValidation (0.49s)
+    --- PASS: TestRecoveryKeyValidation/Generate_recovery_key_with_correct_password (0.12s)
+    --- PASS: TestRecoveryKeyValidation/Generate_recovery_key_with_wrong_password (0.12s)
+    --- PASS: TestRecoveryKeyValidation/Recovery_key_hex_validation (0.00s)
+        --- PASS: TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"" (0.00s)
+        --- PASS: TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"invalid" (0.00s)
+        --- PASS: TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg" (0.00s)
+        --- PASS: TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcde" (0.00s)
+        --- PASS: TestRecoveryKeyValidation/Recovery_key_hex_validation/Invalid_hex:_"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef0" (0.00s)
+=== RUN   TestPerformance
+time="2025-12-24T01:40:05+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:40:05+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:40:05+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\performance_test2518292457\\performance.vault"
+time="2025-12-24T01:40:05+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\performance_test2518292457\\performance.vault"
+time="2025-12-24T01:40:05+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\performance_test2518292457\\performance.vault"
+time="2025-12-24T01:40:05+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\performance_test2518292457\\performance.vault"
+=== RUN   TestPerformance/Large_file_operations
+    comprehensive_vault_test.go:523: Adding 10MB file took: 51.7678ms
+    comprehensive_vault_test.go:531: Extracting 10MB file took: 29.9019ms
+=== RUN   TestPerformance/Many_small_files
+    comprehensive_vault_test.go:552: Adding 1000 small files took: 1m11.1897728s
+    comprehensive_vault_test.go:563: Listing 1001 files took: 3.3393ms
+time="2025-12-24T01:41:16+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:16+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestPerformance (71.55s)
+    --- PASS: TestPerformance/Large_file_operations (0.09s)
+    --- PASS: TestPerformance/Many_small_files (71.19s)
+=== RUN   TestMemoryUsage
+time="2025-12-24T01:41:16+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:16+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:16+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_0.vault"
+time="2025-12-24T01:41:16+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_0.vault"
+time="2025-12-24T01:41:16+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_0.vault"
+time="2025-12-24T01:41:16+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_0.vault"
+time="2025-12-24T01:41:16+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_0.vault"
+time="2025-12-24T01:41:16+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_0.vault"
+time="2025-12-24T01:41:16+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:16+05:30" level=info msg="Successfully closed all vaults"
+    comprehensive_vault_test.go:621: Completed 1 vault cycles
+time="2025-12-24T01:41:16+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:16+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:16+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_1.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_1.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_1.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_1.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_1.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_1.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:17+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_2.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_2.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_2.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_2.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_2.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_2.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:17+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_3.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_3.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_3.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_3.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_3.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_3.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:17+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:17+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:17+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_4.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_4.vault"
+time="2025-12-24T01:41:17+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_4.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_4.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_4.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_4.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:18+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:18+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_5.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_5.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_5.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_5.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_5.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_5.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:18+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:18+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_6.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_6.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_6.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_6.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_6.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_6.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:18+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:18+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_7.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_7.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_7.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_7.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_7.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_7.vault"
+time="2025-12-24T01:41:18+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:18+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:18+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:18+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_8.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_8.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_8.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_8.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_8.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_8.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:19+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:19+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:19+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_9.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_9.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_9.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_9.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_9.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_9.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:19+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:19+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:19+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_10.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_10.vault"
+time="2025-12-24T01:41:19+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_10.vault"
+time="2025-12-24T01:41:19+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_test1645789520\\memory_test_10.vault"
+    comprehensive_vault_test.go:600: 
+        	Error Trace:	G:/projects/dirLocker/tests/comprehensive_vault_test.go:600
+        	Error:      	Received unexpected error:
+        	            	failed to open vault: vault error 1: Invalid password or corrupted vault
+        	Test:       	TestMemoryUsage
+--- FAIL: TestMemoryUsage (3.11s)
+=== RUN   TestFFIIntegration
+=== RUN   TestFFIIntegration/CreateVault
+    ffi_integration_test.go:29: CreateVault succeeded: &{handle:0x207287d02c0}
+=== RUN   TestFFIIntegration/OpenVault
+    ffi_integration_test.go:54: OpenVault succeeded: &{handle:0x207287d02c0}
+=== RUN   TestFFIIntegration/GenerateSharingKeyPair
+    ffi_integration_test.go:73: GenerateSharingKeyPair succeeded: &{PublicKey:[140 147 27 102 70 14 129 126 136 177 107 127 206 189 51 222 194 29 146 20 84 44 12 141 25 228 237 86 215 208 59 122] PrivateKey:[71 190 138 173 47 191 171 10 30 144 136 199 123 199 121 5 212 229 54 57 216 113 83 84 29 24 67 123 132 67 198 0]}
+=== RUN   TestFFIIntegration/RecoveryKeyFromHex
+    ffi_integration_test.go:88: RecoveryKeyFromHex succeeded: &{KeyData:[1 35 69 103 137 171 205 239 1 35 69 103 137 171 205 239 1 35 69 103 137 171 205 239 1 35 69 103 137 171 205 239]}
+=== RUN   TestFFIIntegration/RecoverWithKey
+    ffi_integration_test.go:99: RecoverWithKey error (expected): vault error 4: File not found in vault
+=== RUN   TestFFIIntegration/OpenWithRecipientKey
+    ffi_integration_test.go:115: OpenWithRecipientKey error (expected): vault error 4: File not found in vault
+--- PASS: TestFFIIntegration (0.51s)
+    --- PASS: TestFFIIntegration/CreateVault (0.22s)
+    --- PASS: TestFFIIntegration/OpenVault (0.29s)
+    --- PASS: TestFFIIntegration/GenerateSharingKeyPair (0.00s)
+    --- PASS: TestFFIIntegration/RecoveryKeyFromHex (0.00s)
+    --- PASS: TestFFIIntegration/RecoverWithKey (0.00s)
+    --- PASS: TestFFIIntegration/OpenWithRecipientKey (0.00s)
+=== RUN   TestVaultHandleMethods
+=== RUN   TestVaultHandleMethods/ChangePassword
+    ffi_integration_test.go:162: ChangePassword succeeded
+=== RUN   TestVaultHandleMethods/GenerateRecoveryKey
+    ffi_integration_test.go:177: GenerateRecoveryKey succeeded: recoveryKey=&{KeyData:[16 229 47 13 161 250 24 233 71 249 108 17 126 179 240 46 127 51 186 44 214 35 172 104 251 167 178 101 248 40 80 28]}, wrappedKey=&{EncryptedKey:[246 96 177 253 166 84 102 166 50 123 93 71 224 113 162 242 48 128 198 147 209 151 110 133 64 62 126 202 18 211 118 71 199 41 157 232 157 199 237 243 99 91 163 190 182 27 166 46] Nonce:[20 251 172 3 214 6 3 0 208 170 102 111] Cipher:aes-256-gcm Salt:[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0] Memory:0 Operations:0 Parallelism:0}
+=== RUN   TestVaultHandleMethods/AddSharingRecipient
+    ffi_integration_test.go:195: AddSharingRecipient succeeded
+=== RUN   TestVaultHandleMethods/RemoveSharingRecipient
+    ffi_integration_test.go:213: RemoveSharingRecipient succeeded: removed=true
+=== RUN   TestVaultHandleMethods/SharingRecipientCount
+    ffi_integration_test.go:226: SharingRecipientCount succeeded: count=0
+=== RUN   TestVaultHandleMethods/ExportSharingEnvelopes
+    ffi_integration_test.go:239: ExportSharingEnvelopes succeeded: {
+          "envelopes": {},
+          "vault_uuid": "a99f7379-ae1c-4b83-b8cc-5da57a73392b",
+          "created_at": "2025-12-23T20:11:20.403665200Z",
+          "modified_at": "2025-12-23T20:11:21.096002100Z"
+        }
+=== RUN   TestVaultHandleMethods/ImportSharingEnvelopes
+    ffi_integration_test.go:246: ImportSharingEnvelopes error (expected with empty JSON): vault error 8: Internal error occurred
+=== RUN   TestVaultHandleMethods/Close
+    ffi_integration_test.go:258: Close test skipped - handle will be closed in defer
+--- PASS: TestVaultHandleMethods (0.85s)
+    --- PASS: TestVaultHandleMethods/ChangePassword (0.57s)
+    --- PASS: TestVaultHandleMethods/GenerateRecoveryKey (0.13s)
+    --- PASS: TestVaultHandleMethods/AddSharingRecipient (0.00s)
+    --- PASS: TestVaultHandleMethods/RemoveSharingRecipient (0.00s)
+    --- PASS: TestVaultHandleMethods/SharingRecipientCount (0.00s)
+    --- PASS: TestVaultHandleMethods/ExportSharingEnvelopes (0.00s)
+    --- PASS: TestVaultHandleMethods/ImportSharingEnvelopes (0.00s)
+    --- PASS: TestVaultHandleMethods/Close (0.00s)
+=== RUN   TestRecoveryKeyMethods
+=== RUN   TestRecoveryKeyMethods/ToHex
+    ffi_integration_test.go:283: ToHex succeeded: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+--- PASS: TestRecoveryKeyMethods (0.00s)
+    --- PASS: TestRecoveryKeyMethods/ToHex (0.00s)
+=== RUN   TestFileHidingWorkflow
+    file_hiding_comprehensive_test.go:39: Creating test files...
+    file_hiding_comprehensive_test.go:45: Created test file: document.pdf (512000 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: photo.jpg (2097152 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: secret_notes.txt (85 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: financial_data.xlsx (204800 bytes)
+    file_hiding_comprehensive_test.go:45: Created test file: backup.zip (1048576 bytes)
+    file_hiding_comprehensive_test.go:49: Verifying files are visible before hiding...
+    file_hiding_comprehensive_test.go:56: Hiding files...
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\document.pdf
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\photo.jpg
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\secret_notes.txt
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\financial_data.xlsx
+    file_hiding_comprehensive_test.go:62: Successfully hid file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\backup.zip
+    file_hiding_comprehensive_test.go:66: Verifying files are hidden...
+    file_hiding_comprehensive_test.go:92: Listing hidden files...
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\financial_data.xlsx (size: 204800, hidden at: 2025-12-24T01:41:21+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\photo.jpg (size: 2097152, hidden at: 2025-12-24T01:41:21+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\secret_notes.txt (size: 85, hidden at: 2025-12-24T01:41:21+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\backup.zip (size: 1048576, hidden at: 2025-12-24T01:41:21+05:30)
+    file_hiding_comprehensive_test.go:99: Hidden file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\document.pdf (size: 512000, hidden at: 2025-12-24T01:41:21+05:30)
+    file_hiding_comprehensive_test.go:114: Testing individual file reveal...
+    file_hiding_comprehensive_test.go:131: Successfully revealed and verified file: C:\Users\0X00SY~1\AppData\Local\Temp\file_hiding_workflow_test1143714839\document.pdf
+    file_hiding_comprehensive_test.go:138: Revealing all remaining hidden files...
+    file_hiding_comprehensive_test.go:146: Verifying all files are revealed and intact...
+    file_hiding_comprehensive_test.go:164: File hiding workflow test completed successfully
+--- PASS: TestFileHidingWorkflow (0.51s)
+=== RUN   TestFileHidingEdgeCases
+=== RUN   TestFileHidingEdgeCases/EmptyFile
+=== RUN   TestFileHidingEdgeCases/LargeFile
+    file_hiding_comprehensive_test.go:222: Hiding 10MB file took: 44.6302ms
+    file_hiding_comprehensive_test.go:228: Revealing 10MB file took: 53.2851ms
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_spaces.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file-with-dashes.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_underscores.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file.with.dots.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file(with)parentheses.txt
+=== RUN   TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file[with]brackets.txt
+=== RUN   TestFileHidingEdgeCases/NonExistentFile
+=== RUN   TestFileHidingEdgeCases/DirectoryHiding
+    file_hiding_comprehensive_test.go:303: Directory hiding is supported
+=== RUN   TestFileHidingEdgeCases/ConcurrentHiding
+--- PASS: TestFileHidingEdgeCases (1.84s)
+    --- PASS: TestFileHidingEdgeCases/EmptyFile (0.10s)
+    --- PASS: TestFileHidingEdgeCases/LargeFile (0.12s)
+    --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames (0.55s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_spaces.txt (0.08s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file-with-dashes.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file_with_underscores.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file.with.dots.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file(with)parentheses.txt (0.09s)
+        --- PASS: TestFileHidingEdgeCases/SpecialCharacterFilenames/Filename_file[with]brackets.txt (0.10s)
+    --- PASS: TestFileHidingEdgeCases/NonExistentFile (0.03s)
+    --- PASS: TestFileHidingEdgeCases/DirectoryHiding (0.08s)
+    --- PASS: TestFileHidingEdgeCases/ConcurrentHiding (0.96s)
+=== RUN   TestFileHidingPersistence
+    file_hiding_comprehensive_test.go:394: Hiding files with first hider instance...
+    file_hiding_comprehensive_test.go:406: Creating second hider instance (simulating restart)...
+    file_hiding_comprehensive_test.go:430: Revealing files with second hider instance...
+    file_hiding_comprehensive_test.go:453: File hiding persistence test completed successfully
+--- PASS: TestFileHidingPersistence (0.36s)
+=== RUN   TestFileHidingErrorRecovery
+=== RUN   TestFileHidingErrorRecovery/PartialHidingFailure
+=== RUN   TestFileHidingErrorRecovery/RevealNonHiddenFile
+=== RUN   TestFileHidingErrorRecovery/CorruptedHiddenFileRegistry
+    file_hiding_comprehensive_test.go:537: Reveal succeeded despite corruption - system recovered gracefully
+--- PASS: TestFileHidingErrorRecovery (0.25s)
+    --- PASS: TestFileHidingErrorRecovery/PartialHidingFailure (0.10s)
+    --- PASS: TestFileHidingErrorRecovery/RevealNonHiddenFile (0.03s)
+    --- PASS: TestFileHidingErrorRecovery/CorruptedHiddenFileRegistry (0.12s)
+=== RUN   TestFileHidingPerformance
+=== RUN   TestFileHidingPerformance/ManySmallFiles
+    file_hiding_comprehensive_test.go:564: Creating test files...
+    file_hiding_comprehensive_test.go:574: Hiding files...
+    file_hiding_comprehensive_test.go:581: Hiding 100 files took: 4.6977762s (avg: 46.977762ms per file)
+    file_hiding_comprehensive_test.go:589: Listing 100 hidden files took: 28.4675ms
+    file_hiding_comprehensive_test.go:598: Revealing 100 files took: 4.701183s (avg: 47.01183ms per file)
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance/Size_1MB
+    file_hiding_comprehensive_test.go:636: Hiding 1MB file took: 37.6838ms (26.54 MB/s)
+    file_hiding_comprehensive_test.go:645: Revealing 1MB file took: 45.5883ms (21.94 MB/s)
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance/Size_5MB
+    file_hiding_comprehensive_test.go:636: Hiding 5MB file took: 41.7615ms (119.73 MB/s)
+    file_hiding_comprehensive_test.go:645: Revealing 5MB file took: 47.6334ms (104.97 MB/s)
+=== RUN   TestFileHidingPerformance/LargeFilesPerformance/Size_10MB
+    file_hiding_comprehensive_test.go:636: Hiding 10MB file took: 43.2485ms (231.22 MB/s)
+    file_hiding_comprehensive_test.go:645: Revealing 10MB file took: 55.3972ms (180.51 MB/s)
+--- PASS: TestFileHidingPerformance (9.82s)
+    --- PASS: TestFileHidingPerformance/ManySmallFiles (9.50s)
+    --- PASS: TestFileHidingPerformance/LargeFilesPerformance (0.30s)
+        --- PASS: TestFileHidingPerformance/LargeFilesPerformance/Size_1MB (0.09s)
+        --- PASS: TestFileHidingPerformance/LargeFilesPerformance/Size_5MB (0.10s)
+        --- PASS: TestFileHidingPerformance/LargeFilesPerformance/Size_10MB (0.12s)
+=== RUN   TestVaultManagerIntegration
+=== RUN   TestVaultManagerIntegration/CreateVault
+=== RUN   TestVaultManagerIntegration/OpenVault
+=== RUN   TestVaultManagerIntegration/GetVault
+=== RUN   TestVaultManagerIntegration/ChangePassword
+=== RUN   TestVaultManagerIntegration/GenerateRecoveryKey
+=== RUN   TestVaultManagerIntegration/SharingOperations
+=== RUN   TestVaultManagerIntegration/CloseVault
+=== RUN   TestVaultManagerIntegration/CloseAllVaults
+--- PASS: TestVaultManagerIntegration (1.51s)
+    --- PASS: TestVaultManagerIntegration/CreateVault (0.13s)
+    --- PASS: TestVaultManagerIntegration/OpenVault (0.13s)
+    --- PASS: TestVaultManagerIntegration/GetVault (0.01s)
+    --- PASS: TestVaultManagerIntegration/ChangePassword (0.53s)
+    --- PASS: TestVaultManagerIntegration/GenerateRecoveryKey (0.16s)
+    --- PASS: TestVaultManagerIntegration/SharingOperations (0.00s)
+    --- PASS: TestVaultManagerIntegration/CloseVault (0.00s)
+    --- PASS: TestVaultManagerIntegration/CloseAllVaults (0.55s)
+=== RUN   TestCGOBindings
+=== RUN   TestCGOBindings/CreateAndOpenVault
+=== RUN   TestCGOBindings/InvalidPassword
+=== RUN   TestCGOBindings/NonexistentVault
+--- PASS: TestCGOBindings (0.38s)
+    --- PASS: TestCGOBindings/CreateAndOpenVault (0.25s)
+    --- PASS: TestCGOBindings/InvalidPassword (0.12s)
+    --- PASS: TestCGOBindings/NonexistentVault (0.00s)
+=== RUN   TestConfigurationIntegration
+=== RUN   TestConfigurationIntegration/LoadDefaultConfig
+=== RUN   TestConfigurationIntegration/SaveAndLoadConfig
+=== RUN   TestConfigurationIntegration/ConfigValidation
+--- PASS: TestConfigurationIntegration (0.01s)
+    --- PASS: TestConfigurationIntegration/LoadDefaultConfig (0.00s)
+    --- PASS: TestConfigurationIntegration/SaveAndLoadConfig (0.01s)
+    --- PASS: TestConfigurationIntegration/ConfigValidation (0.00s)
+=== RUN   TestLoggingIntegration
+=== RUN   TestLoggingIntegration/SecureLogging
+=== RUN   TestLoggingIntegration/LogLevels
+--- PASS: TestLoggingIntegration (0.01s)
+    --- PASS: TestLoggingIntegration/SecureLogging (0.01s)
+    --- PASS: TestLoggingIntegration/LogLevels (0.00s)
+=== RUN   TestErrorHandling
+=== RUN   TestErrorHandling/InvalidVaultPath
+=== RUN   TestErrorHandling/EmptyPassword
+=== RUN   TestErrorHandling/DoubleClose
+--- PASS: TestErrorHandling (0.25s)
+    --- PASS: TestErrorHandling/InvalidVaultPath (0.00s)
+    --- PASS: TestErrorHandling/EmptyPassword (0.00s)
+    --- PASS: TestErrorHandling/DoubleClose (0.25s)
+=== RUN   TestMountIntegration
+    mount_integration_test.go:84: Mount executables not found in PATH: [dirlocker-winfsp.exe dirlocker-dokany.exe]
+--- SKIP: TestMountIntegration (0.30s)
+=== RUN   TestMountErrors
+--- PASS: TestMountErrors (0.02s)
+=== RUN   TestMountCleanup
+--- PASS: TestMountCleanup (0.01s)
+=== RUN   TestDocumentWorkflow
+time="2025-12-24T01:41:36+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:36+05:30" level=info msg="Loaded existing mounts" count=0
+    real_world_scenarios_test.go:44: Creating document vault...
+time="2025-12-24T01:41:36+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\document_workflow_test2160909690\\documents.vault"
+time="2025-12-24T01:41:36+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\document_workflow_test2160909690\\documents.vault"
+time="2025-12-24T01:41:36+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\document_workflow_test2160909690\\documents.vault"
+time="2025-12-24T01:41:36+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\document_workflow_test2160909690\\documents.vault"
+    real_world_scenarios_test.go:65: Adding documents to vault...
+    real_world_scenarios_test.go:75: Added document: contracts/client_agreement_2024.pdf (256000 bytes)
+    real_world_scenarios_test.go:75: Added document: financial/tax_return_2023.pdf (1048576 bytes)
+    real_world_scenarios_test.go:75: Added document: financial/receipts/receipt_001.jpg (2097152 bytes)
+    real_world_scenarios_test.go:75: Added document: financial/receipts/receipt_002.png (1572864 bytes)
+    real_world_scenarios_test.go:75: Added document: work/project_notes.txt (86 bytes)
+    real_world_scenarios_test.go:75: Added document: backup/old_documents/archive_2023.zip (5242880 bytes)
+    real_world_scenarios_test.go:75: Added document: contracts/nda_template.docx (46080 bytes)
+    real_world_scenarios_test.go:75: Added document: personal/passport_scan.pdf (512000 bytes)
+    real_world_scenarios_test.go:75: Added document: personal/medical_records.pdf (819200 bytes)
+    real_world_scenarios_test.go:75: Added document: work/presentation_q4_2024.pptx (15728640 bytes)
+    real_world_scenarios_test.go:79: Verifying document integrity...
+    real_world_scenarios_test.go:100: Updating document...
+    real_world_scenarios_test.go:111: Organizing documents...
+    real_world_scenarios_test.go:130: Document workflow test completed successfully
+time="2025-12-24T01:41:37+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:37+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestDocumentWorkflow (1.00s)
+=== RUN   TestPhotoBackupScenario
+time="2025-12-24T01:41:37+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:37+05:30" level=info msg="Loaded existing mounts" count=0
+    real_world_scenarios_test.go:159: Creating photo backup vault...
+time="2025-12-24T01:41:37+05:30" level=info msg="Creating new vault" cipher=0 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\photo_backup_test3089534079\\photo_backup.vault"
+time="2025-12-24T01:41:37+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\photo_backup_test3089534079\\photo_backup.vault"
+time="2025-12-24T01:41:37+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\photo_backup_test3089534079\\photo_backup.vault"
+time="2025-12-24T01:41:37+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\photo_backup_test3089534079\\photo_backup.vault"
+    real_world_scenarios_test.go:184: Generating and adding photos...
+    real_world_scenarios_test.go:213: Added photo: 2024/01_January/IMG_001.jpg (3145728 bytes, JPEG)
+    real_world_scenarios_test.go:213: Added photo: 2024/01_January/IMG_002.jpg (2621440 bytes, JPEG)
+    real_world_scenarios_test.go:213: Added photo: 2024/01_January/IMG_003.png (8388608 bytes, PNG)
+    real_world_scenarios_test.go:213: Added photo: 2024/02_February/IMG_004.jpg (4194304 bytes, JPEG)
+    real_world_scenarios_test.go:213: Added photo: 2024/02_February/IMG_005.heic (2097152 bytes, HEIC)
+    real_world_scenarios_test.go:213: Added photo: 2024/03_March/vacation/IMG_006.jpg (5242880 bytes, JPEG)
+    real_world_scenarios_test.go:213: Added photo: 2024/03_March/vacation/IMG_007.raw (26214400 bytes, RAW)
+    real_world_scenarios_test.go:213: Added photo: 2024/03_March/vacation/video_001.mp4 (52428800 bytes, MP4)
+    real_world_scenarios_test.go:217: Verifying photo integrity...
+    real_world_scenarios_test.go:238: Successfully backed up 8 photos, total size: 99 MB
+    real_world_scenarios_test.go:241: Testing selective photo extraction...
+    real_world_scenarios_test.go:256: Successfully extracted 3 vacation photos
+    real_world_scenarios_test.go:257: Photo backup scenario completed successfully
+time="2025-12-24T01:41:38+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:38+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestPhotoBackupScenario (1.62s)
+=== RUN   TestBusinessVaultScenario
+time="2025-12-24T01:41:38+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:38+05:30" level=info msg="Loaded existing mounts" count=0
+    real_world_scenarios_test.go:289: Creating department vaults...
+time="2025-12-24T01:41:38+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\legal_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\legal_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\legal_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\legal_vault.vault"
+    real_world_scenarios_test.go:300: Created and opened vault: legal_vault.vault
+time="2025-12-24T01:41:39+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\it_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\it_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\it_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\it_vault.vault"
+    real_world_scenarios_test.go:300: Created and opened vault: it_vault.vault
+time="2025-12-24T01:41:39+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+time="2025-12-24T01:41:39+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+    real_world_scenarios_test.go:300: Created and opened vault: hr_vault.vault
+time="2025-12-24T01:41:39+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\finance_vault.vault"
+time="2025-12-24T01:41:40+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\finance_vault.vault"
+time="2025-12-24T01:41:40+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\finance_vault.vault"
+time="2025-12-24T01:41:40+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\finance_vault.vault"
+    real_world_scenarios_test.go:300: Created and opened vault: finance_vault.vault
+    real_world_scenarios_test.go:304: Populating HR vault...
+    real_world_scenarios_test.go:324: Populating Finance vault...
+    real_world_scenarios_test.go:344: Populating Legal vault...
+    real_world_scenarios_test.go:363: Populating IT vault...
+    real_world_scenarios_test.go:383: Verifying all department vaults...
+    real_world_scenarios_test.go:403: Verified hr_vault.vault: 6 documents
+    real_world_scenarios_test.go:403: Verified finance_vault.vault: 6 documents
+    real_world_scenarios_test.go:403: Verified legal_vault.vault: 5 documents
+    real_world_scenarios_test.go:403: Verified it_vault.vault: 6 documents
+    real_world_scenarios_test.go:407: Testing vault isolation...
+time="2025-12-24T01:41:40+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+time="2025-12-24T01:41:40+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+time="2025-12-24T01:41:40+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+time="2025-12-24T01:41:41+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\business_vault_test1673980953\\hr_vault.vault"
+    real_world_scenarios_test.go:419: Business vault scenario completed successfully
+time="2025-12-24T01:41:41+05:30" level=info msg="Closing all open vaults" count=3
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestBusinessVaultScenario (2.05s)
+=== RUN   TestPasswordChangeScenario
+time="2025-12-24T01:41:41+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:41+05:30" level=info msg="Loaded existing mounts" count=0
+    real_world_scenarios_test.go:445: Creating vault with original password...
+time="2025-12-24T01:41:41+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+    real_world_scenarios_test.go:459: Adding important data...
+    real_world_scenarios_test.go:466: Generating recovery key...
+time="2025-12-24T01:41:41+05:30" level=info msg="Generating recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully generated recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+    real_world_scenarios_test.go:474: Recovery key generated: f692ee3881d3494f...
+    real_world_scenarios_test.go:477: Changing password...
+time="2025-12-24T01:41:41+05:30" level=info msg="Changing vault password" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully changed vault password" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+    real_world_scenarios_test.go:486: Verifying old password is rejected...
+time="2025-12-24T01:41:41+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+    real_world_scenarios_test.go:491: Verifying new password works...
+time="2025-12-24T01:41:41+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:41+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+    real_world_scenarios_test.go:503: Verifying data integrity after password change...
+    real_world_scenarios_test.go:509: Warning: Failed to extract important_document.pdf after password change: vault error 8: Internal error occurred
+    real_world_scenarios_test.go:510: This indicates a potential issue with password change implementation
+    real_world_scenarios_test.go:509: Warning: Failed to extract secret_notes.txt after password change: vault error 8: Internal error occurred
+    real_world_scenarios_test.go:510: This indicates a potential issue with password change implementation
+    real_world_scenarios_test.go:509: Warning: Failed to extract financial_data.xlsx after password change: vault error 8: Internal error occurred
+    real_world_scenarios_test.go:510: This indicates a potential issue with password change implementation
+time="2025-12-24T01:41:42+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_change_test4173847348\\password_test.vault"
+    real_world_scenarios_test.go:521: Testing recovery key scenario...
+    real_world_scenarios_test.go:529: Password change scenario completed successfully
+time="2025-12-24T01:41:42+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestPasswordChangeScenario (1.04s)
+=== RUN   TestConcurrentUserScenario
+    real_world_scenarios_test.go:559: Starting concurrent user simulation...
+time="2025-12-24T01:41:42+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:42+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:42+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_1_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:42+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:42+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:42+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:42+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_4_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_2_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:42+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:42+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_0_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:42+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:42+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_3_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_0_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_0_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_2_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_2_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_3_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_3_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_1_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_4_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_1_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_4_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_4_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_2_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_3_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_0_vault.vault"
+time="2025-12-24T01:41:42+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\concurrent_users_test3340622942\\user_1_vault.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed all vaults"
+    real_world_scenarios_test.go:667: User 4 completed successfully with 20 files
+    real_world_scenarios_test.go:667: User 2 completed successfully with 20 files
+    real_world_scenarios_test.go:667: User 0 completed successfully with 20 files
+    real_world_scenarios_test.go:667: User 3 completed successfully with 20 files
+    real_world_scenarios_test.go:667: User 1 completed successfully with 20 files
+    real_world_scenarios_test.go:674: Concurrent user scenario completed: 5 users, 20 files each
+--- PASS: TestConcurrentUserScenario (1.10s)
+=== RUN   TestPasswordSecurityScenarios
+time="2025-12-24T01:41:43+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:43+05:30" level=info msg="Loaded existing mounts" count=0
+=== RUN   TestPasswordSecurityScenarios/WeakPasswords
+time="2025-12-24T01:41:43+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_0.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_0.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_0.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_0.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_0.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_0.vault"
+    security_edge_cases_test.go:71: Weak password '123' was accepted and works correctly
+time="2025-12-24T01:41:43+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_1.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_1.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_1.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_1.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_1.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_1.vault"
+    security_edge_cases_test.go:71: Weak password 'password' was accepted and works correctly
+time="2025-12-24T01:41:43+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_2.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_2.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_2.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_2.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_2.vault"
+time="2025-12-24T01:41:43+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_2.vault"
+    security_edge_cases_test.go:71: Weak password 'abc' was accepted and works correctly
+time="2025-12-24T01:41:43+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_3.vault"
+time="2025-12-24T01:41:43+05:30" level=error msg="Failed to create vault" error="vault error 7: Invalid argument provided" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_3.vault"
+    security_edge_cases_test.go:73: Weak password '' was rejected: failed to create vault: vault error 7: Invalid argument provided
+time="2025-12-24T01:41:43+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_4.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_4.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_4.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_4.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_4.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\weak_4.vault"
+    security_edge_cases_test.go:71: Weak password 'a' was accepted and works correctly
+=== RUN   TestPasswordSecurityScenarios/SpecialCharacterPasswords
+time="2025-12-24T01:41:44+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_0.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_0.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_0.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_0.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_0.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_0.vault"
+    security_edge_cases_test.go:113: Special character password test passed: P@ssw0rd!2...
+time="2025-12-24T01:41:44+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_1.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_1.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_1.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_1.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_1.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_1.vault"
+    security_edge_cases_test.go:113: Special character password test passed: Парол...
+time="2025-12-24T01:41:44+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_2.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_2.vault"
+time="2025-12-24T01:41:44+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_2.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_2.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_2.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_2.vault"
+    security_edge_cases_test.go:113: Special character password test passed: 密码123...
+time="2025-12-24T01:41:45+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_3.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_3.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_3.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_3.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_3.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_3.vault"
+    security_edge_cases_test.go:113: Special character password test passed: パスワ�...
+time="2025-12-24T01:41:45+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_4.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_4.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_4.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_4.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_4.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_4.vault"
+    security_edge_cases_test.go:113: Special character password test passed: 🔐🔑Se...
+time="2025-12-24T01:41:45+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_5.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_5.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_5.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_5.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_5.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_5.vault"
+    security_edge_cases_test.go:113: Special character password test passed: Pass
+        word	...
+time="2025-12-24T01:41:45+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_6.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_6.vault"
+time="2025-12-24T01:41:45+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_6.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_6.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_6.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_6.vault"
+    security_edge_cases_test.go:113: Special character password test passed: Pass"word'...
+time="2025-12-24T01:41:46+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_7.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_7.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_7.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_7.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_7.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_7.vault"
+    security_edge_cases_test.go:113: Special character password test passed: Pass\word/...
+time="2025-12-24T01:41:46+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_8.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_8.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_8.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_8.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_8.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\special_8.vault"
+    security_edge_cases_test.go:113: Special character password test passed: Pass<word>...
+=== RUN   TestPasswordSecurityScenarios/LongPasswords
+time="2025-12-24T01:41:46+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_0.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_0.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_0.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_0.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_0.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_0.vault"
+    security_edge_cases_test.go:145: Long password test passed: length 100
+time="2025-12-24T01:41:46+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_1.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_1.vault"
+time="2025-12-24T01:41:46+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_1.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_1.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_1.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_1.vault"
+    security_edge_cases_test.go:145: Long password test passed: length 300
+time="2025-12-24T01:41:47+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_2.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_2.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_2.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_2.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_2.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\long_2.vault"
+    security_edge_cases_test.go:145: Long password test passed: length 400
+=== RUN   TestPasswordSecurityScenarios/PasswordCaseSensitivity
+time="2025-12-24T01:41:47+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:47+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\password_security_test1591528113\\case_sensitive.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:48+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestPasswordSecurityScenarios (5.18s)
+    --- PASS: TestPasswordSecurityScenarios/WeakPasswords (1.04s)
+    --- PASS: TestPasswordSecurityScenarios/SpecialCharacterPasswords (2.39s)
+    --- PASS: TestPasswordSecurityScenarios/LongPasswords (0.83s)
+    --- PASS: TestPasswordSecurityScenarios/PasswordCaseSensitivity (0.90s)
+=== RUN   TestFileSystemEdgeCases
+time="2025-12-24T01:41:48+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:48+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:48+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\filesystem_edge_cases_test3366480696\\edge_cases.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\filesystem_edge_cases_test3366480696\\edge_cases.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\filesystem_edge_cases_test3366480696\\edge_cases.vault"
+time="2025-12-24T01:41:48+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\filesystem_edge_cases_test3366480696\\edge_cases.vault"
+=== RUN   TestFileSystemEdgeCases/ExtremeFileSizes
+=== RUN   TestFileSystemEdgeCases/BinaryDataPatterns
+=== RUN   TestFileSystemEdgeCases/DeepDirectoryStructure
+=== RUN   TestFileSystemEdgeCases/ManyFilesInDirectory
+=== RUN   TestFileSystemEdgeCases/FileOverwrite
+time="2025-12-24T01:41:50+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:50+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestFileSystemEdgeCases (1.97s)
+    --- PASS: TestFileSystemEdgeCases/ExtremeFileSizes (0.06s)
+    --- PASS: TestFileSystemEdgeCases/BinaryDataPatterns (0.06s)
+    --- PASS: TestFileSystemEdgeCases/DeepDirectoryStructure (0.03s)
+    --- PASS: TestFileSystemEdgeCases/ManyFilesInDirectory (1.50s)
+    --- PASS: TestFileSystemEdgeCases/FileOverwrite (0.07s)
+=== RUN   TestCorruptionResistance
+time="2025-12-24T01:41:50+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:50+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:50+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+    security_edge_cases_test.go:415: Adding test files...
+time="2025-12-24T01:41:50+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+=== RUN   TestCorruptionResistance/WrongPasswordAttempts
+time="2025-12-24T01:41:50+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:50+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 7: Invalid argument provided" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+=== RUN   TestCorruptionResistance/FileSystemCorruption
+=== RUN   TestCorruptionResistance/FileSystemCorruption/TruncatedFile
+time="2025-12-24T01:41:51+05:30" level=warning msg="Attempted to close vault that is not open" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 8: Internal error occurred" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+=== RUN   TestCorruptionResistance/FileSystemCorruption/RandomCorruption
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+    security_edge_cases_test.go:526: Corrupted vault was properly rejected: failed to open vault: vault error 1: Invalid password or corrupted vault
+=== RUN   TestCorruptionResistance/FileSystemCorruption/HeaderCorruption
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=error msg="Failed to open vault" error="vault error 2: Vault file appears to be corrupted" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\corruption_resistance_test1990111547\\corruption_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestCorruptionResistance (1.35s)
+    --- PASS: TestCorruptionResistance/WrongPasswordAttempts (0.72s)
+    --- PASS: TestCorruptionResistance/FileSystemCorruption (0.31s)
+        --- PASS: TestCorruptionResistance/FileSystemCorruption/TruncatedFile (0.01s)
+        --- PASS: TestCorruptionResistance/FileSystemCorruption/RandomCorruption (0.14s)
+        --- PASS: TestCorruptionResistance/FileSystemCorruption/HeaderCorruption (0.02s)
+=== RUN   TestMemorySecurityScenarios
+=== RUN   TestMemorySecurityScenarios/LargeFileHandling
+time="2025-12-24T01:41:51+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:51+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:51+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\large_file_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\large_file_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\large_file_test.vault"
+time="2025-12-24T01:41:51+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\large_file_test.vault"
+=== RUN   TestMemorySecurityScenarios/LargeFileHandling/Size_1MB
+    security_edge_cases_test.go:627: Added 1MB file in 8.6048ms
+    security_edge_cases_test.go:634: Extracted 1MB file in 11.0029ms
+=== RUN   TestMemorySecurityScenarios/LargeFileHandling/Size_5MB
+    security_edge_cases_test.go:627: Added 5MB file in 33.8074ms
+    security_edge_cases_test.go:634: Extracted 5MB file in 18.0659ms
+=== RUN   TestMemorySecurityScenarios/LargeFileHandling/Size_10MB
+    security_edge_cases_test.go:627: Added 10MB file in 62.7384ms
+    security_edge_cases_test.go:634: Extracted 10MB file in 29.5827ms
+time="2025-12-24T01:41:52+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully closed all vaults"
+=== RUN   TestMemorySecurityScenarios/MemoryPressure
+time="2025-12-24T01:41:52+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:52+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:52+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_0.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_0.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_0.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_0.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:52+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:52+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_1.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_1.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_1.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_1.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:52+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:52+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_2.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_2.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_2.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_2.vault"
+time="2025-12-24T01:41:52+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:52+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:52+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_3.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_3.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_3.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_3.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:53+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:53+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_4.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_4.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_4.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_4.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:53+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:53+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_5.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_5.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_5.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_5.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:53+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:53+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_6.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_6.vault"
+time="2025-12-24T01:41:53+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_6.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_6.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:54+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:54+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_7.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_7.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_7.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_7.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:54+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:54+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_8.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_8.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_8.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_8.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:54+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:54+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_9.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_9.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_9.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\memory_security_test1001722549\\pressure_test_9.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+time="2025-12-24T01:41:54+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully closed all vaults"
+    security_edge_cases_test.go:690: Successfully handled 10 concurrent vaults under memory pressure
+--- PASS: TestMemorySecurityScenarios (3.13s)
+    --- PASS: TestMemorySecurityScenarios/LargeFileHandling (0.49s)
+        --- PASS: TestMemorySecurityScenarios/LargeFileHandling/Size_1MB (0.03s)
+        --- PASS: TestMemorySecurityScenarios/LargeFileHandling/Size_5MB (0.07s)
+        --- PASS: TestMemorySecurityScenarios/LargeFileHandling/Size_10MB (0.14s)
+    --- PASS: TestMemorySecurityScenarios/MemoryPressure (2.63s)
+=== RUN   TestTimingAttackResistance
+time="2025-12-24T01:41:54+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:54+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:54+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:54+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+=== RUN   TestTimingAttackResistance/PasswordLengthTiming
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:55+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:56+05:30" level=error msg="Failed to open vault" error="vault error 1: Invalid password or corrupted vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+    security_edge_cases_test.go:756: Password length 1: 117.9488ms
+    security_edge_cases_test.go:756: Password length 2: 118.2672ms
+    security_edge_cases_test.go:756: Password length 3: 117.1263ms
+    security_edge_cases_test.go:756: Password length 4: 117.754ms
+    security_edge_cases_test.go:756: Password length 5: 120.7084ms
+    security_edge_cases_test.go:756: Password length 18: 119.1933ms
+    security_edge_cases_test.go:756: Password length 17: 117.79ms
+    security_edge_cases_test.go:756: Password length 50: 117.4129ms
+=== RUN   TestTimingAttackResistance/FileExistenceTiming
+time="2025-12-24T01:41:56+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+    security_edge_cases_test.go:811: File existing_file.txt (exists: true): 8.9422ms
+    security_edge_cases_test.go:811: File nonexistent_file.txt (exists: false): 0s
+    security_edge_cases_test.go:811: File another_missing.txt (exists: false): 0s
+    security_edge_cases_test.go:811: File missing_file.dat (exists: false): 0s
+time="2025-12-24T01:41:56+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\timing_attack_test3548089226\\timing_test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Closing all open vaults" count=0
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestTimingAttackResistance (1.33s)
+    --- PASS: TestTimingAttackResistance/PasswordLengthTiming (0.95s)
+    --- PASS: TestTimingAttackResistance/FileExistenceTiming (0.13s)
+=== RUN   TestSimpleDirectoryCreation
+time="2025-12-24T01:41:56+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:56+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:56+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\simple_directory_test3294918236\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\simple_directory_test3294918236\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\simple_directory_test3294918236\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\simple_directory_test3294918236\\test.vault"
+    simple_directory_test.go:43: Testing simple directory name...
+    simple_directory_test.go:48: Testing directory with slash...
+    simple_directory_test.go:53: Directory with slash worked!
+    simple_directory_test.go:57: Testing parent then child...
+    simple_directory_test.go:65: Child directory with slash worked!
+    simple_directory_test.go:69: Testing different separators...
+    simple_directory_test.go:74: Windows-style path worked!
+    simple_directory_test.go:81: Created files/directories:
+    simple_directory_test.go:83:   documents (dir: true)
+    simple_directory_test.go:83:   work/projects (dir: true)
+    simple_directory_test.go:83:   parent (dir: true)
+    simple_directory_test.go:83:   parent/child (dir: true)
+    simple_directory_test.go:83:   test\windows (dir: true)
+time="2025-12-24T01:41:56+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestSimpleDirectoryCreation (0.28s)
+=== RUN   TestVaultFileOperations
+time="2025-12-24T01:41:56+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:56+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:56+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_ops_test3054478805\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_ops_test3054478805\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_ops_test3054478805\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_ops_test3054478805\\test.vault"
+=== RUN   TestVaultFileOperations/ListFiles_EmptyVault
+=== RUN   TestVaultFileOperations/AddFile_Success
+=== RUN   TestVaultFileOperations/ExtractFile_Success
+=== RUN   TestVaultFileOperations/CreateDirectory_Success
+=== RUN   TestVaultFileOperations/AddFile_InDirectory
+=== RUN   TestVaultFileOperations/DeleteFile_Success
+=== RUN   TestVaultFileOperations/DeleteFile_NotFound
+=== RUN   TestVaultFileOperations/ExtractFile_NotFound
+=== RUN   TestVaultFileOperations/CreateDirectory_AlreadyExists
+time="2025-12-24T01:41:56+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestVaultFileOperations (0.30s)
+    --- PASS: TestVaultFileOperations/ListFiles_EmptyVault (0.00s)
+    --- PASS: TestVaultFileOperations/AddFile_Success (0.00s)
+    --- PASS: TestVaultFileOperations/ExtractFile_Success (0.01s)
+    --- PASS: TestVaultFileOperations/CreateDirectory_Success (0.00s)
+    --- PASS: TestVaultFileOperations/AddFile_InDirectory (0.01s)
+    --- PASS: TestVaultFileOperations/DeleteFile_Success (0.01s)
+    --- PASS: TestVaultFileOperations/DeleteFile_NotFound (0.00s)
+    --- PASS: TestVaultFileOperations/ExtractFile_NotFound (0.00s)
+    --- PASS: TestVaultFileOperations/CreateDirectory_AlreadyExists (0.00s)
+=== RUN   TestVaultManagerFileOperations
+time="2025-12-24T01:41:56+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:56+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:56+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_mgr_ops_test240585347\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_mgr_ops_test240585347\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_mgr_ops_test240585347\\test.vault"
+time="2025-12-24T01:41:56+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\vault_mgr_ops_test240585347\\test.vault"
+=== RUN   TestVaultManagerFileOperations/VaultManager_ListFiles
+=== RUN   TestVaultManagerFileOperations/VaultManager_AddFile
+=== RUN   TestVaultManagerFileOperations/VaultManager_ExtractFile
+=== RUN   TestVaultManagerFileOperations/VaultManager_CreateDirectory
+=== RUN   TestVaultManagerFileOperations/VaultManager_DeleteFile
+=== RUN   TestVaultManagerFileOperations/VaultManager_VaultNotOpen
+time="2025-12-24T01:41:57+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:57+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestVaultManagerFileOperations (0.29s)
+    --- PASS: TestVaultManagerFileOperations/VaultManager_ListFiles (0.00s)
+    --- PASS: TestVaultManagerFileOperations/VaultManager_AddFile (0.01s)
+    --- PASS: TestVaultManagerFileOperations/VaultManager_ExtractFile (0.01s)
+    --- PASS: TestVaultManagerFileOperations/VaultManager_CreateDirectory (0.01s)
+    --- PASS: TestVaultManagerFileOperations/VaultManager_DeleteFile (0.00s)
+    --- PASS: TestVaultManagerFileOperations/VaultManager_VaultNotOpen (0.00s)
+=== RUN   TestRecoveryKeyOperations
+time="2025-12-24T01:41:57+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-24T01:41:57+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-24T01:41:57+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+time="2025-12-24T01:41:57+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+time="2025-12-24T01:41:57+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+time="2025-12-24T01:41:57+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+=== RUN   TestRecoveryKeyOperations/GenerateRecoveryKey
+time="2025-12-24T01:41:57+05:30" level=info msg="Generating recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+time="2025-12-24T01:41:57+05:30" level=info msg="Successfully generated recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+=== RUN   TestRecoveryKeyOperations/GenerateRecoveryKey_WrongPassword
+time="2025-12-24T01:41:57+05:30" level=info msg="Generating recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+time="2025-12-24T01:41:57+05:30" level=info msg="Successfully generated recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\recovery_test.vault"
+=== RUN   TestRecoveryKeyOperations/GenerateRecoveryKey_VaultNotOpen
+time="2025-12-24T01:41:57+05:30" level=info msg="Generating recovery key" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\closed.vault"
+time="2025-12-24T01:41:57+05:30" level=error msg="Failed to open vault for recovery key generation" error="vault error 4: File not found in vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\recovery_test2808108030\\closed.vault"
+time="2025-12-24T01:41:57+05:30" level=info msg="Closing all open vaults" count=1
+time="2025-12-24T01:41:57+05:30" level=info msg="Successfully closed all vaults"
+--- PASS: TestRecoveryKeyOperations (0.50s)
+    --- PASS: TestRecoveryKeyOperations/GenerateRecoveryKey (0.12s)
+    --- PASS: TestRecoveryKeyOperations/GenerateRecoveryKey_WrongPassword (0.12s)
+    --- PASS: TestRecoveryKeyOperations/GenerateRecoveryKey_VaultNotOpen (0.00s)
+=== RUN   TestNotificationSystem
+=== RUN   TestNotificationSystem/NotificationTypes
+--- PASS: TestNotificationSystem (0.00s)
+    --- PASS: TestNotificationSystem/NotificationTypes (0.00s)
+=== RUN   FuzzVaultOpen
+=== RUN   FuzzVaultOpen/seed#0
+=== RUN   FuzzVaultOpen/seed#1
+--- PASS: FuzzVaultOpen (0.01s)
+    --- PASS: FuzzVaultOpen/seed#0 (0.00s)
+    --- PASS: FuzzVaultOpen/seed#1 (0.00s)
+FAIL
+FAIL	dirLocker/tests	120.365s
+FAIL
