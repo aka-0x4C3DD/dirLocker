@@ -209,6 +209,7 @@ func (im *IconManager) HandleMultipleIcons(icons []string) (string, error)
 - Windows: Dokany or WinFSP integration with UAC elevation handling
 - macOS: macFUSE integration with Gatekeeper compatibility
 - Linux: FUSE integration with distribution-specific packaging
+> For detailed implementation details of the filesystem layer, see [Filesystem Architecture](filesystem.md).
 
 **File Hiding Implementation:**
 
@@ -545,3 +546,12 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 - Package manager integration (Linux)
 
 This comprehensive design provides a solid foundation for implementing the encrypted vault application with all requested features while maintaining security, performance, and cross-platform compatibility.
+
+## Known Limitations
+
+### Plausible Deniability Persistence
+Currently, hidden tables metadata (used for plausible deniability) is **not persisted** across vault sessions.
+- **Behavior**: Hidden tables and their contents exist/work perfectly during the session they are created in.
+- **Limitation**: Closing the vault loses the reference to these hidden tables. Ropening the vault will not show them.
+- **Reason**: Updating the vault header to store hidden table metadata changes the header size, which would shift file offsets and corrupt valid data in the current vault format.
+- **Workaround**: Users must recreate hidden tables/containers for each session if they wish to use them, or wait for a future format update (v3) that supports dynamic header sizing or detached metadata.

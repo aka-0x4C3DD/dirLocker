@@ -31,58 +31,27 @@ Whether you need to secure personal documents, hide sensitive data, or share sec
 | **🔑 Recovery System** | Cryptographic recovery keys ensure you never lose access |
 | **🖥️ Cross-Platform** | Native CLI and GUI experiences for Windows, Linux, and macOS |
 
+## 📚 Documentation
+- **[User Manual](docs/manual.md)**: How to use the CLI and GUI.
+- **[Development Guide](docs/development.md)**: How to build, test, and contribute.
+- **[Architecture](docs/architecture.md)**: Deep dive into the design and security.
+- **[Go Internals](docs/go_internals.md)**: Details of the Go implementation and CGO bindings.
+- **[Filesystem Tech](docs/filesystem.md)**: Implementation details of FUSE/Dokany mounting.
+- **[File Hiding](docs/file_hiding.md)**: OS-level invisibility mechanics.
+- **[Plausible Deniability](docs/deniability.md)**: Deep dive into hidden volumes.
+- **[Security](docs/security.md)**: Cryptography and threat model details.
+
 ## 🚀 Quick Start
 
-### Prerequisites
-*   **Rust**: 1.70+
-*   **Go**: 1.24+
-*   **GCC**: Required for CGO
+### Installation
+Download the latest release for your platform from the [Releases](https://github.com/aka-0x4C3DD/dirLocker/releases) page.
 
-### 🛠️ Building
+### Building from Source
+For detailed build instructions, see the **[Development Guide](docs/development.md)**.
 
-**Windows (PowerShell)**
-```powershell
-# 1. Build Rust Core
-cd vault-core
-cargo build --release --target x86_64-pc-windows-gnu
-
-# 2. Build Go App
-cd ..
-$env:CGO_ENABLED="1"
-go build -o bin/dirlocker-cli.exe ./cmd/cli
-go build -o bin/dirlocker-gui.exe ./cmd/gui
-```
-
-**Linux / macOS**
+**Quick Build (Requires Go + Rust + GCC):**
 ```bash
-# 1. Build Rust Core
-cd vault-core && cargo build --release
-
-# 2. Build Go App
-cd ..
-export CGO_ENABLED=1
-go build -o bin/dirlocker ./cmd/cli
-go build -o bin/dirlocker-gui ./cmd/gui
-```
-
-## 🎮 Usage
-
-### Command Line Interface
-```bash
-# Create a new vault
-./bin/dirlocker create secure.vault
-
-# Open and interact
-./bin/dirlocker open secure.vault
-
-# Mount as a drive (Windows)
-./bin/dirlocker mount secure.vault Z:
-```
-
-### Graphical Interface
-Simply verify the build and launch:
-```bash
-./bin/dirlocker-gui
+make build
 ```
 
 ## 🏗️ Architecture

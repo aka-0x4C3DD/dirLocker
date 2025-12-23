@@ -49,6 +49,12 @@ The `vault-core` capability is exposed via C-compatible functions.
 *   `vault_file_read(handle, path, out_buffer)`: Decrypt and read data.
 *   `vault_file_delete(handle, path)`: Remove file and metadata.
 
+### Plausible Deniability API
+*   `vault_add_hidden_table(handle, pwd, cipher)`: Create a new hidden volume.
+*   `vault_open_hidden_table(handle, pwd)`: Unlock a specific hidden volume.
+*   `vault_create_decoy_table(handle, pwd)`: Initialize a decoy volume.
+*   `vault_wipe_metadata(handle)`: Sanitize potential layout leaks.
+
 ### Error Handling
 All FFI functions return a `VaultResult` integer code:
 *   `0`: Success

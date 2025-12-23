@@ -41,6 +41,8 @@ On supported platforms, dirLocker attempts to make the vault file "invisible" to
 *   **Windows**: Sets `FileAttributes::Hidden` and `System` attributes.
 *   **macOS/Linux**: Prefixes filename with `.` (dotfile).
 
+> **Note**: For a deep dive into the implementation of hidden volumes and plausible deniability, see [Plausible Deniability](deniability.md).
+
 ## Threat Model
 
 **dirLocker protects against:**
