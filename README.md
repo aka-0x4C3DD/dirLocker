@@ -1,19 +1,20 @@
 <div align="center">
 
 # 🔒 dirLocker
+
 ### The Paranoid's Verification of Privacy
 
-
-[![CI Status](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?style=for-the-badge&logo=github&logoColor=white&color=black&labelColor=black)](https://github.com/aka-0x4C3DD/dirLocker/actions)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge&color=black&labelColor=black)](LICENSE)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?style=for-the-badge&logo=github&logoColor=white&color=00FF41&labelColor=black)](https://github.com/aka-0x4C3DD/dirLocker/actions)
+[![License](https://img.shields.io/badge/License-MIT-00FF41?style=for-the-badge&color=black&labelColor=black)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white&color=black&labelColor=black)](go.mod)
 [![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white&color=black&labelColor=black)](vault-core/Cargo.toml)
 
 [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white&color=black&labelColor=black)](README.md)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=white&color=black&labelColor=black)](README.md)
-[![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white&color=black&labelColor=black)](README.md)
+[![macOS](https://img.shields.io/badge/macOS-FFFFFF?style=for-the-badge&logo=apple&logoColor=black&color=black&labelColor=white)](README.md)
+[![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white&color=black&labelColor=black)](clients/mobile/README.md)
 
-[Getting Started](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-architecture) • [Contributing](#-contributing)
+[Getting Started](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-system-architecture) • [Contributing](#-contributing)
 
 </div>
 
@@ -21,42 +22,25 @@
 
 ## 🛑 Stop Trusting, Start Verifying
 
-**dirLocker** is not just another file encryption tool. It is a **state-of-the-art cryptographic vault** engineered for plausible deniability and absolute content secrecy. By fusing a high-performance **Rust** cryptographic core with a flexible **Go** application layer, dirLocker delivers military-grade security that integrates seamlessly into your native OS workflow.
+**dirLocker** is not just another file encryption tool. It is a **state-of-the-art cryptographic vault** engineered for plausible deniability and absolute content secrecy.
 
-> "The only secure file is one that doesn't appear to exist."
+By fusing a high-performance **Rust** cryptographic core with a flexible **Go** application layer (and now **Flutter** for mobile), dirLocker delivers military-grade security that integrates seamlessly into your native OS workflow.
+
+> *"The only secure file is one that doesn't appear to exist."*
+
+---
 
 ## ✨ Key Features
 
 | Feature | Description |
 | :--- | :--- |
-| **🛡️ Ironclad Security** | Powered by **Rust**, utilizing **AES-256-GCM** and **XChaCha20-Poly1305** for tamper-proof encryption. |
-| **👆 Biometric Unlock** | Unlock your vault instantly using **Windows Hello**, **TouchID**, or Linux Secret Service without typing passwords. |
-| **🎲 Secure Generator** | Built-in cryptographically strong password generator clears clipboard automatically to prevent leaks. |
-| **👻 Plausible Deniability** | Create **Hidden Volumes** inside your vault. If coerced, reveal the decoy password, and the hidden data remains mathematically invisible. |
-| **⚡ Native Performance** | Mount vaults directly as drives using **FUSE** (Linux/macOS) and **Dokany/WinFSP** (Windows). Zero lag, full compatibility. |
+| **🛡️ Ironclad Security** | Powered by **Rust**, utilizing **XChaCha20-Poly1305** & **AES-256-GCM** for high-speed, authenticated encryption. |
+| **📱 Mobile Ready** | **NEW!** Full-featured Android/iOS client built with **Flutter**. Manage your encrypted vaults on the go. |
+| **👻 Plausible Deniability** | Create **Hidden Volumes** inside your vault. Reveal a decoy password under coercion, keeping your true data mathematically invisible. |
+| **⚡ Zero-Lag Mounting** | Mount vaults directly as drives using **FUSE** (Linux/macOS) and **Dokany/WinFSP** (Windows). Edit files in-place with native performance. |
 | **🌑 Stealth Mode** | Features OS-level file obfuscation and anti-forensic techniques to prevent analysis. |
-| **🖥️ Cross-Platform** | A unified experience across **Windows**, **Linux**, and **macOS** with native GUI and CLI tools. |
-| **📱 Mobile Ready** | Complete **Flutter** client for **Android**, **iOS**, and **Linux Phones**. securely manage vaults on the go. |
-| **🔑 Recovery Assurance** | Optional cryptographic recovery keys ensure you never get locked out—unless you want to be. |
-
----
-
-## 📚 Documentation
-
-We believe functionality without documentation is a vulnerability. Explore our comprehensive guides:
-
-### 🚀 For Users
-*   **[User Manual](docs/manual.md)**: Master the CLI and GUI. Learn how to create, mount, and hide vaults.
-*   **[Security Model](docs/security.md)**: Understand the threat model, encryption standards, and key derivation (Argon2id) used.
-
-### 🛠️ For Developers & Auditors
-*   **[Architecture Overview](docs/architecture.md)**: The high-level design of the Rust Core <-> Go Application bridge.
-*   **[Development Guide](docs/development.md)**: How to build, test, and extend dirLocker.
-*   **[Go Internals](docs/go_internals.md)**: Deep dive into the Go implementation and CGO bindings.
-*   **[The Filesystem Layer](docs/filesystem.md)**: Implementation details of the FUSE and Kernel-mode mounting.
-*   **[File Hiding Mechanics](docs/file_hiding.md)**: How we achieve OS-level invisibility.
-*   **[Plausible Deniability](docs/deniability.md)**: The math and logic behind hidden volumes.
-*   **[API Reference](docs/api.md)**: Interfaces for programmatic access.
+| **👆 Biometric Unlock** | Unlock your vault instantly using **Windows Hello**, **TouchID**, or Linux Secret Service. |
+| **🖥️ Cross-Platform** | A unified experience across **Windows**, **Linux**, **macOS**, and **Mobile**. |
 
 ---
 
@@ -70,27 +54,24 @@ Download the latest pre-built binary for your OS from the [Releases Page](https:
 **Prerequisites:**
 *   Go 1.24+
 *   Rust 1.70+
-*   GCC/MinGW (for CGO)
+*   Flutter 3.13+ (for Mobile)
 
-#### Windows (PowerShell)
-```powershell
-# Installs dependencies, builds core, and compiles binaries
-.\scripts\build.ps1
-
-# To generate an MSI installer (requires WiX Toolset)
-.\scripts\package_windows.ps1
+#### Desktop (Windows/Linux/macOS)
+```bash
+# Build the CLI and Desktop GUI
+make build
 ```
 
-#### Linux / macOS
+#### Mobile (Android)
 ```bash
-# Standard build
-make build
-
-# Create platform-specific package (.deb or .pkg)
-make package-linux   # or package-macos
+# Build the Mobile APK
+cd clients/mobile
+flutter pub get
+flutter build apk --release
 ```
 
 ### ⚡ First Run
+
 1.  **Initialize a Vault**:
     ```bash
     ./bin/dirlocker-cli init --path ./my-secret-vault --size 1GB
@@ -109,29 +90,38 @@ The following diagram illustrates how dirLocker bridges the gap between high-lev
 
 ```mermaid
 graph TD
-    User([👤 User]) -->|Interacts| GUI[🖥️ Fyne GUI]
-    User -->|Commands| CLI[⌨️ Cobra CLI]
+    User([👤 User]) -->|Interacts| GUI[🖥️ Desktop GUI]
+    User -->|Commands| CLI[⌨️ CLI Tool]
+    User -->|Taps| Mobile[📱 Flutter Mobile]
     
-    subgraph "Go Application Layer"
+    subgraph "Application Layer"
         GUI --> Controller
         CLI --> Controller
-        Controller --> MountMgr[📂 Mount Manager]
-        Controller --> VaultMgr[📦 Vault Manager]
-    end
-
-    subgraph "Bridge"
-        MountMgr <-->|CGO| FFI[🔗 FFI Bindings]
-        VaultMgr <-->|CGO| FFI
+        Mobile --> FFI_Mobile[🔗 Mobile Bridge]
     end
 
     subgraph "Rust Vault Core"
-        FFI <--> Core[🦀 Core Logic]
+        Controller <-->|CGO| Core[🦀 Core Logic]
+        FFI_Mobile <-->|FFI| Core
         Core --> Crypto[🔒 Ring / ChaCha20]
         Core --> IO[💾 Disk I/O]
     end
     
-    MountMgr -->|Syscalls| Kernel[🖥️ OS Kernel / FUSE]
+    subgraph "OS Integration"
+        Controller -->|Mount| FUSE[📂 FUSE / Dokany]
+    end
 ```
+
+---
+
+## 📚 Documentation
+
+We believe functionality without documentation is a vulnerability. Explore our comprehensive guides:
+
+*   **[User Manual](docs/manual.md)**: Master the CLI and GUI.
+*   **[Mobile Guide](clients/mobile/README.md)**: Setup and usage for Android/iOS.
+*   **[Security Model](docs/security.md)**: Threat model, encryption standards, and key derivation.
+*   **[Architecture](docs/architecture.md)**: Deep dive into the Rust/Go/Flutter bridge.
 
 ---
 
@@ -148,6 +138,6 @@ We welcome security auditors and privacy advocates.
 
 **[License](LICENSE)** • **[Report Bug](https://github.com/aka-0x4C3DD/dirLocker/issues)**
 
-Made with ❤️ by aka-0x4C3DD
+Made with ❤️ and ☕ by **aka-0x4C3DD**
 
 </div>
