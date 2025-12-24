@@ -1,0 +1,40 @@
+    Checking vault-core v0.1.0 (G:\projects\dirLocker\vault-core)
+error[E0599]: no function or associated item named `new` found for struct `MobileVault` in the current scope
+   --> src\frb_generated.rs:109:69
+    |
+109 |                     let output_ok = crate::mobile_api::MobileVault::new(api__path, api__password)?;
+    |                                                                     ^^^ function or associated item not found in `MobileVault`
+    |
+   ::: src\mobile_api.rs:12:1
+    |
+12  | pub struct MobileVault {
+    | ---------------------- function or associated item `new` not found for this struct
+    |
+note: if you're trying to build a new `MobileVault`, consider using `MobileVault::new_instance` which returns `Result<MobileVault, std::string::String>`
+   --> src\mobile_api.rs:25:5
+    |
+25  |     pub fn new_instance(path: String, password: String) -> Result<MobileVault, String> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following traits define an item `new`, perhaps you need to implement one of them:
+            candidate #1: `BaseArc`
+            candidate #2: `Bit`
+            candidate #3: `Digest`
+            candidate #4: `KeyInit`
+            candidate #5: `KeyIvInit`
+            candidate #6: `UniformSampler`
+            candidate #7: `VariableOutput`
+            candidate #8: `VariableOutputCore`
+            candidate #9: `VartimePrecomputedMultiscalarMul`
+            candidate #10: `hkdf::hmac::Mac`
+
+error: cannot construct `MobileVault` with struct literal syntax due to private fields
+   --> src\frb_generated.rs:142:16
+    |
+142 |         return crate::mobile_api::MobileVault {};
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: private field `inner` that was not provided
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `vault-core` (lib) due to 2 previous errors
