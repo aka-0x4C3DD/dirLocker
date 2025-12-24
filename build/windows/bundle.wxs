@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
+    <Bundle Name="dirLocker" Version="1.0.0.0" Manufacturer="dirLocker Team" UpgradeCode="PUT-GUID-HERE">
+        <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" />
+
+        <Chain>
+            <!-- WebView2 Runtime (Evergreen Bootstrapper) -->
+            <!-- Checks if strictly required; Wails apps need it -->
+            <PackageGroupRef Id="WebView2" />
+
+            <!-- WinFSP (Filesystem Driver) -->
+            <PackageGroupRef Id="WinFSP" />
+
+            <!-- Main Application -->
+            <MsiPackage SourceFile="dist/dirLocker.msi" DisplayInternalUI="yes" />
+        </Chain>
+    </Bundle>
+
+    <Fragment>
+        <PackageGroup Id="WebView2">
+            <ExePackage
+                Id="WebView2Runtime"
+                DisplayName="Microsoft WebView2 Runtime"
+                SourceFile="build/windows/MicrosoftEdgeWebview2Setup.exe"
+                DownloadUrl="https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+                PerMachine="yes"
+                Permanent="yes"
+                Vital="yes"
+                InstallCommand="/silent /install"
+                DetectCondition="WebView2RuntimeInstalled"
+                Compressed="no">
+                <RemotePayload
+                    CertificatePublicKey="F48C45..." 
+                    CertificateThumbprint="your-thumbprint"
+                    Description="Microsoft Edge WebView2 Setup"
+                    Hash="hash-of-setup-exe"
+                    ProductName="Microsoft Edge WebView2 Runtime"
+                    Size="123456"
+                    Version="1.0.0.0" />
+            </ExePackage>
+        </PackageGroup>
+    </Fragment>
+
+    <Fragment>
+        <PackageGroup Id="WinFSP">
+            <ExePackage
+                Id="WinFSPInstaller"
+                DisplayName="WinFSP Filesystem Driver"
+                SourceFile="build/windows/winfsp.msi" 
+                DownloadUrl="https://github.com/winfsp/winfsp/releases/download/v2.0/winfsp-2.0.23075.msi"
+                PerMachine="yes"
+                Permanent="yes"
+                Vital="yes"
+                Compressed="no"
+                InstallCommand="/quiet" />
+        </PackageGroup>
+    </Fragment>
+</Wix>

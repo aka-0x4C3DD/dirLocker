@@ -69,89 +69,15 @@ target/
 *.obj
 
 # -----------------------------------------------------------------------------
-# Python Build Artifacts
+# Documentation Build Artifacts
 # -----------------------------------------------------------------------------
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-*.manifest
-*.spec
 
 # -----------------------------------------------------------------------------
-# Build and Output Directories
+# Documentation Build Artifacts
 # -----------------------------------------------------------------------------
-/bin/
-/build/
-/dist/
-/log/
-/logs/
-
-# Keep example directories but ignore their build outputs
-/examples/*/target/
-/examples/*/*.exe
-/examples/*/dirlocker*
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# -----------------------------------------------------------------------------
-# Test Artifacts and Coverage
-# -----------------------------------------------------------------------------
-# Go test cache
-.cache/
-*.test
-*.prof
-
-# Python test artifacts
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Test vaults and temporary test files
-test-vault/
-test_vault/
-*.vault.test
-test_*.vault
-*_test.vault
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+docs/_build/
+docs/.doctrees/
+/site
 
 # -----------------------------------------------------------------------------
 # Logs and Temporary Files
@@ -162,100 +88,17 @@ pip-delete-this-directory.txt
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 
 # Application logs
-/log/*.log
-/logs/*.log
+/log/
+/logs/
 dirlocker.log
 vault.log
 *_log*.txt
 tests_*.txt
 
 # -----------------------------------------------------------------------------
-# Sensitive Data and Secrets
-# -----------------------------------------------------------------------------
-# Vault files (actual encrypted vaults should not be in repo)
-*.vault
-*.vlt
-
-# Recovery keys and sensitive data
-*.recovery
-*.key
-*.pem
-*.p12
-*.pfx
-secrets/
-.secrets/
-
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# -----------------------------------------------------------------------------
-# IDE and Editor Files
-# -----------------------------------------------------------------------------
-# VSCode
-.vscode/
-*.code-workspace
-
-# JetBrains IDEs (GoLand, IntelliJ, etc.)
-.idea/
-*.iml
-*.iws
-*.ipr
-
-# Vim
-*.swp
-*.swo
-*.swn
-.vim/
-
-# Emacs
-*~
-\#*\#
-.\#*
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# -----------------------------------------------------------------------------
-# Python Virtual Environments
-# -----------------------------------------------------------------------------
-.venv/
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-.Python
-
-# -----------------------------------------------------------------------------
-# Python Package Management
-# -----------------------------------------------------------------------------
-# UV
-# uv.lock is kept in tools/ for reproducibility
-
-# Poetry
-# poetry.lock
-
-# PDM
-.pdm.toml
-.pdm-python
-.pdm-build/
-
-# PEP 582
-__pypackages__/
-
-# -----------------------------------------------------------------------------
-# Documentation Build Artifacts
-# -----------------------------------------------------------------------------
-docs/_build/
-docs/.doctrees/
-/site
+# Platform-Specific Files
 
 # Sphinx
 docs/_static/

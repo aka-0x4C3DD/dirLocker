@@ -1,0 +1,52 @@
+# Dockerfile.linux
+# Reproduces the dirLocker build environment for Linux (Ubuntu 22.04)
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV GO_VERSION=1.23.4
+ENV RUST_VERSION=1.83.0
+
+# 1. Install System Dependencies
+# 'build-essential' for GCC/Make
+# 'libgtk-3-dev', 'libwebkit2gtk-4.0-dev' for Wails
+# 'fuse3', 'libfuse-dev' for Core Logic
+# 'curl', 'git', 'wget' for tools
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    wget \
+    libgtk-3-dev \
+    libwebkit2gtk-4.0-dev \
+    fuse3 \
+    libfuse-dev \
+    pkg-config \
+    nsis \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Go
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
+    rm go${GO_VERSION}.linux-amd64.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin
+
+# 3. Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
+ENV PATH=$PATH:/root/.cargo/bin
+
+# 4. Install Wails (Framework)
+RUN go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# 5. Install Node.js (for Frontend) without sudo
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# 6. Set Working Directory
+WORKDIR /app
+
+# 7. Copy Source Code
+COPY . .
+
+# 8. Build Command (Default)
+CMD ["make", "package-linux"]

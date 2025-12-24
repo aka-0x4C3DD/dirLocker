@@ -1,0 +1,40 @@
+# Dockerfile.windows
+# Reproduces the dirLocker build environment for Windows
+# Uses Windows Server Core LTSC2022
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# Set shell to PowerShell
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# 1. Install Chocolatey
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# 2. Install Build Dependencies
+# - git, make: Basic tools
+# - golang: Go compiler
+# - rust: Rust compiler
+# - wixtoolset: For MSI generation
+# - mingw: For GCC (if needed by CGO)
+# - nodejs: For Wails frontend build
+RUN choco install -y git make golang rust wixtoolset mingw nodejs-lts
+
+# 3. Install Wails
+RUN go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# 4. Set Environment Variables
+# Add Go/Cargo/Wails to PATH (Reloading env might be needed if choco didn't persist properly in the same layer)
+# Often needed to explicitly set PATH for subsequent RUN instructions
+ENV PATH="C:\Program Files\Go\bin;C:\Users\ContainerAdministrator\go\bin;C:\Users\ContainerAdministrator\.cargo\bin;${PATH}"
+
+# 5. Set Workdir
+WORKDIR C:\app
+
+# 6. Copy Source
+COPY . .
+
+# 7. Build Command
+# Using the PowerShell-based Makefile logic
+CMD ["make", "package-windows"]
