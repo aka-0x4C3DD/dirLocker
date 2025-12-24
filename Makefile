@@ -36,7 +36,11 @@ check-tools:
 
 build-core:
 	$(call print_step,Building Rust Core)
+ifeq ($(IS_WINDOWS),1)
+	cd vault-core; cargo build --release --target x86_64-pc-windows-gnu
+else
 	cd vault-core; cargo build --release
+endif
 
 build-cli:
 	$(call print_step,Building CLI Application)
@@ -113,7 +117,7 @@ package-mac: build-gui
 
 test: test-go test-rust
 
-test-go:
+test-go: build-core
 	$(call print_step,Running Go Tests)
 	$env:CGO_ENABLED=1; go test -tags cgo -v ./pkg/... ./internal/... ./tests/...
 
