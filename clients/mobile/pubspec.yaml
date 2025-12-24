@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   flutter_rust_bridge: 2.11.1
+  file_picker: ^10.3.8
 dev_dependencies:
   flutter_test:
     sdk: flutter

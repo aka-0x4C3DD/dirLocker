@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../bridge_generated.dart/mobile_api.dart';
 import 'vault_dashboard_screen.dart';
+import 'create_vault_screen.dart';
 
 class VaultAccessScreen extends StatefulWidget {
   const VaultAccessScreen({super.key});
@@ -95,6 +96,18 @@ class _VaultAccessScreenState extends State<VaultAccessScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Open Vault'),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateVaultScreen(),
+                  ),
+                );
+              },
+              child: const Text('Create New Vault'),
             ),
             const SizedBox(height: 24),
             if (_status.isNotEmpty)

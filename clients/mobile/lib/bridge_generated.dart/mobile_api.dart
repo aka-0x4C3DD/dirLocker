@@ -11,6 +11,18 @@ Future<void> initMobileLogger() =>
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<MobileVault>>
 abstract class MobileVault implements RustOpaqueInterface {
+  Future<void> addFile({required String fileName, required List<int> data});
+
+  static Future<MobileVault> createVault({
+    required String path,
+    required String password,
+  }) => RustLib.instance.api.crateMobileApiMobileVaultCreateVault(
+    path: path,
+    password: password,
+  );
+
+  Future<void> deleteFile({required String fileName});
+
   Future<List<MobileFileInfo>> listFiles();
 
   static Future<MobileVault> newInstance({
@@ -20,6 +32,8 @@ abstract class MobileVault implements RustOpaqueInterface {
     path: path,
     password: password,
   );
+
+  Future<Uint8List> readFile({required String fileName});
 }
 
 /// Simplified file info for mobile UI

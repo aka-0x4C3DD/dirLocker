@@ -64,7 +64,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -1605006684;
+  int get rustContentHash => 842357194;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -75,6 +75,22 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<void> crateMobileApiMobileVaultAddFile({
+    required MobileVault that,
+    required String fileName,
+    required List<int> data,
+  });
+
+  Future<MobileVault> crateMobileApiMobileVaultCreateVault({
+    required String path,
+    required String password,
+  });
+
+  Future<void> crateMobileApiMobileVaultDeleteFile({
+    required MobileVault that,
+    required String fileName,
+  });
+
   Future<List<MobileFileInfo>> crateMobileApiMobileVaultListFiles({
     required MobileVault that,
   });
@@ -82,6 +98,11 @@ abstract class RustLibApi extends BaseApi {
   Future<MobileVault> crateMobileApiMobileVaultNewInstance({
     required String path,
     required String password,
+  });
+
+  Future<Uint8List> crateMobileApiMobileVaultReadFile({
+    required MobileVault that,
+    required String fileName,
   });
 
   Future<void> crateMobileApiInitMobileLogger();
@@ -104,6 +125,120 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  Future<void> crateMobileApiMobileVaultAddFile({
+    required MobileVault that,
+    required String fileName,
+    required List<int> data,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMobileVault(
+            that,
+            serializer,
+          );
+          sse_encode_String(fileName, serializer);
+          sse_encode_list_prim_u_8_loose(data, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateMobileApiMobileVaultAddFileConstMeta,
+        argValues: [that, fileName, data],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMobileApiMobileVaultAddFileConstMeta =>
+      const TaskConstMeta(
+        debugName: "MobileVault_add_file",
+        argNames: ["that", "fileName", "data"],
+      );
+
+  @override
+  Future<MobileVault> crateMobileApiMobileVaultCreateVault({
+    required String path,
+    required String password,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(path, serializer);
+          sse_encode_String(password, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMobileVault,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateMobileApiMobileVaultCreateVaultConstMeta,
+        argValues: [path, password],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMobileApiMobileVaultCreateVaultConstMeta =>
+      const TaskConstMeta(
+        debugName: "MobileVault_create_vault",
+        argNames: ["path", "password"],
+      );
+
+  @override
+  Future<void> crateMobileApiMobileVaultDeleteFile({
+    required MobileVault that,
+    required String fileName,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMobileVault(
+            that,
+            serializer,
+          );
+          sse_encode_String(fileName, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateMobileApiMobileVaultDeleteFileConstMeta,
+        argValues: [that, fileName],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMobileApiMobileVaultDeleteFileConstMeta =>
+      const TaskConstMeta(
+        debugName: "MobileVault_delete_file",
+        argNames: ["that", "fileName"],
+      );
+
+  @override
   Future<List<MobileFileInfo>> crateMobileApiMobileVaultListFiles({
     required MobileVault that,
   }) {
@@ -118,7 +253,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 1,
+            funcId: 4,
             port: port_,
           );
         },
@@ -153,7 +288,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 5,
             port: port_,
           );
         },
@@ -176,6 +311,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<Uint8List> crateMobileApiMobileVaultReadFile({
+    required MobileVault that,
+    required String fileName,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMobileVault(
+            that,
+            serializer,
+          );
+          sse_encode_String(fileName, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 6,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_prim_u_8_strict,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateMobileApiMobileVaultReadFileConstMeta,
+        argValues: [that, fileName],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateMobileApiMobileVaultReadFileConstMeta =>
+      const TaskConstMeta(
+        debugName: "MobileVault_read_file",
+        argNames: ["that", "fileName"],
+      );
+
+  @override
   Future<void> crateMobileApiInitMobileLogger() {
     return handler.executeNormal(
       NormalTask(
@@ -184,7 +357,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 7,
             port: port_,
           );
         },
@@ -253,6 +426,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<MobileFileInfo> dco_decode_list_mobile_file_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_mobile_file_info).toList();
+  }
+
+  @protected
+  List<int> dco_decode_list_prim_u_8_loose(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as List<int>;
   }
 
   @protected
@@ -359,6 +538,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ans_.add(sse_decode_mobile_file_info(deserializer));
     }
     return ans_;
+  }
+
+  @protected
+  List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getUint8List(len_);
   }
 
   @protected
@@ -470,6 +656,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_prim_u_8_loose(
+    List<int> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putUint8List(
+      self is Uint8List ? self : Uint8List.fromList(self),
+    );
+  }
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
     SseSerializer serializer,
@@ -539,6 +737,19 @@ class MobileVaultImpl extends RustOpaque implements MobileVault {
         RustLib.instance.api.rust_arc_decrement_strong_count_MobileVaultPtr,
   );
 
+  Future<void> addFile({required String fileName, required List<int> data}) =>
+      RustLib.instance.api.crateMobileApiMobileVaultAddFile(
+        that: this,
+        fileName: fileName,
+        data: data,
+      );
+
+  Future<void> deleteFile({required String fileName}) => RustLib.instance.api
+      .crateMobileApiMobileVaultDeleteFile(that: this, fileName: fileName);
+
   Future<List<MobileFileInfo>> listFiles() =>
       RustLib.instance.api.crateMobileApiMobileVaultListFiles(that: this);
+
+  Future<Uint8List> readFile({required String fileName}) => RustLib.instance.api
+      .crateMobileApiMobileVaultReadFile(that: this, fileName: fileName);
 }
