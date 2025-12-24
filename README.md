@@ -3,11 +3,15 @@
 # 🔒 dirLocker
 ### The Paranoid's Verification of Privacy
 
-[![CI Status](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?style=flat-square&logo=github&color=black)](https://github.com/aka-0x4C3DD/dirLocker/actions)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square&color=black)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat-square&logo=go&color=black)](go.mod)
-[![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=flat-square&logo=rust&color=black)](vault-core/Cargo.toml)
-[![Platform](https://img.shields.io/badge/platform-win%20%7C%20linux%20%7C%20macos-lightgrey?style=flat-square&color=black)](README.md)
+
+[![CI Status](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?style=for-the-badge&logo=github&logoColor=white&color=black&labelColor=black)](https://github.com/aka-0x4C3DD/dirLocker/actions)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge&color=black&labelColor=black)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white&color=black&labelColor=black)](go.mod)
+[![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white&color=black&labelColor=black)](vault-core/Cargo.toml)
+
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white&color=black&labelColor=black)](README.md)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=white&color=black&labelColor=black)](README.md)
+[![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white&color=black&labelColor=black)](README.md)
 
 [Getting Started](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-architecture) • [Contributing](#-contributing)
 
