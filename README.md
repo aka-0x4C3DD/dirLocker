@@ -36,6 +36,7 @@
 | **⚡ Native Performance** | Mount vaults directly as drives using **FUSE** (Linux/macOS) and **Dokany/WinFSP** (Windows). Zero lag, full compatibility. |
 | **🌑 Stealth Mode** | Features OS-level file obfuscation and anti-forensic techniques to prevent analysis. |
 | **🖥️ Cross-Platform** | A unified experience across **Windows**, **Linux**, and **macOS** with native GUI and CLI tools. |
+| **📱 Mobile Ready** | Complete **Flutter** client for **Android**, **iOS**, and **Linux Phones**. securely manage vaults on the go. |
 | **🔑 Recovery Assurance** | Optional cryptographic recovery keys ensure you never get locked out—unless you want to be. |
 
 ---

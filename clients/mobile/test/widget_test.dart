@@ -14,8 +14,11 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const DirLockerApp());
 
-    // Verify that we have a title
-    expect(find.text('DirLocker Vault'), findsOneWidget);
+    // Verify that we have the correct title
+    expect(find.text('DirLocker Mobile'), findsOneWidget);
+
+    // Verify buttons exist
     expect(find.text('Open Vault'), findsOneWidget);
+    expect(find.text('Create New Vault'), findsOneWidget);
   });
 }

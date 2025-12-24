@@ -61,13 +61,16 @@ class _VaultAccessScreenState extends State<VaultAccessScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.lock_outline, size: 80, color: Colors.deepPurple),
+            Icon(
+              Icons.lock_outline,
+              size: 80,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(height: 32),
             TextField(
               controller: _pathController,
               decoration: const InputDecoration(
                 labelText: 'Vault Path',
-                border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.folder),
                 hintText: '/path/to/your/vault.dat',
               ),
@@ -78,7 +81,6 @@ class _VaultAccessScreenState extends State<VaultAccessScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Password',
-                border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.key),
               ),
             ),
@@ -87,13 +89,20 @@ class _VaultAccessScreenState extends State<VaultAccessScreen> {
               onPressed: _isLoading ? null : _openVault,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 18),
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 24,
                       width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     )
                   : const Text('Open Vault'),
             ),
@@ -107,7 +116,13 @@ class _VaultAccessScreenState extends State<VaultAccessScreen> {
                   ),
                 );
               },
-              child: const Text('Create New Vault'),
+              child: Text(
+                'Create New Vault',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             if (_status.isNotEmpty)

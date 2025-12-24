@@ -1,0 +1,68 @@
+# Dockerfile.mobile
+# Reproduces the build environment for dirLocker Mobile (Android)
+# Includes Rust, Flutter, and Android SDK
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RUST_VERSION=1.70.0
+ENV FLUTTER_VERSION=3.13.0
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=$PATH:/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:/root/.cargo/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
+
+# 1. Install System Dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    wget \
+    unzip \
+    xz-utils \
+    zip \
+    libglu1-mesa \
+    cmake \
+    ninja-build \
+    clang \
+    pkg-config \
+    libgtk-3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION} && \
+    rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
+
+# 3. Install Cargo Tools
+RUN cargo install flutter_rust_bridge_codegen@^2.0.0
+
+# 4. Install Flutter
+RUN git clone https://github.com/flutter/flutter.git /opt/flutter && \
+    cd /opt/flutter && \
+    git checkout stable
+
+# 5. Install Android SDK (Command Line Tools)
+# Note: Actual Android build requires accepting licenses and downloading platforms.
+# This is a base setup.
+RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
+    wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline-tools.zip && \
+    unzip /tmp/cmdline-tools.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools && \
+    mv ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest && \
+    rm /tmp/cmdline-tools.zip
+
+# 6. Initialize Flutter
+RUN flutter config --no-analytics && \
+    flutter doctor
+
+# 7. Set Working Directory
+WORKDIR /app
+
+# 8. Copy Source Code
+COPY . .
+
+# 9. Build Command
+# Generate bindings and build the release APK
+CMD flutter_rust_bridge_codegen \
+    --rust-input ../../vault-core/src/mobile_api.rs \
+    --dart-output ./lib/bridge_generated.dart \
+    --c-output ./ios/Runner/bridge_generated.h \
+    --rust-root ../../vault-core && \
+    cd clients/mobile && \
+    flutter build apk --release

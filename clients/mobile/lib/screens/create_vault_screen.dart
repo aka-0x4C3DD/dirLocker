@@ -34,7 +34,7 @@ class _CreateVaultScreenState extends State<CreateVaultScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Vault Path (e.g., /sdcard/my_vault.vault)',
                   hintText: 'Enter absolute path',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.folder),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -48,7 +48,7 @@ class _CreateVaultScreenState extends State<CreateVaultScreen> {
                 controller: _passwordController,
                 decoration: const InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.key),
                 ),
                 obscureText: true,
                 validator: (value) {
@@ -63,7 +63,7 @@ class _CreateVaultScreenState extends State<CreateVaultScreen> {
                 controller: _confirmPasswordController,
                 decoration: const InputDecoration(
                   labelText: 'Confirm Password',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.check_circle_outline),
                 ),
                 obscureText: true,
                 validator: (value) {
@@ -77,7 +77,10 @@ class _CreateVaultScreenState extends State<CreateVaultScreen> {
               if (_error != null)
                 Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontFamily: 'monospace',
+                  ),
                   textAlign: TextAlign.center,
                 ),
               const SizedBox(height: 16),
@@ -87,7 +90,14 @@ class _CreateVaultScreenState extends State<CreateVaultScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator()
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      )
                     : const Text('Create Vault'),
               ),
             ],

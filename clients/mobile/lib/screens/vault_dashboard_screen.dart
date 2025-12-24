@@ -235,11 +235,15 @@ class _VaultDashboardScreenState extends State<VaultDashboardScreen> {
     }
 
     if (_displayedFiles.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey),
+            Icon(
+              Icons.folder_open,
+              size: 64,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
             SizedBox(height: 16),
             Text('Vault is empty'),
           ],
@@ -254,7 +258,9 @@ class _VaultDashboardScreenState extends State<VaultDashboardScreen> {
         return ListTile(
           leading: Icon(
             file.isDir ? Icons.folder : Icons.insert_drive_file,
-            color: file.isDir ? Colors.amber : Colors.blue,
+            color: file.isDir
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface,
           ),
           title: Text(file.name),
           subtitle: Text(file.isDir ? 'Directory' : '${file.size} bytes'),
