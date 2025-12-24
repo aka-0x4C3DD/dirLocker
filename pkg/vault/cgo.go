@@ -12,7 +12,7 @@ package vault
 #include "vault_core.h"
 #include <stdlib.h>
 */
-import "C"
+import "C" // Triggers rebuild of CGO definitions
 import (
 	"fmt"
 	"runtime"

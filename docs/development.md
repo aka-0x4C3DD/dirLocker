@@ -15,6 +15,12 @@ Before starting, ensure you have the following installed:
 *   **go-winres**: For icon embedding (automatically installed by Makefile).
 *   **Rsrc**: Recommended to have `git bash` or equivalent for running Make commands.
 
+### Linux Specifics
+*   **Dependencies**: Requires `libsecret-1-dev` and `dbus` headers for the `keyring` crate.
+    *   Ubuntu/Debian: `sudo apt-get install libsecret-1-dev libdbus-1-dev`
+    *   Fedora: `sudo dnf install libsecret-devel dbus-devel`
+
+
 ## Build System
 
 We use a unified `Makefile` for all platforms.

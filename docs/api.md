@@ -41,6 +41,7 @@ The `vault-core` capability is exposed via C-compatible functions.
 ### Core Functions
 *   `vault_create(path, password)`: Initialize a new vault container.
 *   `vault_open(path, password)`: Open an existing vault and return a handle.
+*   `vault_get_id(path)`: Retrieve the unique Vault UUID from the header without unlocking.
 *   `vault_close(handle)`: Securely close the vault and zero memory.
 *   `vault_generate_recovery_key(handle)`: Generate a 256-bit recovery key.
 

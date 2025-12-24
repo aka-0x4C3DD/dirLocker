@@ -30,6 +30,8 @@
 | Feature | Description |
 | :--- | :--- |
 | **🛡️ Ironclad Security** | Powered by **Rust**, utilizing **AES-256-GCM** and **XChaCha20-Poly1305** for tamper-proof encryption. |
+| **👆 Biometric Unlock** | Unlock your vault instantly using **Windows Hello**, **TouchID**, or Linux Secret Service without typing passwords. |
+| **🎲 Secure Generator** | Built-in cryptographically strong password generator clears clipboard automatically to prevent leaks. |
 | **👻 Plausible Deniability** | Create **Hidden Volumes** inside your vault. If coerced, reveal the decoy password, and the hidden data remains mathematically invisible. |
 | **⚡ Native Performance** | Mount vaults directly as drives using **FUSE** (Linux/macOS) and **Dokany/WinFSP** (Windows). Zero lag, full compatibility. |
 | **🌑 Stealth Mode** | Features OS-level file obfuscation and anti-forensic techniques to prevent analysis. |
