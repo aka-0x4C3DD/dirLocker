@@ -68,65 +68,48 @@ build-gui:
 	@if (Test-Path cmd/gui/build/windows/icon.ico) { Copy-Item cmd/gui/build/windows/icon.ico -Destination pkg/iconmanager/default_icon.ico }
 
 package-windows: build-gui
-	$(call print_step,Packaging for Windows (MSI))
+	$(call print_step,Packaging for Windows (MSI + Bootstrapper))
 ifeq ($(IS_WINDOWS),1)
 	@if (-not (Test-Path dist)) { New-Item -ItemType Directory -Force -Path dist | Out-Null }
 	@if (-not (Test-Path build/windows)) { New-Item -ItemType Directory -Force -Path build/windows | Out-Null }
+	
 	@if (Get-Command candle -ErrorAction SilentlyContinue) { \
 		Write-Host "Compiling WiX installer..."; \
 		candle -out dist/installer.wixobj build/windows/installer.wxs; \
 		Write-Host "Linking MSI..."; \
 		light -ext WixUIExtension -out dist/dirLocker.msi dist/installer.wixobj; \
 		Write-Host "MSI Installer created at dist/dirLocker.msi" -ForegroundColor Green; \
+		\
+		Write-Host "Compiling Bootstrapper Bundle..."; \
+		candle -ext WixBalExtension -out dist/bundle.wixobj build/windows/bundle.wxs; \
+		Write-Host "Linking Bootstrapper..."; \
+		light -ext WixBalExtension -out dist/dirLocker-setup.exe dist/bundle.wixobj; \
+		Write-Host "Bootstrapper created at dist/dirLocker-setup.exe" -ForegroundColor Green; \
 	} else { \
-		Write-Host "Warning: WiX Toolset (candle/light) not found. Skipping MSI generation."; \
+		Write-Host "Warning: WiX Toolset (candle/light) not found. Skipping MSI/Bundle generation."; \
 	}
 endif
 
 
 package-linux: build-gui
-	$(call print_step,Packaging for Linux)
-	@if (-not (Test-Path $(BINARY_DIR)/linux/share/applications)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/linux/share/applications | Out-Null }
-	@if (-not (Test-Path $(BINARY_DIR)/linux/share/icons)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/linux/share/icons | Out-Null }
-	@Copy-Item $(BINARY_DIR)/dirlocker-gui $(BINARY_DIR)/linux/dirlocker-gui
-	@Copy-Item pkg/iconmanager/icon.png $(BINARY_DIR)/linux/share/icons/dirlocker.png
-	@Set-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "[Desktop Entry]"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Type=Application"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Name=dirLocker"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Comment=Secure Cross-Platform Vault"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Exec=/usr/local/bin/dirlocker-gui"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Icon=dirlocker"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Terminal=false"
-	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Categories=Utility;Security;"
-	@Write-Host "Linux package created in $(BINARY_DIR)/linux" -ForegroundColor Green
+	$(call print_step,Packaging for Linux (DEB + Dependencies))
+	@if (Test-Path scripts/package_linux.sh) { \
+		bash scripts/package_linux.sh; \
+	} else { \
+		Write-Host "Error: scripts/package_linux.sh not found" -ForegroundColor Red; \
+	}
 
 package-mac: build-gui
-	$(call print_step,Packaging for macOS)
+	$(call print_step,Packaging for macOS (PKG Preparation))
+	@# First ensure standard .app structure is ready (from previous steps)
 	@if (-not (Test-Path $(BINARY_DIR)/dirLocker.app/Contents/MacOS)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/dirLocker.app/Contents/MacOS | Out-Null }
 	@if (-not (Test-Path $(BINARY_DIR)/dirLocker.app/Contents/Resources)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/dirLocker.app/Contents/Resources | Out-Null }
 	@Copy-Item $(BINARY_DIR)/dirlocker-gui $(BINARY_DIR)/dirLocker.app/Contents/MacOS/dirLocker
-	@if (Test-Path pkg/iconmanager/icon.icns) {
-		Copy-Item pkg/iconmanager/icon.icns $(BINARY_DIR)/dirLocker.app/Contents/Resources/icon.icns
-	} else {
-		Write-Host "Warning: icon.icns not found, using generic icon"
+	@if (Test-Path pkg/iconmanager/icon.icns) { Copy-Item pkg/iconmanager/icon.icns $(BINARY_DIR)/dirLocker.app/Contents/Resources/icon.icns }
+	@# Run the helper script to prepare PKG logic
+	@if (Test-Path scripts/package_macos.sh) { \
+		bash scripts/package_macos.sh; \
 	}
-	@Set-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<?xml version="1.0" encoding="UTF-8"?>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<plist version="1.0">'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<dict>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleExecutable</key>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>dirLocker</string>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleIconFile</key>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>icon.icns</string>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleIdentifier</key>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>com.aka-0x4c3dd.dirlocker</string>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleName</key>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>dirLocker</string>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundlePackageType</key>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>APPL</string>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '</dict>'
-	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '</plist>'
-	@Write-Host "macOS App Bundle created in $(BINARY_DIR)/dirLocker.app" -ForegroundColor Green
 
 test: test-go test-rust
 
