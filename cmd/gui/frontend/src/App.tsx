@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CreateVault, OpenVault } from '../wailsjs/go/main/App';
+import TitleBar from './components/TitleBar';
 
 function App() {
     const [view, setView] = useState<'welcome' | 'unlock' | 'create' | 'dashboard'>('welcome');
@@ -52,11 +53,8 @@ function App() {
     };
 
     return (
-        <div id="app" className="h-screen w-screen flex flex-col bg-background text-white selection:bg-brand-neon selection:text-black">
-            {/* Header/Title Bar Area (Draggable) */}
-            <div className="w-full h-8 bg-surface/50 border-b border-white/5 flex items-center justify-center select-none" style={{ widows: 1 }}>
-                <span className="text-xs font-mono text-gray-500 tracking-widest">DIRLOCKER // SECURE VAULT SYSTEM</span>
-            </div>
+        <div id="app" className="h-screen w-screen flex flex-col bg-background text-white selection:bg-brand-neon selection:text-black border border-white/5 overflow-hidden rounded-lg">
+            <TitleBar />
 
             <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
                 {/* Background Decor */}

@@ -1,17 +1,15 @@
 .PHONY: all build build-core build-cli build-gui test clean check check-tools
 
+SHELL := pwsh.exe
+.SHELLFLAGS := -NoProfile -Command
+
 BINARY_DIR := bin
 EXTENSION := 
-SHELL_CMD := bash
 IS_WINDOWS := 0
 
 ifeq ($(OS),Windows_NT)
 	EXTENSION := .exe
 	IS_WINDOWS := 1
-	# On Windows, try to use functionality available in Git Bash or similar
-	SHELL_CMD := bash
-else
-	SHELL_CMD := sh
 endif
 
 # Colors for pretty output
@@ -20,134 +18,132 @@ green := \033[0;32m
 reset := \033[0m
 
 define print_step
-	@echo -e "$(cyan)=== $(1) ===$(reset)"
+	@Write-Host "=== $(1) ===" -ForegroundColor Cyan
 endef
 
 all: build
 
 build: check-tools build-core build-cli build-gui
-	@echo -e "$(green)Build Complete. Binaries are located in $(BINARY_DIR)/$(reset)"
-	@ls -lh $(BINARY_DIR)
+	@Write-Host "Build Complete. Binaries are located in $(BINARY_DIR)/" -ForegroundColor Green
+	@Get-ChildItem -Path $(BINARY_DIR) | Select-Object Name, Length, LastWriteTime
+
 
 check-tools:
 	$(call print_step,Checking Prerequisites)
-	@command -v go >/dev/null 2>&1 || { echo >&2 "Go is required but not installed. Aborting."; exit 1; }
-	@command -v cargo >/dev/null 2>&1 || { echo >&2 "Cargo is required but not installed. Aborting."; exit 1; }
-	@mkdir -p $(BINARY_DIR)
+	@if (-not (Get-Command go -ErrorAction SilentlyContinue)) { echo "Go is required but not installed. Aborting."; exit 1 }
+	@if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { echo "Cargo is required but not installed. Aborting."; exit 1 }
+	@if (-not (Test-Path $(BINARY_DIR))) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR) | Out-Null }
 
 build-core:
 	$(call print_step,Building Rust Core)
-	cd vault-core && cargo build --release
+	cd vault-core; cargo build --release
 
 build-cli:
 	$(call print_step,Building CLI Application)
-	@mkdir -p $(BINARY_DIR)
+	@if (-not (Test-Path $(BINARY_DIR))) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR) | Out-Null }
 	# CGO_ENABLED=1 is required for linking against the Rust core
-	export CGO_ENABLED=1 && go build -o $(BINARY_DIR)/dirlocker-cli$(EXTENSION) ./cmd/cli
+	$env:CGO_ENABLED=1; go build -o $(BINARY_DIR)/dirlocker-cli$(EXTENSION) ./cmd/cli
 
 resources:
 	$(call print_step,Generating Windows Resources)
 ifeq ($(IS_WINDOWS),1)
-	@command -v go-winres >/dev/null 2>&1 || { echo "Installing go-winres..."; go install github.com/tc-hib/go-winres@latest; }
-	cd cmd/gui && go-winres make --in winres.json
+	@if (-not (Get-Command go-winres -ErrorAction SilentlyContinue)) { echo "Installing go-winres..."; go install github.com/tc-hib/go-winres@latest }
+	cd cmd/gui; go-winres make --in winres.json
 endif
 
 build-gui:
 	$(call print_step,Building GUI Application with Wails)
-	@mkdir -p $(BINARY_DIR)
+	@if (-not (Test-Path $(BINARY_DIR))) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR) | Out-Null }
+	
+	# Generate Icons
+	@Write-Host "Generating Icons..." -ForegroundColor Cyan
+	go run scripts/resize_icon.go
+
 	# Build using Wails
-	cd cmd/gui && wails build -clean
+	cd cmd/gui; wails build -clean
 	# Copy artifacts to bin directory
-	@if [ -f cmd/gui/build/bin/gui.exe ]; then \
-		cp cmd/gui/build/bin/gui.exe $(BINARY_DIR)/dirlocker-gui.exe; \
-		echo "Copied Windows binary"; \
-	fi
-	@if [ -f cmd/gui/build/bin/gui ]; then \
-		cp cmd/gui/build/bin/gui $(BINARY_DIR)/dirlocker-gui; \
-		echo "Copied Unix binary"; \
-	fi
+	@if (Test-Path cmd/gui/build/bin/gui.exe) { Copy-Item cmd/gui/build/bin/gui.exe -Destination $(BINARY_DIR)/dirlocker-gui.exe; echo "Copied Windows binary" }
+	@if (Test-Path cmd/gui/build/bin/gui) { Copy-Item cmd/gui/build/bin/gui -Destination $(BINARY_DIR)/dirlocker-gui; echo "Copied Unix binary" }
 	# Ensure icon exists for packaging
-	@if [ -f cmd/gui/build/windows/icon.ico ]; then \
-		cp cmd/gui/build/windows/icon.ico pkg/iconmanager/default_icon.ico; \
-	fi
+	@if (Test-Path cmd/gui/build/windows/icon.ico) { Copy-Item cmd/gui/build/windows/icon.ico -Destination pkg/iconmanager/default_icon.ico }
 
 package-windows: build-gui
 	$(call print_step,Packaging for Windows (MSI))
 ifeq ($(IS_WINDOWS),1)
-	@mkdir -p dist
-	@mkdir -p build/windows
-	@if command -v candle >/dev/null 2>&1; then \
-		echo "Compiling WiX installer..."; \
+	@if (-not (Test-Path dist)) { New-Item -ItemType Directory -Force -Path dist | Out-Null }
+	@if (-not (Test-Path build/windows)) { New-Item -ItemType Directory -Force -Path build/windows | Out-Null }
+	@if (Get-Command candle -ErrorAction SilentlyContinue) { \
+		Write-Host "Compiling WiX installer..."; \
 		candle -out dist/installer.wixobj build/windows/installer.wxs; \
-		echo "Linking MSI..."; \
+		Write-Host "Linking MSI..."; \
 		light -ext WixUIExtension -out dist/dirLocker.msi dist/installer.wixobj; \
-		echo -e "$(green)MSI Installer created at dist/dirLocker.msi$(reset)"; \
-	else \
-		echo "Warning: WiX Toolset (candle/light) not found. Skipping MSI generation."; \
-	fi
+		Write-Host "MSI Installer created at dist/dirLocker.msi" -ForegroundColor Green; \
+	} else { \
+		Write-Host "Warning: WiX Toolset (candle/light) not found. Skipping MSI generation."; \
+	}
 endif
 
 
 package-linux: build-gui
 	$(call print_step,Packaging for Linux)
-	@mkdir -p $(BINARY_DIR)/linux/share/applications
-	@mkdir -p $(BINARY_DIR)/linux/share/icons
-	@cp $(BINARY_DIR)/dirlocker-gui $(BINARY_DIR)/linux/dirlocker-gui
-	@cp pkg/iconmanager/icon.png $(BINARY_DIR)/linux/share/icons/dirlocker.png
-	@echo "[Desktop Entry]" > $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Type=Application" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Name=dirLocker" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Comment=Secure Cross-Platform Vault" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Exec=/usr/local/bin/dirlocker-gui" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Icon=dirlocker" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Terminal=false" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo "Categories=Utility;Security;" >> $(BINARY_DIR)/linux/share/applications/dirlocker.desktop
-	@echo -e "$(green)Linux package created in $(BINARY_DIR)/linux$(reset)"
+	@if (-not (Test-Path $(BINARY_DIR)/linux/share/applications)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/linux/share/applications | Out-Null }
+	@if (-not (Test-Path $(BINARY_DIR)/linux/share/icons)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/linux/share/icons | Out-Null }
+	@Copy-Item $(BINARY_DIR)/dirlocker-gui $(BINARY_DIR)/linux/dirlocker-gui
+	@Copy-Item pkg/iconmanager/icon.png $(BINARY_DIR)/linux/share/icons/dirlocker.png
+	@Set-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "[Desktop Entry]"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Type=Application"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Name=dirLocker"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Comment=Secure Cross-Platform Vault"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Exec=/usr/local/bin/dirlocker-gui"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Icon=dirlocker"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Terminal=false"
+	@Add-Content -Path $(BINARY_DIR)/linux/share/applications/dirlocker.desktop -Value "Categories=Utility;Security;"
+	@Write-Host "Linux package created in $(BINARY_DIR)/linux" -ForegroundColor Green
 
 package-mac: build-gui
 	$(call print_step,Packaging for macOS)
-	@mkdir -p $(BINARY_DIR)/dirLocker.app/Contents/MacOS
-	@mkdir -p $(BINARY_DIR)/dirLocker.app/Contents/Resources
-	@cp $(BINARY_DIR)/dirlocker-gui $(BINARY_DIR)/dirLocker.app/Contents/MacOS/dirLocker
-	@if [ -f pkg/iconmanager/icon.icns ]; then \
-		cp pkg/iconmanager/icon.icns $(BINARY_DIR)/dirLocker.app/Contents/Resources/icon.icns; \
-	else \
-		echo "Warning: icon.icns not found, using generic icon"; \
-	fi
-	@echo '<?xml version="1.0" encoding="UTF-8"?>' > $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '<plist version="1.0">' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '<dict>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>CFBundleExecutable</key>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>string>dirLocker</string>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>CFBundleIconFile</key>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>string>icon.icns</string>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>CFBundleIdentifier</key>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>string>com.aka-0x4c3dd.dirlocker</string>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>CFBundleName</key>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>string>dirLocker</string>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>CFBundlePackageType</key>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '    <key>string>APPL</string>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '</dict>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo '</plist>' >> $(BINARY_DIR)/dirLocker.app/Contents/Info.plist
-	@echo -e "$(green)macOS App Bundle created in $(BINARY_DIR)/dirLocker.app$(reset)"
+	@if (-not (Test-Path $(BINARY_DIR)/dirLocker.app/Contents/MacOS)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/dirLocker.app/Contents/MacOS | Out-Null }
+	@if (-not (Test-Path $(BINARY_DIR)/dirLocker.app/Contents/Resources)) { New-Item -ItemType Directory -Force -Path $(BINARY_DIR)/dirLocker.app/Contents/Resources | Out-Null }
+	@Copy-Item $(BINARY_DIR)/dirlocker-gui $(BINARY_DIR)/dirLocker.app/Contents/MacOS/dirLocker
+	@if (Test-Path pkg/iconmanager/icon.icns) {
+		Copy-Item pkg/iconmanager/icon.icns $(BINARY_DIR)/dirLocker.app/Contents/Resources/icon.icns
+	} else {
+		Write-Host "Warning: icon.icns not found, using generic icon"
+	}
+	@Set-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<?xml version="1.0" encoding="UTF-8"?>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<plist version="1.0">'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '<dict>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleExecutable</key>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>dirLocker</string>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleIconFile</key>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>icon.icns</string>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleIdentifier</key>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>com.aka-0x4c3dd.dirlocker</string>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundleName</key>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>dirLocker</string>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>CFBundlePackageType</key>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '    <key>string>APPL</string>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '</dict>'
+	@Add-Content -Path $(BINARY_DIR)/dirLocker.app/Contents/Info.plist -Value '</plist>'
+	@Write-Host "macOS App Bundle created in $(BINARY_DIR)/dirLocker.app" -ForegroundColor Green
 
 test: test-go test-rust
 
 test-go:
 	$(call print_step,Running Go Tests)
-	export CGO_ENABLED=1 && go test -tags cgo -v ./pkg/... ./internal/... ./tests/...
+	$env:CGO_ENABLED=1; go test -tags cgo -v ./pkg/... ./internal/... ./tests/...
 
 test-rust:
 	$(call print_step,Running Rust Tests)
-	cd vault-core && cargo test
+	cd vault-core; cargo test
 
 clean:
 	$(call print_step,Cleaning Artifacts)
-	rm -rf $(BINARY_DIR)
-	cd vault-core && cargo clean
+	@if (Test-Path $(BINARY_DIR)) { Remove-Item -Recurse -Force $(BINARY_DIR) }
+	cd vault-core; cargo clean
 
 check:
 	$(call print_step,Static Analysis)
 	go vet ./...
-	cd vault-core && cargo check
+	cd vault-core; cargo check
