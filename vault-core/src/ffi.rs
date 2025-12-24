@@ -720,6 +720,151 @@ pub extern "C" fn vault_generate_recovery_key(
     }
 }
 
+// Biometrics and Secure Storage FFI
+
+/// Store a credential in the system secure store (keyring)
+///
+/// # Safety
+/// - `service`, `user`, `password` must be valid null-terminated C strings
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_secure_store(
+    service: *const c_char,
+    user: *const c_char,
+    password: *const c_char,
+) -> c_int {
+    if service.is_null() || user.is_null() || password.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let service_str = match unsafe { CStr::from_ptr(service) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+    let user_str = match unsafe { CStr::from_ptr(user) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+    let password_str = match unsafe { CStr::from_ptr(password) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::biometrics::save_credential(service_str, user_str, password_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Retrieve a credential from the system secure store
+///
+/// # Safety
+/// - `service`, `user` must be valid C strings
+/// - `password_out` will be allocated, must be freed with vault_free_string
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_secure_get(
+    service: *const c_char,
+    user: *const c_char,
+    password_out: *mut *mut c_char,
+) -> c_int {
+    if service.is_null() || user.is_null() || password_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let service_str = match unsafe { CStr::from_ptr(service) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+    let user_str = match unsafe { CStr::from_ptr(user) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::biometrics::get_credential(service_str, user_str) {
+        Ok(pass) => {
+            let c_string = match std::ffi::CString::new(pass) {
+                Ok(s) => s,
+                Err(_) => {
+                    set_last_error(CErrorCode::InternalError);
+                    return CErrorCode::InternalError as c_int;
+                }
+            };
+            unsafe {
+                *password_out = c_string.into_raw();
+            }
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
+/// Delete a credential from the system secure store
+///
+/// # Safety
+/// - `service`, `user` must be valid C strings
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_secure_delete(service: *const c_char, user: *const c_char) -> c_int {
+    if service.is_null() || user.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let service_str = match unsafe { CStr::from_ptr(service) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+    let user_str = match unsafe { CStr::from_ptr(user) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    match crate::biometrics::delete_credential(service_str, user_str) {
+        Ok(()) => {
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
+}
+
 /// Recover vault access using recovery key
 ///
 /// # Safety
@@ -2193,4 +2338,51 @@ pub extern "C" fn vault_wipe_revealing_metadata(handle: CVaultHandle) -> c_int {
 #[no_mangle]
 pub extern "C" fn vault_get_deniability_limitations() -> *const c_char {
     crate::deniability::DeniabilityManager::get_limitations_doc().as_ptr() as *const c_char
+}
+
+/// Get the UUID of a vault without opening it (reading header only)
+///
+/// # Safety
+/// - `path` must be a valid null-terminated C string
+/// - `uuid_out` will be set to allocated string (must be freed with vault_free_string)
+/// - Returns 0 on success, error code on failure
+#[no_mangle]
+pub extern "C" fn vault_get_id(path: *const c_char, uuid_out: *mut *mut c_char) -> c_int {
+    if path.is_null() || uuid_out.is_null() {
+        set_last_error(CErrorCode::InvalidArgument);
+        return CErrorCode::InvalidArgument as c_int;
+    }
+
+    let path_str = match unsafe { CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            set_last_error(CErrorCode::InvalidArgument);
+            return CErrorCode::InvalidArgument as c_int;
+        }
+    };
+
+    // Read only the header to get the UUID
+    match crate::format::VaultFormat::read_vault_header(path_str) {
+        Ok((header, _)) => {
+            let uuid_str = header.vault_uuid.to_string();
+            let c_string = match std::ffi::CString::new(uuid_str) {
+                Ok(s) => s,
+                Err(_) => {
+                    set_last_error(CErrorCode::InternalError);
+                    return CErrorCode::InternalError as c_int;
+                }
+            };
+
+            unsafe {
+                *uuid_out = c_string.into_raw();
+            }
+
+            set_last_error(CErrorCode::Success);
+            CErrorCode::Success as c_int
+        }
+        Err(e) => {
+            set_last_error(e.code().into());
+            e.code() as c_int
+        }
+    }
 }

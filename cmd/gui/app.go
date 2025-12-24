@@ -84,3 +84,23 @@ func (a *App) ListFiles(path string) ([]vault.FileEntry, error) {
 
 	return a.vaultManager.ListFiles(path)
 }
+
+// BiometricsStore stores credentials in the system secure store
+func (a *App) BiometricsStore(service, user, password string) error {
+	return vault.SecureStore(service, user, password)
+}
+
+// BiometricsGet retrieves credentials from the system secure store
+func (a *App) BiometricsGet(service, user string) (string, error) {
+	return vault.SecureGet(service, user)
+}
+
+// BiometricsDelete deletes credentials from the system secure store
+func (a *App) BiometricsDelete(service, user string) error {
+	return vault.SecureDelete(service, user)
+}
+
+// GetVaultID retrieves the UUID of a vault from its file header
+func (a *App) GetVaultID(path string) (string, error) {
+	return vault.GetVaultID(path)
+}

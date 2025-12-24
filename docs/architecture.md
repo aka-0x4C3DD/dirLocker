@@ -110,6 +110,7 @@ graph TB
 // Core vault operations
 pub extern "C" fn vault_create(path: *const c_char, password: *const c_char, cipher: u32) -> VaultHandle;
 pub extern "C" fn vault_open(path: *const c_char, unlock_material: *const UnlockMaterial) -> VaultHandle;
+pub extern "C" fn vault_get_id(path: *const c_char, uuid_out: *mut *mut c_char) -> c_int; // New for UUID binding
 pub extern "C" fn vault_close(handle: VaultHandle) -> i32;
 
 // File operations
@@ -202,6 +203,13 @@ func (im *IconManager) HandleMultipleIcons(icons []string) (string, error)
 - Material Design UI components
 - Biometric authentication support
 - Core library integration via JNI
+
+### Biometric Authentication Layer
+*   **Design**: 3-Tier Architecture.
+    1.  **React**: Manages UI consent and calls `GetVaultID` to retrieve immutable UUID.
+    2.  **Go Middleware**: Exposes `GetVaultID` and bridges credential requests.
+    3.  **Rust Core**: Uses `keyring` crate to interface with Windows Credential Manager / Keychain.
+*   **Security**: Credentials are never stored in the vault file itself. They are stored in the OS enclave, keyed by `dirLocker::{vault_uuid}`.
 
 ### Platform Integration Components
 
@@ -546,6 +554,14 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 - Package manager integration (Linux)
 
 This comprehensive design provides a solid foundation for implementing the encrypted vault application with all requested features while maintaining security, performance, and cross-platform compatibility.
+
+
+### Biometric Testing
+*   **Lifecycle**: Verify Save/Read/Delete operations via `test_biometrics_lifecycle`.
+*   **Stability**: Verify usage of `vault_get_id` on locked files.
+*   **Manual Scenarios**:
+    *   **Renaming**: Ensure renaming a `.vault` file does not break biometric unlock (verifies UUID binding).
+    *   **Revocation**: Ensure removing credentials from OS manager properly fails in UI.
 
 ## Known Limitations
 

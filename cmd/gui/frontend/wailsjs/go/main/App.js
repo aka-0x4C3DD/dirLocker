@@ -17,3 +17,15 @@ export function ListFiles(arg1) {
 export function OpenVault(arg1, arg2) {
   return window['go']['main']['App']['OpenVault'](arg1, arg2);
 }
+
+export function BiometricsStore(arg1, arg2, arg3) {
+  return window['go']['main']['App']['BiometricsStore'](arg1, arg2, arg3);
+}
+
+export function BiometricsGet(arg1, arg2) {
+  return window['go']['main']['App']['BiometricsGet'](arg1, arg2);
+}
+
+export function BiometricsDelete(arg1, arg2) {
+  return window['go']['main']['App']['BiometricsDelete'](arg1, arg2);
+}

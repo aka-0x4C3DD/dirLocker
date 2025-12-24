@@ -58,6 +58,7 @@ typedef struct {
 // Core vault operations
 CVaultHandle vault_create(const char* path, const char* password, CCipherType cipher);
 CVaultHandle vault_open(const char* path, const CUnlockMaterial* unlock_material);
+int vault_get_id(const char* path, char** uuid_out);
 int vault_close(CVaultHandle handle);
 
 // Error handling
@@ -202,6 +203,11 @@ int vault_wipe_revealing_metadata(CVaultHandle handle);
 
 // Get documentation about plausible deniability limitations
 const char* vault_get_deniability_limitations(void);
+
+// Biometrics and Secure Storage functions
+int vault_secure_store(const char* service, const char* user, const char* password);
+int vault_secure_get(const char* service, const char* user, char** password_out);
+int vault_secure_delete(const char* service, const char* user);
 
 #ifdef __cplusplus
 }

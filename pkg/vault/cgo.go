@@ -632,3 +632,23 @@ func (v *VaultHandle) CreateDirectory(vaultPath string) error {
 func IsCGOEnabled() bool {
 	return true
 }
+
+// GetVaultID gets the UUID of a vault without opening it
+func GetVaultID(path string) (string, error) {
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	var cUuidOut *C.char
+	result := C.vault_get_id(cPath, &cUuidOut)
+	if result != C.ERROR_SUCCESS {
+		if err := getLastError(); err != nil {
+			return "", err
+		}
+		return "", &VaultError{Code: ErrorCode(result), Message: "Failed to get vault ID"}
+	}
+
+	uuidStr := C.GoString(cUuidOut)
+	C.vault_free_string(cUuidOut)
+
+	return uuidStr, nil
+}

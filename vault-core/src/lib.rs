@@ -3,6 +3,7 @@
 //! This library provides the core cryptographic functionality for creating,
 //! opening, and managing encrypted vault containers with cross-platform compatibility.
 
+pub mod biometrics;
 pub mod crypto;
 pub mod deniability;
 pub mod error;

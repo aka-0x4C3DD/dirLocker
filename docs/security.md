@@ -35,6 +35,13 @@ Each vault is a single file (`.vault` or `.vc`) with the following encrypted str
 *   Can decrypt the Master Key independently of the password.
 *   Must be stored offline by the user.
 
+### Biometric Integration
+*   **Storage**: Credentials are stored in the OS-provided Secure Store (Windows Credential Manager, macOS Keychain).
+*   **Binding**: Credentials are cryptographically bound to the Vault's UUID, not its file path.
+*   **Access Control**: Rely on OS-level enforcement (User Presence/Hello) before releasing the key.
+    *   *Limitation*: Some OS configs may allow "silent" unlock if the session is recently active (see `known_limitations.md`).
+
+
 ## File Hiding (Plausible Deniability)
 
 On supported platforms, dirLocker attempts to make the vault file "invisible" to casual inspection:
@@ -49,6 +56,14 @@ On supported platforms, dirLocker attempts to make the vault file "invisible" to
 *   Passive analysis of the vault file.
 *   Offline brute-force attacks (mitigated by Argon2id).
 *   Data tampering (mitigated by GCM/Poly1305 integrity checks).
+
+## Client-Side Security (Frontend)
+
+*   **Entropy**: Random generation uses `window.crypto.getRandomValues` (CSPRNG), never `Math.random`.
+*   **Memory Hygiene**:
+    *   Clipboard is cleared 30 seconds after copying generated passwords.
+    *   Passwords in React state are minimized but cannot be guaranteed zeroed due to JS garbage collection.
+
 
 **dirLocker does NOT protect against:**
 *   Compromised host OS (keyloggers, memory dumpers) while the vault is OPEN.

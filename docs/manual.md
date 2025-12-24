@@ -57,6 +57,22 @@ The `dirlocker-gui` application provides a visual file manager.
 4.  **Drag & Drop**: Add files by collecting them into the window.
 5.  **Mount**: Click the "Mount" button in the toolbar to expose the vault as a drive.
 
+## Biometric Authentication
+
+**dirLocker** supports biometric unlock (Windows Hello, TouchID, etc.) for convenience.
+
+*   **Enable**: Check "Enable Biometrics" when creating a new vault.
+*   **Usage**: Click "Unlock using Biometrics" on the login screen.
+*   **Security**: Credentials are stored in the OS Secure Store (Windows Credential Manager / macOS Keychain).
+*   **Robustness**: The link is bound to the Vault's internal unique ID, so you can safely rename or move your vault file without breaking biometric access.
+
+## Strong Password Generator
+
+A built-in secure password generator is available in the "Create Vault" view.
+
+*   **Customization**: Adjust length (8-64) and character sets (A-Z, a-z, 0-9, Symbols).
+*   **Privacy**: Generated passwords copied to the clipboard are **automatically cleared after 30 seconds** to prevent accidental leaks.
+
 ## Recovery System
 
 If you lose your password, you can use the **Recovery Key** generated during vault creation.
