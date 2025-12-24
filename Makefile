@@ -52,11 +52,24 @@ ifeq ($(IS_WINDOWS),1)
 	cd cmd/gui && go-winres make --in winres.json
 endif
 
-build-gui: resources
-	$(call print_step,Building GUI Application)
+build-gui:
+	$(call print_step,Building GUI Application with Wails)
 	@mkdir -p $(BINARY_DIR)
-	# CGO_ENABLED=1 is required for linking against the Rust core
-	export CGO_ENABLED=1 && go build -o $(BINARY_DIR)/dirlocker-gui$(EXTENSION) ./cmd/gui
+	# Build using Wails
+	cd cmd/gui && wails build -clean
+	# Copy artifacts to bin directory
+	@if [ -f cmd/gui/build/bin/gui.exe ]; then \
+		cp cmd/gui/build/bin/gui.exe $(BINARY_DIR)/dirlocker-gui.exe; \
+		echo "Copied Windows binary"; \
+	fi
+	@if [ -f cmd/gui/build/bin/gui ]; then \
+		cp cmd/gui/build/bin/gui $(BINARY_DIR)/dirlocker-gui; \
+		echo "Copied Unix binary"; \
+	fi
+	# Ensure icon exists for packaging
+	@if [ -f cmd/gui/build/windows/icon.ico ]; then \
+		cp cmd/gui/build/windows/icon.ico pkg/iconmanager/default_icon.ico; \
+	fi
 
 package-windows: build-gui
 	$(call print_step,Packaging for Windows (MSI))
