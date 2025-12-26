@@ -215,3 +215,6 @@ TASK_*_IMPLEMENTATION_SUMMARY.md
 # - README.md, LICENSE (Documentation)
 # - .gitattributes (Git configuration)
 # - Build scripts: build-fuse.sh, build-fuse.bat
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
