@@ -43,9 +43,6 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
           sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev gnome-keyring
 
       - name: Test Rust Core
@@ -64,6 +61,8 @@ jobs:
       - name: Test Go CLI
         env:
           CGO_ENABLED: 1
+          # Add the path to the compiled Rust library so tests can find it at runtime
+          LD_LIBRARY_PATH: ${{ github.workspace }}/vault-core/target/release
         run: |
           go test -v -coverprofile=coverage.txt -covermode=atomic ./pkg/... ./internal/... ./tests/...
 
