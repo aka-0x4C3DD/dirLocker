@@ -336,7 +336,7 @@ func NewTestLogger() *Logger {
 	}
 
 	logger.Logger.SetLevel(logrus.DebugLevel)
-	logger.Logger.SetOutput(io.Discard) // Don't output during tests
+	logger.Logger.SetOutput(os.Stdout) // Output to stdout for CI visibility
 	logger.initSensitivePatterns()
 
 	return logger
