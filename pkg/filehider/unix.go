@@ -27,8 +27,14 @@ func NewUnixFileHider() (FileHider, error) {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	hiddenDir := filepath.Join(homeDir, ".dirlocker", "hidden")
-	registryPath := filepath.Join(homeDir, ".dirlocker", "registry.enc")
+	return newUnixFileHiderWithRoot(filepath.Join(homeDir, ".dirlocker"))
+}
+
+// newUnixFileHiderWithRoot creates a new Unix file hider with a custom root directory
+// This is used for testing to isolate file operations
+func newUnixFileHiderWithRoot(rootDir string) (FileHider, error) {
+	hiddenDir := filepath.Join(rootDir, "hidden")
+	registryPath := filepath.Join(rootDir, "registry.enc")
 
 	// Create hidden directory if it doesn't exist
 	if err := os.MkdirAll(hiddenDir, 0700); err != nil {

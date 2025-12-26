@@ -21,8 +21,8 @@ func TestFileHidingWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	// Create file hider
-	hider, err := filehider.NewFileHider()
+	// Create file hider with isolated test directory
+	hider, err := filehider.NewFileHiderForTesting(tempDir)
 	require.NoError(t, err)
 
 	// Create test files with different types and sizes
@@ -170,7 +170,7 @@ func TestFileHidingEdgeCases(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	hider, err := filehider.NewFileHider()
+	hider, err := filehider.NewFileHiderForTesting(tempDir)
 	require.NoError(t, err)
 
 	t.Run("EmptyFile", func(t *testing.T) {
@@ -372,7 +372,7 @@ func TestFileHidingPersistence(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Create first file hider instance
-	hider1, err := filehider.NewFileHider()
+	hider1, err := filehider.NewFileHiderForTesting(tempDir)
 	require.NoError(t, err)
 
 	// Create test files
@@ -404,7 +404,7 @@ func TestFileHidingPersistence(t *testing.T) {
 
 	// Create second file hider instance (simulating restart)
 	t.Log("Creating second hider instance (simulating restart)...")
-	hider2, err := filehider.NewFileHider()
+	hider2, err := filehider.NewFileHiderForTesting(tempDir)
 	require.NoError(t, err)
 
 	// Check that second instance can see the hidden files
@@ -459,7 +459,7 @@ func TestFileHidingErrorRecovery(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	hider, err := filehider.NewFileHider()
+	hider, err := filehider.NewFileHiderForTesting(tempDir)
 	require.NoError(t, err)
 
 	t.Run("PartialHidingFailure", func(t *testing.T) {
@@ -553,7 +553,7 @@ func TestFileHidingPerformance(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	hider, err := filehider.NewFileHider()
+	hider, err := filehider.NewFileHiderForTesting(tempDir)
 	require.NoError(t, err)
 
 	t.Run("ManySmallFiles", func(t *testing.T) {
