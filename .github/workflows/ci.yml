@@ -43,7 +43,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev gnome-keyring
+          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev gnome-keyring fuse libfuse2
 
       - name: Test Rust Core
         run: |
@@ -58,26 +58,21 @@ jobs:
           cd vault-core
           cargo build --release
 
+      - name: Build Go CLI
+        env:
+          CGO_ENABLED: 1
+        run: |
+          go build -v -o bin/dirlocker ./cmd/cli
+
       - name: Test Go CLI
         env:
           CGO_ENABLED: 1
           # Add the path to the compiled Rust library so tests can find it at runtime
           LD_LIBRARY_PATH: ${{ github.workspace }}/vault-core/target/release
+          # Add bin to PATH so integration tests can find the dirlocker binary
+          PATH: ${{ github.workspace }}/bin:${{ env.PATH }}
         run: |
           go test -v -coverprofile=coverage.txt -covermode=atomic ./pkg/... ./internal/... ./tests/...
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
-          fail_ci_if_error: false
-
-      - name: Build Go CLI
-        env:
-          CGO_ENABLED: 1
-        run: |
-          go build -v -o bin/dirlocker-cli ./cmd/cli
 
   # Windows Build: Wails GUI
   build-windows:

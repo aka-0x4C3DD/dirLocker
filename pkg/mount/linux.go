@@ -374,6 +374,13 @@ func (l *LinuxMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		exePath = "dirlocker"
 	}
 
+	// If we are running tests, the executable will be the test binary (e.g., .../tests.test)
+	// In this case, we implemented a fallback to look for the "dirlocker" binary in PATH
+	if strings.HasSuffix(exePath, ".test") || strings.Contains(exePath, "go-build") {
+		l.logger.Info("Running in test mode, using 'dirlocker' from PATH instead of current executable", "current_exe", exePath)
+		exePath = "dirlocker"
+	}
+
 	args := []string{
 		"mount-helper", "fuse",
 		"--vault", vault.GetPath(),
