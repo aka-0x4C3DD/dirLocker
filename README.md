@@ -2,7 +2,9 @@
 
 # 🔒 dirLocker
 
+<sub>
 > **"The only secure file is one that doesn't appear to exist."**
+</sub>
 
 [![Core CI](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?label=Core%20CI&style=for-the-badge&logo=github&logoColor=white&labelColor=1a202c)](https://github.com/aka-0x4C3DD/dirLocker/actions/workflows/ci.yml)
 [![Mobile CI](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/flutter.yml?label=Mobile%20CI&style=for-the-badge&logo=flutter&logoColor=white&labelColor=1a202c)](https://github.com/aka-0x4C3DD/dirLocker/actions/workflows/flutter.yml)
@@ -147,9 +149,11 @@ We welcome security auditors and privacy advocates.
 
 </div>
 <div align="center">
+<sub>
 
 **[License](LICENSE)** • **[Report Bug](https://github.com/aka-0x4C3DD/dirLocker/issues)**
 
 Made with ❤️ and ☕ by **kiro** & **anti-gravity**
 
+</sub>
 </div>
