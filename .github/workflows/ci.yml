@@ -2,7 +2,7 @@ name: Core & GUI CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "antiGravity" ]
     paths:
       - 'vault-core/**'
       - 'cmd/**'
@@ -11,7 +11,7 @@ on:
       - 'go.mod'
       - 'go.sum'
   pull_request:
-    branches: [ "main" ]
+    branches: [ "antiGravity" ]
     paths:
       - 'vault-core/**'
       - 'cmd/**'
