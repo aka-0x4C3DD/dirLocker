@@ -8,10 +8,10 @@
 [![Mobile CI](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/flutter.yml?label=Mobile%20CI&style=for-the-badge&logo=flutter&logoColor=white&labelColor=1a202c&color=00FF41)](https://github.com/aka-0x4C3DD/dirLocker/actions/workflows/flutter.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/aka-0x4C3DD/dirLocker?style=for-the-badge&logo=codecov&logoColor=white&labelColor=1a202c)](https://codecov.io/gh/aka-0x4C3DD/dirLocker)
 [![Dependencies](https://img.shields.io/librariesio/github/aka-0x4C3DD/dirLocker?style=for-the-badge&logo=nuget&logoColor=white&labelColor=1a202c)](https://libraries.io/github/aka-0x4C3DD/dirLocker)
-[![SemVer](https://img.shields.io/github/v/release/aka-0x4C3DD/dirLocker?style=for-the-badge&label=SemVer&logo=semver&logoColor=white&labelColor=1a202c&color=blue)](https://github.com/aka-0x4C3DD/dirLocker/releases)
+[![SemVer](https://img.shields.io/github/v/tag/aka-0x4C3DD/dirLocker?style=for-the-badge&label=SemVer&logo=semver&logoColor=white&labelColor=1a202c&color=blue)](https://github.com/aka-0x4C3DD/dirLocker/releases)
 [![Analysis](https://img.shields.io/codacy/grade/bd3b7726563640b8981604a37bba3169?style=for-the-badge&logo=codacy&logoColor=white&labelColor=1a202c)](https://app.codacy.com/gh/aka-0x4C3DD/dirLocker/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-MIT-00FF41?style=for-the-badge&labelColor=1a202c&color=00FF41)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white&labelColor=1a202c&color=00ADD8)](go.mod)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white&labelColor=1a202c&color=00ADD8)](go.mod)
 [![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white&labelColor=1a202c&color=white)](vault-core/Cargo.toml)
 
 [![Windows](https://img.shields.io/badge/Windows-%230078D6.svg?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a202c&color=0078D6)](README.md)
