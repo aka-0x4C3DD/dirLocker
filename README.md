@@ -2,14 +2,14 @@
 
 # 🔒 dirLocker
 
-### The Paranoid's Verification of Privacy
+> **"The only secure file is one that doesn't appear to exist."**
 
 [![CI Status](https://img.shields.io/github/actions/workflow/status/aka-0x4C3DD/dirLocker/ci.yml?style=for-the-badge&logo=github&logoColor=white&labelColor=1a202c&color=00FF41)](https://github.com/aka-0x4C3DD/dirLocker/actions)
 [![License](https://img.shields.io/badge/License-MIT-00FF41?style=for-the-badge&labelColor=1a202c&color=00FF41)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white&labelColor=1a202c&color=00ADD8)](go.mod)
 [![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white&labelColor=1a202c&color=white)](vault-core/Cargo.toml)
 
-<br/>
+
 
 [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a202c&color=0078D6)](README.md)
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black&labelColor=1a202c&color=FCC624)](README.md)
@@ -24,9 +24,8 @@
 
 ---
 
-## 🛑 Stop Trusting, Start Verifying
+<div align="justify">
 
-> **"The only secure file is one that doesn't appear to exist."**
 
 **dirLocker** is a state-of-the-art cryptographic vault engineered for **plausible deniability** and **absolute content secrecy**. By fusing a high-performance **Rust** cryptographic core with a flexible **Go** application layer and a **Flutter** mobile client, dirLocker delivers military-grade security that integrates seamlessly into your native workflow.
 
@@ -139,10 +138,11 @@ We welcome security auditors and privacy advocates.
 
 ---
 
+</div>
 <div align="center">
 
 **[License](LICENSE)** • **[Report Bug](https://github.com/aka-0x4C3DD/dirLocker/issues)**
 
-Made with ❤️ and ☕ by **aka-0x4C3DD**
+Made with ❤️ and ☕ by **kiro** & **anti-gravity**
 
 </div>
