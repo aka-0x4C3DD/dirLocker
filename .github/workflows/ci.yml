@@ -43,7 +43,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.0-dev
+          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev
 
       - name: Test Rust Core
         run: |
@@ -85,7 +85,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-msvc
+          targets: x86_64-pc-windows-gnu
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -103,7 +103,7 @@ jobs:
       - name: Build Rust Core (Windows DLL)
         run: |
           cd vault-core
-          cargo build --release
+          cargo build --release --target x86_64-pc-windows-gnu
 
       - name: Build Wails App
         shell: pwsh
