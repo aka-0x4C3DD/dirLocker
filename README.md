@@ -9,7 +9,7 @@
 [![Coverage](https://img.shields.io/codecov/c/github/aka-0x4C3DD/dirLocker?style=for-the-badge&logo=codecov&logoColor=white&labelColor=1a202c)](https://codecov.io/gh/aka-0x4C3DD/dirLocker)
 [![Go Report Card](https://img.shields.io/badge/Go%20Report-A+-success?style=for-the-badge&logo=go&logoColor=white&labelColor=1a202c)](https://goreportcard.com/report/github.com/aka-0x4C3DD/dirLocker)
 [![SemVer](https://img.shields.io/github/v/tag/aka-0x4C3DD/dirLocker?style=for-the-badge&label=SemVer&logo=semver&logoColor=white&labelColor=1a202c&color=blue)](https://github.com/aka-0x4C3DD/dirLocker/releases)
-[![Analysis](https://img.shields.io/codacy/grade/bd3b7726563640b8981604a37bba3169?style=for-the-badge&logo=codacy&logoColor=white&labelColor=1a202c)](https://app.codacy.com/gh/aka-0x4C3DD/dirLocker/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Analysis](https://img.shields.io/codacy/grade/c2e0088325f146f4b332e0ae056b8e0f?style=for-the-badge&logo=codacy&logoColor=white&labelColor=1a202c)](https://app.codacy.com/gh/aka-0x4C3DD/dirLocker/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-MIT-00FF41?style=for-the-badge&labelColor=1a202c&color=00FF41)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white&labelColor=1a202c&color=00ADD8)](go.mod)
 [![Rust Version](https://img.shields.io/badge/Rust-1.70+-000000?style=for-the-badge&logo=rust&logoColor=white&labelColor=1a202c&color=white)](vault-core/Cargo.toml)
