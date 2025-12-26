@@ -43,7 +43,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev gnome-keyring fuse libfuse2
+          sudo apt-get install -y libgtk-3-dev libappindicator3-dev llvm clang gcc pkg-config libssl-dev gnome-keyring dbus-x11 fuse libfuse2 fuse3 libfuse3-dev
 
       - name: Test Rust Core
         run: |
