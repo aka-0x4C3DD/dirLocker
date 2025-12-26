@@ -79,6 +79,10 @@ func (l *LinuxMounter) Mount(ctx context.Context, vault VaultInterface, options 
 		Setpgid: true, // Create new process group for easier cleanup
 	}
 
+	// Forward stdout and stderr to capture logs from the helper
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	// Start the mount process
 	if err := cmd.Start(); err != nil {
 		return nil, &MountError{
