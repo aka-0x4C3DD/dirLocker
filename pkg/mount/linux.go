@@ -389,6 +389,7 @@ func (l *LinuxMounter) createFUSECommand(vault VaultInterface, options *MountOpt
 		"mount-helper", "fuse",
 		"--vault", vault.GetPath(),
 		"--mountpoint", options.MountPoint,
+		"--password", vault.GetPassword(),
 	}
 
 	if options.ReadOnly {

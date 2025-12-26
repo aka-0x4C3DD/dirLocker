@@ -29,6 +29,7 @@ type MountInfo struct {
 // VaultInterface represents the minimal interface needed for mounting
 type VaultInterface interface {
 	GetPath() string
+	GetPassword() string
 	UpdateLastUsed()
 }
 

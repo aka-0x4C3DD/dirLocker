@@ -273,6 +273,10 @@ func (m *MockVaultInterface) GetPath() string {
 	return m.path
 }
 
+func (m *MockVaultInterface) GetPassword() string {
+	return "mock-password"
+}
+
 func (m *MockVaultInterface) UpdateLastUsed() {
 	// Mock implementation
 }

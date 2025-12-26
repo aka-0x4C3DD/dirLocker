@@ -34,6 +34,7 @@ type VaultManager struct {
 type ManagedVault struct {
 	Handle   *VaultHandle
 	Path     string
+	Password string
 	OpenedAt time.Time
 	LastUsed time.Time
 	IsShared bool
@@ -201,6 +202,7 @@ func (vm *VaultManager) OpenVault(path, password string) (*ManagedVault, error) 
 	managedVault := &ManagedVault{
 		Handle:   handle,
 		Path:     path,
+		Password: password,
 		OpenedAt: time.Now(),
 		LastUsed: time.Now(),
 		IsShared: false,
@@ -530,6 +532,13 @@ func (mv *ManagedVault) GetPath() string {
 	mv.mutex.RLock()
 	defer mv.mutex.RUnlock()
 	return mv.Path
+}
+
+// GetPassword returns the vault password (implements mount.VaultInterface)
+func (mv *ManagedVault) GetPassword() string {
+	mv.mutex.RLock()
+	defer mv.mutex.RUnlock()
+	return mv.Password
 }
 
 // ListFiles lists all files and directories in the managed vault

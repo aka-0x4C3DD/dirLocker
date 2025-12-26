@@ -17,6 +17,10 @@ func (m *MockVault) GetPath() string {
 	return m.path
 }
 
+func (m *MockVault) GetPassword() string {
+	return "mock-password"
+}
+
 func (m *MockVault) UpdateLastUsed() {
 	// No-op for testing
 }
