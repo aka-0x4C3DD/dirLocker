@@ -59,7 +59,15 @@ jobs:
         env:
           CGO_ENABLED: 1
         run: |
-          go test -v ./pkg/... ./internal/... ./tests/...
+          go test -v -coverprofile=coverage.txt -covermode=atomic ./pkg/... ./internal/... ./tests/...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          fail_ci_if_error: false
+
 
       - name: Build Go CLI
         env:
