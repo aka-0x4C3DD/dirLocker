@@ -17,8 +17,8 @@ function App() {
 
     useEffect(() => {
         if (toastMessage) {
-            const timer = setTimeout(() => setToastMessage(''), 3000);
-            return () => clearTimeout(timer);
+            const timer = setTimeout(() => { setToastMessage(''); }, 3000);
+            return () => { clearTimeout(timer); };
         }
     }, [toastMessage]);
 

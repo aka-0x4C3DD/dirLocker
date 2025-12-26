@@ -34,7 +34,7 @@ const CreateView: React.FC<CreateViewProps> = ({ path, setPath, password, setPas
         if (charset === "") charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         let retVal = "";
-        if (window.crypto && window.crypto.getRandomValues) {
+        if (window.crypto?.getRandomValues) {
             const values = new Uint32Array(passLength);
             window.crypto.getRandomValues(values);
             for (let i = 0; i < passLength; i++) {
@@ -138,7 +138,7 @@ const CreateView: React.FC<CreateViewProps> = ({ path, setPath, password, setPas
                     <label className="text-xs font-mono text-gray-400 uppercase flex justify-between items-center">
                         <span>Master Password</span>
                         <button
-                            onClick={() => setShowGenSettings(!showGenSettings)}
+                            onClick={() => { setShowGenSettings(!showGenSettings); }}
                             className={`text-[10px] uppercase tracking-wider hover:text-accent transition-colors ${showGenSettings ? 'text-accent' : 'text-gray-600'}`}
                         >
                             {showGenSettings ? 'Hide Options' : 'Options'}
@@ -171,25 +171,25 @@ const CreateView: React.FC<CreateViewProps> = ({ path, setPath, password, setPas
                                 <input
                                     type="range" min="8" max="64"
                                     value={passLength}
-                                    onChange={(e) => setPassLength(Number(e.target.value))}
+                                    onChange={(e) => { setPassLength(Number(e.target.value)); }}
                                     className="w-32 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-gray-400">
                                 <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                                    <input type="checkbox" checked={useUpper} onChange={() => setUseUpper(!useUpper)} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
+                                    <input type="checkbox" checked={useUpper} onChange={() => { setUseUpper(!useUpper); }} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
                                     A-Z
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                                    <input type="checkbox" checked={useLower} onChange={() => setUseLower(!useLower)} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
+                                    <input type="checkbox" checked={useLower} onChange={() => { setUseLower(!useLower); }} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
                                     a-z
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                                    <input type="checkbox" checked={useNumbers} onChange={() => setUseNumbers(!useNumbers)} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
+                                    <input type="checkbox" checked={useNumbers} onChange={() => { setUseNumbers(!useNumbers); }} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
                                     0-9
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                                    <input type="checkbox" checked={useSymbols} onChange={() => setUseSymbols(!useSymbols)} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
+                                    <input type="checkbox" checked={useSymbols} onChange={() => { setUseSymbols(!useSymbols); }} className="rounded border-gray-700 bg-gray-900 text-accent/80 focus:ring-0" />
                                     #$@
                                 </label>
                             </div>
@@ -202,7 +202,7 @@ const CreateView: React.FC<CreateViewProps> = ({ path, setPath, password, setPas
                         type="checkbox"
                         id="biometrics"
                         checked={enableBiometrics}
-                        onChange={(e) => setEnableBiometrics(e.target.checked)}
+                        onChange={(e) => { setEnableBiometrics(e.target.checked); }}
                         className="form-checkbox h-4 w-4 text-accent bg-black border-white/10 rounded focus:ring-offset-0 focus:ring-accent"
                     />
                     <label htmlFor="biometrics" className="text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
