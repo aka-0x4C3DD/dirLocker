@@ -2,27 +2,27 @@ name: Core & GUI CI
 
 on:
   push:
-    branches: [ "antiGravity" ]
+    branches: ["antiGravity"]
     paths:
-      - 'vault-core/**'
-      - 'cmd/**'
-      - 'pkg/**'
-      - '.github/workflows/ci.yml'
-      - 'go.mod'
-      - 'go.sum'
+      - "vault-core/**"
+      - "cmd/**"
+      - "pkg/**"
+      - ".github/workflows/ci.yml"
+      - "go.mod"
+      - "go.sum"
   pull_request:
-    branches: [ "antiGravity" ]
+    branches: ["antiGravity"]
     paths:
-      - 'vault-core/**'
-      - 'cmd/**'
-      - 'pkg/**'
-      - '.github/workflows/ci.yml'
-      - 'go.mod'
-      - 'go.sum'
+      - "vault-core/**"
+      - "cmd/**"
+      - "pkg/**"
+      - ".github/workflows/ci.yml"
+      - "go.mod"
+      - "go.sum"
 
 env:
-  GO_VERSION: '1.25'
-  NODE_VERSION: '20'
+  GO_VERSION: "1.25"
+  NODE_VERSION: "20"
 
 jobs:
   # Linux Build: Rust Core + Go CLI
@@ -43,11 +43,15 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev
+          sudo apt-get install -y libsodium-dev libgtk-3-dev libwebkit2gtk-4.1-dev gnome-keyring dbus-x11
 
       - name: Test Rust Core
         run: |
           cd vault-core
+          # Start dbus session and run tests
+          eval $(dbus-launch --sh-syntax)
+          # Unlock gnome-keyring with a dummy password
+          echo -n "dummy" | gnome-keyring-daemon --login
           cargo test --verbose
 
       - name: Build Rust Core (Release)
@@ -67,7 +71,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           fail_ci_if_error: false
-
 
       - name: Build Go CLI
         env:

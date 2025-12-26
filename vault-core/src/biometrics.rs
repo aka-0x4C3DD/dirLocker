@@ -50,9 +50,6 @@ mod tests {
 
     #[test]
     fn test_biometrics_lifecycle() {
-        if std::env::var("CI").is_ok() {
-            return;
-        }
         let service = "test_dirLocker_service";
         let user = unique_user();
         let password = "super_secret_password";
@@ -74,9 +71,6 @@ mod tests {
 
     #[test]
     fn test_biometrics_overwrite() {
-        if std::env::var("CI").is_ok() {
-            return;
-        }
         let service = "test_dirLocker_service";
         let user = unique_user();
         let pass1 = "password_v1";
