@@ -34,19 +34,27 @@ func NewWindowsFileHider() (FileHider, error) {
 		return nil, fmt.Errorf("APPDATA environment variable not set")
 	}
 
-	hiddenDir := filepath.Join(appData, "dirLocker", "hidden")
-	registryPath := filepath.Join(appData, "dirLocker", "registry.enc")
+	return newWindowsFileHiderWithRoot(filepath.Join(appData, "dirLocker"))
+}
+
+// newWindowsFileHiderWithRoot creates a new Windows file hider with a custom root directory
+// This is used for testing to isolate file operations
+func newWindowsFileHiderWithRoot(rootDir string) (FileHider, error) {
+	hiddenDir := filepath.Join(rootDir, "hidden")
+	registryPath := filepath.Join(rootDir, "registry.enc")
 
 	// Create hidden directory if it doesn't exist
 	if err := os.MkdirAll(hiddenDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create hidden directory: %w", err)
 	}
 
-	// Set hidden and system attributes on the dirLocker directory
-	dirLockerPath := filepath.Join(appData, "dirLocker")
-	if err := setWindowsAttributes(dirLockerPath, FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM); err != nil {
+	// Set hidden and system attributes on the root directory
+	if err := setWindowsAttributes(rootDir, FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM); err != nil {
 		// Log warning but don't fail - the directory will still work
-		fmt.Printf("Warning: failed to set hidden attributes on %s: %v\n", dirLockerPath, err)
+		// Only log if the directory exists (it might not if we're just setting up)
+		if _, err := os.Stat(rootDir); err == nil {
+			fmt.Printf("Warning: failed to set hidden attributes on %s: %v\n", rootDir, err)
+		}
 	}
 
 	// Use a default password for the registry (in production, this should be derived from user credentials)

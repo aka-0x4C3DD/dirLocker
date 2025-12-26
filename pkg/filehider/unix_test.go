@@ -5,14 +5,11 @@ package filehider
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
 func TestUnixFileHider_HideAndUnhideFile(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Unix-specific test")
-	}
+	// Check removed: runtime.GOOS == "windows" is impossible due to build tags
 
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "filehider_test")
@@ -90,9 +87,7 @@ func TestUnixFileHider_HideAndUnhideFile(t *testing.T) {
 }
 
 func TestUnixFileHider_HideDirectory(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Unix-specific test")
-	}
+	// Check removed: runtime.GOOS == "windows" is impossible due to build tags
 
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "filehider_test")
@@ -166,9 +161,7 @@ func TestUnixFileHider_HideDirectory(t *testing.T) {
 }
 
 func TestUnixFileHider_HideNonExistentFile(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Unix-specific test")
-	}
+	// Check removed: runtime.GOOS == "windows" is impossible due to build tags
 
 	hider, err := NewUnixFileHider()
 	if err != nil {
@@ -183,9 +176,7 @@ func TestUnixFileHider_HideNonExistentFile(t *testing.T) {
 }
 
 func TestUnixFileHider_UnhideNonExistentFile(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Unix-specific test")
-	}
+	// Check removed: runtime.GOOS == "windows" is impossible due to build tags
 
 	hider, err := NewUnixFileHider()
 	if err != nil {

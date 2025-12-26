@@ -18,9 +18,17 @@ import (
 	"bazil.org/fuse/fs"
 )
 
+// VaultOps defines the operations required from the vault
+type VaultOps interface {
+	ListFiles() ([]vault.FileEntry, error)
+	AddFile(path string, data []byte) error
+	CreateDirectory(path string) error
+	ExtractFile(path string) ([]byte, error)
+}
+
 // VaultFS implements a FUSE filesystem for vault contents
 type VaultFS struct {
-	vault  *vault.ManagedVault
+	vault  VaultOps
 	logger *logging.Logger
 	opts   *Options
 	conn   *fuse.Conn
@@ -49,7 +57,7 @@ type FileHandle struct {
 }
 
 // NewVaultFS creates a new FUSE filesystem for a vault
-func NewVaultFS(v *vault.ManagedVault, logger *logging.Logger, opts *Options) (*VaultFS, error) {
+func NewVaultFS(v VaultOps, logger *logging.Logger, opts *Options) (*VaultFS, error) {
 	if opts == nil {
 		opts = &Options{}
 	}

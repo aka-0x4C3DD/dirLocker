@@ -29,8 +29,9 @@ func TestWindowsFileHider_HideAndUnhideFile(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	// Create file hider (this will use a temporary location for testing)
-	hider, err := NewWindowsFileHider()
+	// Create file hider with a specific test root to ensure isolation
+	testHiderRoot := filepath.Join(tempDir, "hider_root")
+	hider, err := newWindowsFileHiderWithRoot(testHiderRoot)
 	if err != nil {
 		t.Fatalf("Failed to create Windows file hider: %v", err)
 	}
@@ -120,8 +121,9 @@ func TestWindowsFileHider_HideDirectory(t *testing.T) {
 		t.Fatalf("Failed to create test file 2: %v", err)
 	}
 
-	// Create file hider
-	hider, err := NewWindowsFileHider()
+	// Create file hider with a specific test root to ensure isolation
+	testHiderRoot := filepath.Join(tempDir, "hider_root")
+	hider, err := newWindowsFileHiderWithRoot(testHiderRoot)
 	if err != nil {
 		t.Fatalf("Failed to create Windows file hider: %v", err)
 	}
@@ -170,7 +172,15 @@ func TestWindowsFileHider_HideNonExistentFile(t *testing.T) {
 		t.Skip("Windows-specific test")
 	}
 
-	hider, err := NewWindowsFileHider()
+	// Create temporary directory for test root
+	tempDir, err := os.MkdirTemp("", "filehider_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	testHiderRoot := filepath.Join(tempDir, "hider_root")
+	hider, err := newWindowsFileHiderWithRoot(testHiderRoot)
 	if err != nil {
 		t.Fatalf("Failed to create Windows file hider: %v", err)
 	}
@@ -187,7 +197,15 @@ func TestWindowsFileHider_UnhideNonExistentFile(t *testing.T) {
 		t.Skip("Windows-specific test")
 	}
 
-	hider, err := NewWindowsFileHider()
+	// Create temporary directory for test root
+	tempDir, err := os.MkdirTemp("", "filehider_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	testHiderRoot := filepath.Join(tempDir, "hider_root")
+	hider, err := newWindowsFileHiderWithRoot(testHiderRoot)
 	if err != nil {
 		t.Fatalf("Failed to create Windows file hider: %v", err)
 	}

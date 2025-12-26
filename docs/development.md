@@ -55,6 +55,17 @@ make test
 
 - **Rust Tests**: Runs `cargo test` inside `vault-core`.
 
+### Windows Specific Testing
+
+When running tests on Windows, ensure your environment is correctly configured:
+
+1.  **Mounting Drivers**: The `TestMountIntegration` requires either **Dokany** or **WinFSP** to be installed. If neither is found, the test will skip securely.
+    - _Note_: The test runner verifies the drivers are present before attempting to mount.
+2.  **Cross-Compilation Variables**: **DO NOT** set `GOOS=linux` when running tests on Windows.
+    - Running `go test` with `GOOS=linux` on Windows will attempt to build and execute Linux binaries, resulting in `%1 is not a valid Win32 application` errors.
+    - Ensure `GOOS` is unset (empty) or set to `windows` in your terminal session before testing.
+    - _PowerShell_: `$env:GOOS=""`
+
 ### CI/CD Environment Notes
 
 When running tests in a CI environment (especially Linux):

@@ -238,7 +238,7 @@ func (ufh *UnixFileHider) IsHidden(path string) bool {
 // Helper functions
 
 // setExtendedAttributes sets extended attributes on Unix systems
-func setExtendedAttributes(path string) error {
+func setExtendedAttributes(_ string) error {
 	// This is a placeholder for extended attributes functionality
 	// On Linux, you would use the "github.com/pkg/xattr" package
 	// On macOS, you would use similar extended attributes APIs

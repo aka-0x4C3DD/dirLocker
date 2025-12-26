@@ -333,11 +333,18 @@ func (w *WindowsMounter) isRunningAsAdmin() bool {
 
 func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
 	// Create command to run our Dokany filesystem implementation via helper
-	exePath, err := os.Executable()
-	if err != nil {
-		w.logger.Error("Failed to get executable path", "error", err)
-		// Fallback to "dirlocker" if we can't find the executable
-		exePath = "dirlocker"
+	var exePath string
+	var err error
+
+	if options != nil && options.ExecutablePath != "" {
+		exePath = options.ExecutablePath
+	} else {
+		exePath, err = os.Executable()
+		if err != nil {
+			w.logger.Error("Failed to get executable path", "error", err)
+			// Fallback to "dirlocker" if we can't find the executable
+			exePath = "dirlocker"
+		}
 	}
 
 	args := []string{
@@ -365,10 +372,17 @@ func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *Moun
 
 func (w *WindowsMounter) createWinFSPCommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
 	// Create command to run our WinFSP filesystem implementation via helper
-	exePath, err := os.Executable()
-	if err != nil {
-		w.logger.Error("Failed to get executable path", "error", err)
-		exePath = "dirlocker"
+	var exePath string
+	var err error
+
+	if options != nil && options.ExecutablePath != "" {
+		exePath = options.ExecutablePath
+	} else {
+		exePath, err = os.Executable()
+		if err != nil {
+			w.logger.Error("Failed to get executable path", "error", err)
+			exePath = "dirlocker"
+		}
 	}
 
 	args := []string{

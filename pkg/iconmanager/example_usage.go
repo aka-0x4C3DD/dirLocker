@@ -57,34 +57,31 @@ func ExampleUsage() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
-		for {
-			select {
-			case <-ticker.C:
-				changed, err := iconManager.DetectIconChange()
+		for range ticker.C {
+			changed, err := iconManager.DetectIconChange()
+			if err != nil {
+				logger.WithError(err).Error("Failed to detect icon changes")
+				continue
+			}
+
+			if changed {
+				logger.Info("Icon change detected, updating...")
+
+				// Re-detect the current icon
+				newIcon, err := iconManager.DetectCustomIcon()
 				if err != nil {
-					logger.WithError(err).Error("Failed to detect icon changes")
+					logger.WithError(err).Error("Failed to detect new icon")
 					continue
 				}
 
-				if changed {
-					logger.Info("Icon change detected, updating...")
-
-					// Re-detect the current icon
-					newIcon, err := iconManager.DetectCustomIcon()
-					if err != nil {
-						logger.WithError(err).Error("Failed to detect new icon")
-						continue
-					}
-
-					// Apply the new icon (or default if none found)
-					if err := iconManager.ApplyIcon(newIcon); err != nil {
-						logger.WithError(err).Error("Failed to apply new icon")
+				// Apply the new icon (or default if none found)
+				if err := iconManager.ApplyIcon(newIcon); err != nil {
+					logger.WithError(err).Error("Failed to apply new icon")
+				} else {
+					if newIcon == "" {
+						logger.Info("Reverted to default icon")
 					} else {
-						if newIcon == "" {
-							logger.Info("Reverted to default icon")
-						} else {
-							logger.Infof("Applied new icon: %s", newIcon)
-						}
+						logger.Infof("Applied new icon: %s", newIcon)
 					}
 				}
 			}

@@ -7,13 +7,14 @@ import (
 
 // MountOptions contains configuration for mounting a vault
 type MountOptions struct {
-	MountPoint   string        // Path where vault should be mounted
-	ReadOnly     bool          // Mount as read-only
-	AllowOther   bool          // Allow other users to access mount
-	Timeout      time.Duration // Operation timeout
-	Debug        bool          // Enable debug logging
-	CacheTimeout time.Duration // File attribute cache timeout
-	MaxReadAhead int           // Maximum read-ahead size
+	MountPoint     string        // Path where vault should be mounted
+	ReadOnly       bool          // Mount as read-only
+	AllowOther     bool          // Allow other users to access mount
+	Timeout        time.Duration // Operation timeout
+	Debug          bool          // Enable debug logging
+	CacheTimeout   time.Duration // File attribute cache timeout
+	MaxReadAhead   int           // Maximum read-ahead size
+	ExecutablePath string        // Path to dirlocker executable (optional, uses os.Executable by default)
 }
 
 // MountInfo contains information about a mounted vault

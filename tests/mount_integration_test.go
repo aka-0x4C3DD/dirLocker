@@ -94,15 +94,31 @@ func TestMountIntegration(t *testing.T) {
 		mountPoint = filepath.Join(t.TempDir(), "mount")
 	}
 
+	// Build CLI binary for testing to avoid recursion loops when calling mount-helper
+	// logic from the test executable itself.
+	cliPath := filepath.Join(t.TempDir(), "dirlocker-cli.exe")
+	if runtime.GOOS == "windows" {
+		buildCmd := exec.Command("go", "build", "-o", cliPath, "./cmd/cli")
+		if out, err := buildCmd.CombinedOutput(); err != nil {
+			t.Fatalf("Failed to build CLI binary: %v\nOutput: %s", err, out)
+		}
+	}
+
 	// Test mounting
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	mountInfo, err := mountManager.Mount(ctx, testVault, &mount.MountOptions{
+	opts := &mount.MountOptions{
 		MountPoint: mountPoint,
 		ReadOnly:   false,
 		Debug:      true,
-	})
+	}
+
+	if runtime.GOOS == "windows" {
+		opts.ExecutablePath = cliPath
+	}
+
+	mountInfo, err := mountManager.Mount(ctx, testVault, opts)
 	require.NoError(t, err)
 	require.NotNil(t, mountInfo)
 
