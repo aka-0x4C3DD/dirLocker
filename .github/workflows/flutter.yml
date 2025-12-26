@@ -2,12 +2,12 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "antiGravity" ]
     paths:
       - 'clients/mobile/**'
       - '.github/workflows/flutter.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ "antiGravity" ]
     paths:
       - 'clients/mobile/**'
       - '.github/workflows/flutter.yml'
