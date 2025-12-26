@@ -4,7 +4,7 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV GO_VERSION=1.23.4
+ENV GO_VERSION=1.25.5
 ENV RUST_VERSION=1.83.0
 
 # 1. Install System Dependencies

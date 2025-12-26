@@ -5,8 +5,8 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV RUST_VERSION=1.70.0
-ENV FLUTTER_VERSION=3.13.0
+ENV RUST_VERSION=stable
+ENV FLUTTER_VERSION=3.22.0
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV PATH=$PATH:/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:/root/.cargo/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
 

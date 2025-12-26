@@ -1,0 +1,62 @@
+name: Docker Publish
+
+on:
+    push:
+        branches: ["antiGravity"]
+        tags: ["v*.*.*"]
+    pull_request:
+        branches: ["antiGravity"]
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+    build-and-push:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+
+        strategy:
+            matrix:
+                include:
+                    - dockerfile: build/docker/Dockerfile.linux
+                      tag-suffix: linux
+                      context: .
+                    - dockerfile: build/docker/Dockerfile.mobile
+                      tag-suffix: mobile
+                      context: .
+                      # Skip Windows Dockerfile for now as it requires Windows runner which is slower/costly
+                      # and building Windows containers on GH Actions defaults to Linux unless specified.
+                      # Building Windows containers requires a windows-latest runner and extra config.
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Log in to the Container registry
+              uses: docker/login-action@v2
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract metadata (tags, labels) for Docker
+              id: meta
+              uses: docker/metadata-action@v4
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                  tags: |
+                      type=raw,value=${{ matrix.tag-suffix }}-{{branch}}-{{sha}}
+                      type=ref,event=branch,suffix=-${{ matrix.tag-suffix }}
+                      type=ref,event=tag,suffix=-${{ matrix.tag-suffix }}
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v4
+              with:
+                  context: ${{ matrix.context }}
+                  file: ${{ matrix.dockerfile }}
+                  push: ${{ github.event_name != 'pull_request' }}
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
