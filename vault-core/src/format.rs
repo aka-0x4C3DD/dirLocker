@@ -506,8 +506,14 @@ impl VaultFormat {
         let file_table_bytes = file_table_json.as_bytes();
 
         // Check if file table fits in reserved space
-        let total_encrypted_size =
+        let mut total_encrypted_size =
             crypto_engine.nonce_size() + file_table_bytes.len() + crypto_engine.tag_size();
+
+        // Version 2+ adds 4-byte length prefix
+        if header.file_table_version >= 2 {
+            total_encrypted_size += 4;
+        }
+
         if total_encrypted_size as u64 > header.file_table_reserved_size {
             return Err(VaultError::internal_error(format!(
                 "File table size {} exceeds reserved space {}. Defragmentation required.",
@@ -559,14 +565,23 @@ impl VaultFormat {
             // Seek to file table position
             file.seek(std::io::SeekFrom::Start(header.file_table_offset))?;
 
-            // Write nonce first
+            // Write nonce first (or length then nonce for v2+)
+            let mut written_size = 0;
+
+            if header.file_table_version >= 2 {
+                let len_bytes = (encrypted_file_table.len() as u32).to_be_bytes();
+                file.write_all(&len_bytes)?;
+                written_size += 4;
+            }
+
             file.write_all(nonce)?;
+            written_size += nonce.len();
 
             // Write encrypted file table
             file.write_all(encrypted_file_table)?;
+            written_size += encrypted_file_table.len();
 
             // Zero out remaining reserved space to prevent data leakage
-            let written_size = nonce.len() + encrypted_file_table.len();
             let remaining_space = header.file_table_reserved_size as usize - written_size;
             if remaining_space > 0 {
                 let zeros = vec![0u8; remaining_space];
@@ -598,14 +613,23 @@ impl VaultFormat {
         // Seek to file table position
         file.seek(std::io::SeekFrom::Start(header.file_table_offset))?;
 
-        // Write nonce first
+        // Write nonce first (or length then nonce for v2+)
+        let mut written_size = 0;
+
+        if header.file_table_version >= 2 {
+            let len_bytes = (encrypted_file_table.len() as u32).to_be_bytes();
+            file.write_all(&len_bytes)?;
+            written_size += 4;
+        }
+
         file.write_all(nonce)?;
+        written_size += nonce.len();
 
         // Write encrypted file table
         file.write_all(encrypted_file_table)?;
+        written_size += encrypted_file_table.len();
 
         // Zero out remaining reserved space to prevent data leakage
-        let written_size = nonce.len() + encrypted_file_table.len();
         let remaining_space = header.file_table_reserved_size as usize - written_size;
         if remaining_space > 0 {
             let zeros = vec![0u8; remaining_space];
@@ -651,42 +675,72 @@ impl VaultFormat {
             file_size - file_table_offset
         };
 
-        // Check if we have enough data for a nonce
-        if max_read_size < crypto_engine.nonce_size() as u64 {
-            // Not enough data for a nonce, assume empty file table
-            return Ok(FileTable::new());
-        }
+        let (nonce, encrypted_data) = if header.file_table_version >= 2 {
+            // Version 2+: Read length prefix, then nonce, then exact data
+            if max_read_size < (4 + crypto_engine.nonce_size()) as u64 {
+                return Ok(FileTable::new());
+            }
 
-        // Read nonce
-        let mut nonce = vec![0u8; crypto_engine.nonce_size()];
-        reader.read_exact(&mut nonce)?;
+            // Read data length
+            let mut len_bytes = [0u8; 4];
+            reader.read_exact(&mut len_bytes)?;
+            let data_len = u32::from_be_bytes(len_bytes) as usize;
 
-        // Read all remaining data in the reserved space (may include padding)
-        let remaining_data_size = max_read_size - crypto_engine.nonce_size() as u64;
-        if remaining_data_size == 0 {
-            // Empty file table
-            return Ok(FileTable::new());
-        }
+            // Verify basic sanity of data length
+            if data_len as u64 > max_read_size - 4 - crypto_engine.nonce_size() as u64 {
+                // Corrupted length or data
+                return Ok(FileTable::new());
+            }
 
-        let mut encrypted_data = vec![0u8; remaining_data_size as usize];
-        reader.read_exact(&mut encrypted_data)?;
+            // Read nonce
+            let mut nonce = vec![0u8; crypto_engine.nonce_size()];
+            reader.read_exact(&mut nonce)?;
 
-        // Find the actual encrypted file table by looking for non-zero data
-        // (the rest is padding zeros)
-        let mut actual_encrypted_size = encrypted_data.len();
-        while actual_encrypted_size > crypto_engine.tag_size()
-            && encrypted_data[actual_encrypted_size - 1] == 0
-        {
-            actual_encrypted_size -= 1;
-        }
+            // Read exact encrypted data
+            let mut data = vec![0u8; data_len];
+            reader.read_exact(&mut data)?;
 
-        if actual_encrypted_size < crypto_engine.tag_size() {
-            // No valid encrypted data found
-            return Ok(FileTable::new());
-        }
+            (nonce, data)
+        } else {
+            // Version 1: Read nonce, then all data, then trim zeros
+            if max_read_size < crypto_engine.nonce_size() as u64 {
+                // Not enough data for a nonce, assume empty file table
+                return Ok(FileTable::new());
+            }
 
-        // Trim to actual encrypted data size
-        encrypted_data.truncate(actual_encrypted_size);
+            // Read nonce
+            let mut nonce = vec![0u8; crypto_engine.nonce_size()];
+            reader.read_exact(&mut nonce)?;
+
+            // Read all remaining data in the reserved space (may include padding)
+            let remaining_data_size = max_read_size - crypto_engine.nonce_size() as u64;
+            if remaining_data_size == 0 {
+                // Empty file table
+                return Ok(FileTable::new());
+            }
+
+            let mut encrypted_data = vec![0u8; remaining_data_size as usize];
+            reader.read_exact(&mut encrypted_data)?;
+
+            // Find the actual encrypted file table by looking for non-zero data
+            // (the rest is padding zeros)
+            let mut actual_encrypted_size = encrypted_data.len();
+            while actual_encrypted_size > crypto_engine.tag_size()
+                && encrypted_data[actual_encrypted_size - 1] == 0
+            {
+                actual_encrypted_size -= 1;
+            }
+
+            if actual_encrypted_size < crypto_engine.tag_size() {
+                // No valid encrypted data found
+                return Ok(FileTable::new());
+            }
+
+            // Trim to actual encrypted data size
+            encrypted_data.truncate(actual_encrypted_size);
+
+            (nonce, encrypted_data)
+        };
 
         // Use consistent header JSON as Additional Authenticated Data (AAD)
         let header_aad = Self::serialize_header_for_aad(header)?;
