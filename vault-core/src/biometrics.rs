@@ -39,13 +39,17 @@ pub fn delete_credential(service: &str, user: &str) -> VaultResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     // Helper to generate a unique user for testing to avoid conflicts
     fn unique_user() -> String {
+        let count = COUNTER.fetch_add(1, Ordering::Relaxed);
         let start = SystemTime::now();
         let since_the_epoch = start.duration_since(UNIX_EPOCH).unwrap();
-        format!("test_user_{}", since_the_epoch.as_millis())
+        format!("test_user_{}_{}", since_the_epoch.as_millis(), count)
     }
 
     #[test]
