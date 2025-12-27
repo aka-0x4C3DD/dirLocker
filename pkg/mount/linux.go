@@ -252,6 +252,14 @@ func (l *LinuxMounter) CheckDrivers() error {
 // Helper methods
 
 func (l *LinuxMounter) isFUSEAvailable() bool {
+	// Check if fusermount3 or fusermount is available in PATH
+	// This is required for hanwen/go-fuse and most FUSE implementations
+	_, err3 := exec.LookPath("fusermount3")
+	_, err := exec.LookPath("fusermount")
+	if err3 != nil && err != nil {
+		return false
+	}
+
 	// Check for FUSE kernel module
 	if _, err := os.Stat("/dev/fuse"); err == nil {
 		return true
@@ -372,17 +380,22 @@ func (l *LinuxMounter) isMountPointMounted(mountPoint string) bool {
 
 func (l *LinuxMounter) createFUSECommand(vault VaultInterface, options *MountOptions) *exec.Cmd {
 	// Create command to run our FUSE filesystem implementation via helper
-	exePath, err := os.Executable()
-	if err != nil {
-		l.logger.Error("Failed to get executable path", "error", err)
-		exePath = "dirlocker"
-	}
+	exePath := options.ExecutablePath
+	var err error
 
-	// If we are running tests, the executable will be the test binary (e.g., .../tests.test)
-	// In this case, we implemented a fallback to look for the "dirlocker" binary in PATH
-	if strings.HasSuffix(exePath, ".test") || strings.Contains(exePath, "go-build") {
-		l.logger.Info("Running in test mode, using 'dirlocker' from PATH instead of current executable", "current_exe", exePath)
-		exePath = "dirlocker"
+	if exePath == "" {
+		exePath, err = os.Executable()
+		if err != nil {
+			l.logger.Error("Failed to get executable path", "error", err)
+			exePath = "dirlocker"
+		}
+
+		// If we are running tests, the executable will be the test binary (e.g., .../tests.test)
+		// In this case, we implemented a fallback to look for the "dirlocker" binary in PATH
+		if strings.HasSuffix(exePath, ".test") || strings.Contains(exePath, "go-build") {
+			l.logger.Info("Running in test mode, using 'dirlocker' from PATH instead of current executable", "current_exe", exePath)
+			exePath = "dirlocker"
+		}
 	}
 
 	args := []string{
