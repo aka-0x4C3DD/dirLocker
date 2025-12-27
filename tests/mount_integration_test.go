@@ -70,20 +70,8 @@ func TestMountIntegration(t *testing.T) {
 		t.Skipf("Required drivers not available: %v", err)
 	}
 
-	// Check if mount executables exist (they may not be built yet)
-	if runtime.GOOS == "windows" {
-		requiredExes := []string{"dirlocker-winfsp.exe", "dirlocker-dokany.exe"}
-		var foundExe bool
-		for _, exe := range requiredExes {
-			if _, err := exec.LookPath(exe); err == nil {
-				foundExe = true
-				break
-			}
-		}
-		if !foundExe {
-			t.Skipf("Mount executables not found in PATH: %v", requiredExes)
-		}
-	}
+	// Executables are built dynamically in this test, so we skip the pre-check for specific binary names.
+	// The build step below will ensure we have what we need.
 
 	// Determine mount point based on platform
 	var mountPoint string
@@ -98,7 +86,8 @@ func TestMountIntegration(t *testing.T) {
 	// logic from the test executable itself.
 	cliPath := filepath.Join(t.TempDir(), "dirlocker-cli.exe")
 	if runtime.GOOS == "windows" {
-		buildCmd := exec.Command("go", "build", "-o", cliPath, "./cmd/cli")
+		// Note: tests are run from the tests/ directory, so we need to go up one level
+		buildCmd := exec.Command("go", "build", "-o", cliPath, "../cmd/cli")
 		if out, err := buildCmd.CombinedOutput(); err != nil {
 			t.Fatalf("Failed to build CLI binary: %v\nOutput: %s", err, out)
 		}
@@ -244,9 +233,24 @@ func TestMountErrors(t *testing.T) {
 		mountPoint = "/tmp/invalid-mount"
 	}
 
-	_, err = mountManager.Mount(ctx, mockVault, &mount.MountOptions{
+	// Build CLI binary for testing to avoid recursion loops
+	cliPath := filepath.Join(t.TempDir(), "dirlocker-cli.exe")
+	if runtime.GOOS == "windows" {
+		// Note: tests are run from the tests/ directory, so we need to go up one level
+		buildCmd := exec.Command("go", "build", "-o", cliPath, "../cmd/cli")
+		if out, err := buildCmd.CombinedOutput(); err != nil {
+			t.Fatalf("Failed to build CLI binary: %v\nOutput: %s", err, out)
+		}
+	}
+
+	opts := &mount.MountOptions{
 		MountPoint: mountPoint,
-	})
+	}
+	if runtime.GOOS == "windows" {
+		opts.ExecutablePath = cliPath
+	}
+
+	_, err = mountManager.Mount(ctx, mockVault, opts)
 	assert.Error(t, err)
 
 	// Test unmounting non-existent mount

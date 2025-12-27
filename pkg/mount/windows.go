@@ -103,6 +103,12 @@ func (w *WindowsMounter) Mount(ctx context.Context, vault VaultInterface, option
 		}
 	}
 
+	// Channel to signal process exit
+	processExit := make(chan error, 1)
+	go func() {
+		processExit <- cmd.Wait()
+	}()
+
 	// Wait for mount to be ready with timeout
 	mountReady := make(chan bool, 1)
 	go func() {
@@ -124,6 +130,12 @@ func (w *WindowsMounter) Mount(ctx context.Context, vault VaultInterface, option
 				Code:    MountErrorTimeout,
 				Message: "mount operation timed out",
 			}
+		}
+	case err := <-processExit:
+		return nil, &MountError{
+			Code:    MountErrorUnknown,
+			Message: "mount process exited prematurely",
+			Cause:   err,
 		}
 	case <-ctx.Done():
 		cmd.Process.Kill()
@@ -351,6 +363,7 @@ func (w *WindowsMounter) createDokanyCommand(vault VaultInterface, options *Moun
 		"mount-helper", "dokany",
 		"--vault", vault.GetPath(),
 		"--drive", options.MountPoint,
+		"--password", vault.GetPassword(),
 	}
 
 	if options.ReadOnly {
@@ -389,6 +402,7 @@ func (w *WindowsMounter) createWinFSPCommand(vault VaultInterface, options *Moun
 		"mount-helper", "winfsp",
 		"--vault", vault.GetPath(),
 		"--drive", options.MountPoint,
+		"--password", vault.GetPassword(),
 	}
 
 	if options.ReadOnly {
@@ -444,8 +458,14 @@ func (w *WindowsMounter) forceUnmountDrive(driveLetter string) error {
 		return nil // Already unmounted
 	}
 
-	// Additional cleanup could be added here
-	w.logger.Info("Force unmounted drive", "drive", driveLetter)
+	// Try to eject the drive using subst (generic fallback)
+	if err := exec.Command("subst", driveLetter[0:2], "/d").Run(); err != nil {
+		w.logger.Warn("Failed to force unmount with subst", "error", err, "drive", driveLetter)
+		// We could try 'net use /delete' here as well
+	} else {
+		w.logger.Info("Force unmounted drive using subst", "drive", driveLetter)
+	}
+
 	return nil
 }
 

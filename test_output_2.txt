@@ -1,0 +1,34 @@
+=== RUN   TestMountIntegration
+time="2025-12-27T12:25:05+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-27T12:25:05+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-27T12:25:05+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+time="2025-12-27T12:25:05+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+time="2025-12-27T12:25:05+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+time="2025-12-27T12:25:05+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+time="2025-12-27T12:25:06+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-27T12:25:06+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-27T12:25:09+05:30" level=info msg="Mounting vault" mount_point="Z:" vault_path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+time="2025-12-27T12:25:09+05:30" level=info msg="Starting Windows mount process" drive="Z:" type=winfsp
+time="2025-12-27T12:25:39+05:30" level=error msg="Failed to mount vault" error="mount operation cancelled: context deadline exceeded" vault_path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+    mount_integration_test.go:111: 
+        	Error Trace:	G:/projects/dirLocker/tests/mount_integration_test.go:111
+        	Error:      	Received unexpected error:
+        	            	mount operation cancelled: context deadline exceeded
+        	Test:       	TestMountIntegration
+time="2025-12-27T12:25:39+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+time="2025-12-27T12:25:39+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration598031945\\001\\test.vault"
+--- FAIL: TestMountIntegration (33.73s)
+=== RUN   TestMountErrors
+time="2025-12-27T12:25:39+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-27T12:25:39+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-27T12:25:42+05:30" level=info msg="Mounting vault" mount_point="Y:" vault_path=/nonexistent/vault.vault
+time="2025-12-27T12:25:42+05:30" level=info msg="Starting Windows mount process" drive="Y:" type=winfsp
+time="2025-12-27T12:25:43+05:30" level=error msg="Failed to mount vault" error="mount process exited prematurely: exit status 1" vault_path=/nonexistent/vault.vault
+--- PASS: TestMountErrors (4.33s)
+=== RUN   TestMountCleanup
+time="2025-12-27T12:25:43+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-27T12:25:43+05:30" level=info msg="Loaded existing mounts" count=0
+--- PASS: TestMountCleanup (0.01s)
+FAIL
+FAIL	dirLocker/tests	38.579s
+FAIL

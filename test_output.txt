@@ -1,0 +1,23 @@
+=== RUN   TestMountIntegration
+time="2025-12-27T12:23:40+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-27T12:23:40+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-27T12:23:40+05:30" level=info msg="Creating new vault" cipher=1 path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+time="2025-12-27T12:23:40+05:30" level=info msg="Successfully created vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+time="2025-12-27T12:23:40+05:30" level=info msg="Opening vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+time="2025-12-27T12:23:40+05:30" level=info msg="Successfully opened vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+time="2025-12-27T12:23:40+05:30" level=info msg="Using WinFSP for Windows mounting"
+time="2025-12-27T12:23:40+05:30" level=info msg="Loaded existing mounts" count=0
+time="2025-12-27T12:23:43+05:30" level=info msg="Mounting vault" mount_point="Z:" vault_path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+time="2025-12-27T12:23:43+05:30" level=info msg="Starting Windows mount process" drive="Z:" type=winfsp
+time="2025-12-27T12:23:44+05:30" level=error msg="Failed to mount vault" error="mount process exited prematurely" vault_path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+    mount_integration_test.go:111: 
+        	Error Trace:	G:/projects/dirLocker/tests/mount_integration_test.go:111
+        	Error:      	Received unexpected error:
+        	            	mount process exited prematurely
+        	Test:       	TestMountIntegration
+time="2025-12-27T12:23:44+05:30" level=info msg="Closing vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+time="2025-12-27T12:23:44+05:30" level=info msg="Successfully closed vault" path="C:\\Users\\0X00SY~1\\AppData\\Local\\Temp\\TestMountIntegration1775718066\\001\\test.vault"
+--- FAIL: TestMountIntegration (4.26s)
+FAIL
+FAIL	dirLocker/tests	4.777s
+FAIL

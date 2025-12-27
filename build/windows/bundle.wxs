@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-    <Bundle Name="dirLocker" Version="1.0.0.0" Manufacturer="dirLocker Team" UpgradeCode="PUT-GUID-HERE">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+    <Bundle Name="dirLocker" Version="1.0.0.0" Manufacturer="dirLocker Team" UpgradeCode="c334a72a-09d5-4a01-8914-110e8764dea1">
         <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" />
+
+        <util:RegistrySearch Id="WinFspInstalledCheck"
+            Root="HKLM"
+            Key="SOFTWARE\WinFsp"
+            Value="InstallDir"
+            Variable="WinFspInstalled"
+            Result="exists" />
 
         <Chain>
             <!-- WebView2 Runtime (Evergreen Bootstrapper) -->
@@ -52,7 +59,8 @@
                 Permanent="yes"
                 Vital="yes"
                 Compressed="no"
-                InstallCommand="/quiet" />
+                InstallCommand="/quiet"
+                DetectCondition="WinFspInstalled" />
         </PackageGroup>
     </Fragment>
 </Wix>

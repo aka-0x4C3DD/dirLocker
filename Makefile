@@ -77,6 +77,9 @@ ifeq ($(IS_WINDOWS),1)
 	@if (-not (Test-Path dist)) { New-Item -ItemType Directory -Force -Path dist | Out-Null }
 	@if (-not (Test-Path build/windows)) { New-Item -ItemType Directory -Force -Path build/windows | Out-Null }
 	
+	@Write-Host "Fetching dependencies..."
+	@pwsh -File scripts/fetch_win_deps.ps1
+	
 	@if (Get-Command candle -ErrorAction SilentlyContinue) { \
 		Write-Host "Compiling WiX installer..."; \
 		candle -out dist/installer.wixobj build/windows/installer.wxs; \

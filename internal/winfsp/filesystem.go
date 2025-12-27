@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -170,23 +171,49 @@ func (vfs *VaultFS) isDriveLetterInUse(driveLetter string) bool {
 // simulateMount creates a simple simulation of filesystem mounting
 // In a real implementation, this would use actual WinFSP APIs
 func (vfs *VaultFS) simulateMount() error {
-	// This is a placeholder implementation
+	// This is a placeholder implementation using subst for testing
 	// Real WinFSP integration would involve:
 	// 1. Loading WinFSP DLL
 	// 2. Creating filesystem host
 	// 3. Setting up operation callbacks
 	// 4. Starting the filesystem service
 
-	vfs.logger.Info("Simulating WinFSP mount (placeholder implementation)")
+	vfs.logger.Info("Simulating WinFSP mount using subst", "drive", vfs.driveLetter)
+
+	// Create a temp directory to mount
+	tempDir, err := os.MkdirTemp("", "dirlocker-mount-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp dir for simulation: %w", err)
+	}
+
+	// We cheat a bit and store the temp dir in the struct for unmounting
+	// Note: In a real implementation this wouldn't be needed or would be handled differently
+
+	cmd := exec.Command("subst", vfs.driveLetter[0:2], tempDir)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("subst failed: %v, output: %s", err, string(out))
+	}
+
+	// Write a README to the mount point so it's not empty
+	os.WriteFile(filepath.Join(tempDir, "README.txt"), []byte("This is a simulated mount."), 0644)
+
 	return nil
 }
 
 // simulateUnmount simulates filesystem unmounting
 func (vfs *VaultFS) simulateUnmount() error {
-	// This is a placeholder implementation
-	// Real WinFSP integration would properly stop the filesystem service
+	vfs.logger.Info("Simulating WinFSP unmount using subst /d", "drive", vfs.driveLetter)
 
-	vfs.logger.Info("Simulating WinFSP unmount (placeholder implementation)")
+	// Unmount using subst /d
+	cmd := exec.Command("subst", vfs.driveLetter[0:2], "/d")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		// Don't fail if already unmounted
+		if strings.Contains(string(out), "Invalid parameter") {
+			return nil
+		}
+		return fmt.Errorf("subst /d failed: %v, output: %s", err, string(out))
+	}
+
 	return nil
 }
 

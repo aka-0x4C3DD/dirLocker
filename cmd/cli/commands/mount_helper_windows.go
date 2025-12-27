@@ -146,6 +146,9 @@ func runMountHelper(logger *logging.Logger, driverType, vaultPath, mountPoint, p
 		return fmt.Errorf("mount failed: %w", err)
 	}
 
+	// Wait for context cancellation (signal or error)
+	<-ctx.Done()
+
 	if err := fs.Unmount(); err != nil {
 		logger.Error("Unmount failed", "error", err)
 	}
