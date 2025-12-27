@@ -219,3 +219,7 @@ TASK_*_IMPLEMENTATION_SUMMARY.md
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+
+#Ignore cursor AI rules
+.cursor\rules\codacy.mdc
