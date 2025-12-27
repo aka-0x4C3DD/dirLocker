@@ -73,9 +73,12 @@ jobs:
           # Add bin to PATH so integration tests can find the dirlocker binary, while preserving system paths (like gcc)
           export PATH=${{ github.workspace }}/bin:$PATH
           # Run tests with coverage
-          # Note: "coverage: [no statements]" warnings are normal for packages with only types/interfaces
-          # and do not indicate a test failure
-          go test -v -coverprofile=coverage.txt -covermode=atomic ./pkg/... ./internal/... ./tests/...
+          # Collect coverage only for pkg and internal packages (not tests package, which has no code to cover)
+          # The tests package is excluded from coverage as it only contains test code
+          # Use a coverage filename without dots to avoid it being interpreted as a package pattern
+          go test -v -coverprofile=coverage_data -covermode=atomic ./pkg/... ./internal/...
+          # Run tests package separately without coverage to avoid "[no statements]" error
+          go test -v ./tests/...
 
   # Windows Build: Wails GUI
   build-windows:
