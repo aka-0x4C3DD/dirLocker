@@ -199,17 +199,37 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	var entries []fuse.Dirent
 	for _, file := range files {
-		entry := fuse.Dirent{
-			Name: file.Name,
+		// Filter entries that belong to this directory
+		// We expect file.Name to be the full path in the vault
+		dirPath := filepath.ToSlash(filepath.Dir(file.Name))
+
+		// Handle root directory comparison
+		// If d.path is "/", filepath.Dir("/test.txt") returns "/"
+		// If d.path is "/subdir", filepath.Dir("/subdir/nested.txt") returns "/subdir"
+
+		// Clean paths to ensure consistent comparison
+		cleanDirPath := filepath.Clean(dirPath)
+		cleanCurrentPath := filepath.Clean(d.path)
+
+		// On Windows, filepath.Dir might return backslashes, but our vault paths use forward slashes (usually)
+		// We should ensure we are comparing normalized paths
+		if cleanDirPath == "." {
+			cleanDirPath = "/" // Handle root if returned as .
 		}
 
-		if file.IsDir {
-			entry.Type = fuse.DT_Dir
-		} else {
-			entry.Type = fuse.DT_File
-		}
+		if cleanDirPath == cleanCurrentPath {
+			entry := fuse.Dirent{
+				Name: filepath.Base(file.Name),
+			}
 
-		entries = append(entries, entry)
+			if file.IsDir {
+				entry.Type = fuse.DT_Dir
+			} else {
+				entry.Type = fuse.DT_File
+			}
+
+			entries = append(entries, entry)
+		}
 	}
 
 	d.fs.logger.Debug("Dir.ReadDirAll result", "path", d.path, "count", len(entries))

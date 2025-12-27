@@ -5,7 +5,6 @@ package fuse
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -43,19 +42,19 @@ func TestVaultFS_FileOperations(t *testing.T) {
 	mockVault := &MockVault{
 		files: map[string]*MockFile{
 			"/test.txt": {
-				Name:  "test.txt",
+				Name:  "/test.txt",
 				Data:  []byte("Hello, World!"),
 				IsDir: false,
 				Size:  13,
 			},
 			"/subdir": {
-				Name:  "subdir",
+				Name:  "/subdir",
 				Data:  nil,
 				IsDir: true,
 				Size:  0,
 			},
 			"/subdir/nested.txt": {
-				Name:  "nested.txt",
+				Name:  "/subdir/nested.txt",
 				Data:  []byte("Nested file content"),
 				IsDir: false,
 				Size:  19,
@@ -141,7 +140,10 @@ func TestVaultFS_FileHandles(t *testing.T) {
 	assert.True(t, handle.Modified)
 
 	// Verify the data was written
-	expected := []byte("Hello, FUSE!")
+	// Note: The write was length 5 at offset 7.
+	// "Hello, World!" (len 13) -> "Hello, " (0-6) + "FUSE!" (7-11) + "!" (12)
+	// So we expect "Hello, FUSE!!"
+	expected := []byte("Hello, FUSE!!")
 	assert.Equal(t, expected, handle.Data)
 }
 
@@ -222,7 +224,7 @@ func (m *MockVault) ExtractFile(path string) ([]byte, error) {
 
 func (m *MockVault) AddFile(path string, data []byte) error {
 	m.files[path] = &MockFile{
-		Name:  filepath.Base(path),
+		Name:  path,
 		Data:  data,
 		IsDir: false,
 		Size:  int64(len(data)),
@@ -232,7 +234,7 @@ func (m *MockVault) AddFile(path string, data []byte) error {
 
 func (m *MockVault) CreateDirectory(path string) error {
 	m.files[path] = &MockFile{
-		Name:  filepath.Base(path),
+		Name:  path,
 		Data:  nil,
 		IsDir: true,
 		Size:  0,

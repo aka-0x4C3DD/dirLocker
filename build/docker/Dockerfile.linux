@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
     libgtk-3-dev \
     libwebkit2gtk-4.0-dev \
     fuse3 \
-    libfuse-dev \
+    libfuse3-dev \
     pkg-config \
     nsis \
     && rm -rf /var/lib/apt/lists/*
