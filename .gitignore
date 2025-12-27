@@ -39,6 +39,7 @@ vendor/
 *.out
 *.prof
 coverage.txt
+coverage_data
 coverage.html
 
 # Go workspace file
