@@ -14,22 +14,22 @@ graph TB
         CLI[CLI Application<br/>Go + Cobra]
         GUI[GUI Application<br/>Go + Qt]
     end
-    
+
     subgraph "Mobile Applications"
         iOS[iOS App<br/>Swift + File Provider]
         Android[Android App<br/>Kotlin + SAF]
     end
-    
+
     subgraph "Core Library"
         Crypto[Crypto Library<br/>Rust + libsodium]
     end
-    
+
     subgraph "Platform Integration"
         WinFS[Windows<br/>Dokany/WinFSP]
         MacFS[macOS<br/>macFUSE]
         LinuxFS[Linux<br/>FUSE]
     end
-    
+
     subgraph "Build System"
         MSI[MSI Packages]
         DMG[DMG Packages]
@@ -37,16 +37,16 @@ graph TB
         APK[APK/AAB Packages]
         IPA[IPA Packages]
     end
-    
+
     CLI --> Crypto
     GUI --> Crypto
     iOS --> Crypto
     Android --> Crypto
-    
+
     GUI --> WinFS
     GUI --> MacFS
     GUI --> LinuxFS
-    
+
     CLI -.-> MSI
     GUI -.-> MSI
     GUI -.-> DMG
@@ -58,6 +58,7 @@ graph TB
 ### Layered Architecture Design
 
 1. **Core Cryptographic Layer (Rust)**
+
    - Vault format implementation and parsing
    - Encryption/decryption operations (AES-256-GCM, XChaCha20-Poly1305)
    - Key derivation (Argon2id) and management (HKDF)
@@ -65,6 +66,7 @@ graph TB
    - Cross-platform C-compatible FFI interface
 
 2. **Application Logic Layer (Go)**
+
    - Business logic and workflow management
    - Vault operations wrapper and abstraction
    - File hiding functionality implementation
@@ -72,10 +74,12 @@ graph TB
    - Configuration and settings management
 
 3. **User Interface Layer**
+
    - Desktop: Qt-based GUI and CLI interface
    - Mobile: Native platform applications with file provider integration
 
 4. **Platform Integration Layer**
+
    - Filesystem mounting (FUSE, Dokany, macFUSE)
    - OS-specific file hiding mechanisms
    - Platform keystore integration
@@ -92,6 +96,7 @@ graph TB
 ### Core Cryptographic Library (Rust)
 
 **Primary Responsibilities:**
+
 - Implement vault container format specification
 - Provide secure cryptographic operations
 - Handle file chunking and streaming
@@ -99,13 +104,15 @@ graph TB
 - Export C-compatible FFI interface
 
 **Key Dependencies:**
-- `libsodium` or `sodiumoxide` for XChaCha20-Poly1305
+
+- `chacha20poly1305` for XChaCha20-Poly1305 operations
 - `aes-gcm` for AES-256-GCM operations
 - `argon2` for key derivation functions
 - `hkdf` for key expansion and subkey derivation
 - `x25519-dalek` for asymmetric key operations
 
 **Public API Interface:**
+
 ```rust
 // Core vault operations
 pub extern "C" fn vault_create(path: *const c_char, password: *const c_char, cipher: u32) -> VaultHandle;
@@ -130,12 +137,14 @@ pub extern "C" fn vault_change_password(handle: VaultHandle, old_pass: *const c_
 ### Go Application Layer
 
 **Desktop CLI Application:**
+
 - Command-line interface using Cobra framework
 - Comprehensive vault management operations
 - Scriptable interface for automation
 - Cross-platform binary distribution
 
 **Desktop GUI Application:**
+
 - Qt-based graphical interface using therecipe/qt
 - Vault browser with tree view and file operations
 - Mount/unmount functionality with platform integration
@@ -143,6 +152,7 @@ pub extern "C" fn vault_change_password(handle: VaultHandle, old_pass: *const c_
 - Settings and configuration management
 
 **Vault Manager Component:**
+
 ```go
 type VaultManager struct {
     coreLib    *CoreLibrary
@@ -158,6 +168,7 @@ func (vm *VaultManager) UnmountVault(vault *Vault) error
 ```
 
 **File Hiding System:**
+
 ```go
 type FileHider interface {
     HideFile(path string) error
@@ -178,6 +189,7 @@ type UnixFileHider struct {
 ```
 
 **Icon Management System:**
+
 ```go
 type IconManager struct {
     appDir      string
@@ -193,47 +205,54 @@ func (im *IconManager) HandleMultipleIcons(icons []string) (string, error)
 ### Mobile Applications
 
 **iOS Application (Swift):**
+
 - File Provider extension for Files app integration
 - Core library integration via C FFI
 - Touch ID/Face ID authentication
 - Document picker and sharing integration
 
 **Android Application (Kotlin):**
+
 - DocumentProvider implementation using SAF
 - Material Design UI components
 - Biometric authentication support
 - Core library integration via JNI
 
 ### Biometric Authentication Layer
-*   **Design**: 3-Tier Architecture.
-    1.  **React**: Manages UI consent and calls `GetVaultID` to retrieve immutable UUID.
-    2.  **Go Middleware**: Exposes `GetVaultID` and bridges credential requests.
-    3.  **Rust Core**: Uses `keyring` crate to interface with Windows Credential Manager / Keychain.
-*   **Security**: Credentials are never stored in the vault file itself. They are stored in the OS enclave, keyed by `dirLocker::{vault_uuid}`.
+
+- **Design**: 3-Tier Architecture.
+  1.  **React**: Manages UI consent and calls `GetVaultID` to retrieve immutable UUID.
+  2.  **Go Middleware**: Exposes `GetVaultID` and bridges credential requests.
+  3.  **Rust Core**: Uses `keyring` crate to interface with Windows Credential Manager / Keychain.
+- **Security**: Credentials are never stored in the vault file itself. They are stored in the OS enclave, keyed by `dirLocker::{vault_uuid}`.
 
 ### Platform Integration Components
 
 **Filesystem Mounting:**
+
 - Windows: Dokany or WinFSP integration with UAC elevation handling
 - macOS: macFUSE integration with Gatekeeper compatibility
 - Linux: FUSE integration with distribution-specific packaging
-> For detailed implementation details of the filesystem layer, see [Filesystem Architecture](filesystem.md).
+  > For detailed implementation details of the filesystem layer, see [Filesystem Architecture](filesystem.md).
 
 **File Hiding Implementation:**
 
-*Windows Strategy:*
+_Windows Strategy:_
+
 - Move files to `%APPDATA%\VaultApp\hidden\{uuid}\`
 - Apply Windows hidden and system file attributes
 - Store encrypted registry in `%APPDATA%\VaultApp\registry.enc`
 - Use Windows API for attribute manipulation
 
-*Unix Strategy (macOS/Linux):*
+_Unix Strategy (macOS/Linux):_
+
 - Move files to `~/.vaultapp/hidden/{uuid}/`
 - Use extended attributes for additional metadata
 - Store encrypted registry in `~/.vaultapp/registry.enc`
 - Leverage platform-specific hidden directory conventions
 
-*Mobile Strategy:*
+_Mobile Strategy:_
+
 - iOS: Use app Documents directory with file coordination
 - Android: Use app private storage with SAF integration
 - Both platforms naturally sandbox files from other applications
@@ -257,6 +276,7 @@ Chunks: AEAD-encrypted file content segments
 ```
 
 **Header JSON Structure (Fixed Core):**
+
 ```json
 {
   "cipher": "xchacha20poly1305" | "aes-256-gcm",
@@ -279,6 +299,7 @@ Chunks: AEAD-encrypted file content segments
 ```
 
 **Metadata Sections Structure:**
+
 ```
 [SectionCount][Section1][Section2]...[SectionN]
 
@@ -291,6 +312,7 @@ Each Section: [TypeLen][Type][DataLen][EncryptedData]
 ```
 
 **Supported Metadata Section Types:**
+
 - `"hidden_tables"`: Plausible deniability hidden file table metadata
 - `"sharing_keys"`: X25519 recipient keys and envelope data
 - `"recovery_info"`: Recovery key metadata and hints
@@ -298,6 +320,7 @@ Each Section: [TypeLen][Type][DataLen][EncryptedData]
 - `"audit_log"`: Encrypted operation audit trail
 
 **File Table Structure:**
+
 ```json
 {
   "files": [
@@ -305,9 +328,7 @@ Each Section: [TypeLen][Type][DataLen][EncryptedData]
       "name_encrypted": "base64-encrypted-filename",
       "iv": "base64-nonce",
       "size": 1024,
-      "chunks": [
-        {"offset": 2048, "size": 1024, "iv": "base64-chunk-nonce"}
-      ],
+      "chunks": [{ "offset": 2048, "size": 1024, "iv": "base64-chunk-nonce" }],
       "mtime": "2024-01-01T00:00:00Z",
       "mode": 644,
       "is_dir": false
@@ -319,6 +340,7 @@ Each Section: [TypeLen][Type][DataLen][EncryptedData]
 ### Application Data Models
 
 **Hidden File Registry:**
+
 ```go
 type HiddenFileRegistry struct {
     Version int                        `json:"version"`
@@ -337,6 +359,7 @@ type HiddenFileInfo struct {
 ```
 
 **Configuration Model:**
+
 ```go
 type Config struct {
     DefaultCipher    CipherType        `json:"default_cipher"`
@@ -354,23 +377,27 @@ type Config struct {
 ### Error Classification and Handling Strategy
 
 **Cryptographic Errors:**
+
 - `InvalidPassword`: Wrong password or corrupted key derivation
 - `UnsupportedCipher`: Vault uses unsupported encryption algorithm
 - `CorruptedVault`: Vault file integrity check failed
 - `KeyDerivationFailed`: Argon2id operation failed
 
 **File System Errors:**
+
 - `MountFailed`: Unable to mount vault (missing drivers, permissions)
 - `FileNotFound`: Requested file doesn't exist in vault
 - `InsufficientSpace`: Not enough disk space for operation
 - `PermissionDenied`: Insufficient permissions for file operation
 
 **Platform-Specific Errors:**
+
 - `DriverNotInstalled`: Required FUSE/Dokany driver not available
 - `ElevationRequired`: Operation requires administrator privileges
 - `UnsupportedPlatform`: Feature not available on current platform
 
 **Error Propagation Strategy:**
+
 ```go
 type VaultError struct {
     Code    ErrorCode `json:"code"`
@@ -411,12 +438,14 @@ func (vm *VaultManager) OpenVault(path, password string) (*Vault, error) {
 ### Recovery and Repair Mechanisms
 
 **Vault Repair System:**
+
 - Chunk-level integrity verification using AEAD tags
 - File table reconstruction from valid chunks
 - Partial recovery of uncorrupted files
 - Backup creation before repair attempts
 
 **Atomic Operations:**
+
 - Write-to-temporary-file-then-rename pattern
 - Transaction logging for multi-step operations
 - Rollback capability for failed operations
@@ -427,24 +456,25 @@ func (vm *VaultManager) OpenVault(path, password string) (*Vault, error) {
 ### Unit Testing
 
 **Core Library Testing (Rust):**
+
 ```rust
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_vault_creation_with_test_vectors() {
         // Test with known cryptographic test vectors
         let vault = create_vault("test.vault", "password", CipherType::XChaCha20Poly1305);
         assert!(vault.is_ok());
     }
-    
+
     #[test]
     fn test_cross_platform_compatibility() {
         // Create vault with specific parameters
         // Verify it can be opened with same parameters
     }
-    
+
     #[test]
     fn test_chunk_streaming() {
         // Test large file chunking and random access
@@ -453,14 +483,15 @@ mod tests {
 ```
 
 **Go Application Testing:**
+
 ```go
 func TestVaultManager_CreateAndOpen(t *testing.T) {
     vm := NewVaultManager()
-    
+
     // Test vault creation
     err := vm.CreateVault("test.vault", "password", XChaCha20Poly1305)
     require.NoError(t, err)
-    
+
     // Test vault opening
     vault, err := vm.OpenVault("test.vault", "password")
     require.NoError(t, err)
@@ -471,26 +502,26 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
     if runtime.GOOS != "windows" {
         t.Skip("Windows-specific test")
     }
-    
+
     hider := NewWindowsFileHider()
-    
+
     // Create test file
     testFile := "test_file.txt"
     err := ioutil.WriteFile(testFile, []byte("test content"), 0644)
     require.NoError(t, err)
-    
+
     // Test hiding
     err = hider.HideFile(testFile)
     require.NoError(t, err)
-    
+
     // Verify file is hidden from OS
     _, err = os.Stat(testFile)
     require.True(t, os.IsNotExist(err))
-    
+
     // Test unhiding
     err = hider.UnhideFile("test_file.txt")
     require.NoError(t, err)
-    
+
     // Verify file is visible again
     _, err = os.Stat(testFile)
     require.NoError(t, err)
@@ -500,12 +531,22 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 ### Integration Testing
 
 **Cross-Platform Compatibility:**
+
 - Automated testing on Windows, macOS, Linux, iOS, Android
 - Vault creation on one platform, opening on another
 - File format compatibility verification
 - Performance benchmarking across platforms
 
+**Mount Simulation (Windows specific):**
+
+- **Challenge**: WinFSP or Dokany drivers might not be present in all CI/Test environments, and installing them requires admin privileges/restarts.
+- **Solution**: We use a `subst`-based simulation for integration tests when actual drivers are missing or for testing the integration logic itself.
+  - The `simulateMount` function maps a drive letter to a temporary directory using `subst <drive>: <path>`.
+  - The `simulateUnmount` function removes the mapping using `subst <drive>: /d`.
+- **Benefit**: Allows `TestMountIntegration` and `mount-helper` command flow to be verified (process creation, argument passing, signal handling) without depending on the heavy kernel-level drivers.
+
 **End-to-End Workflows:**
+
 - Complete vault lifecycle testing (create, populate, mount, modify, unmount)
 - File hiding and unhiding workflows
 - Sharing and multi-recipient scenarios
@@ -514,12 +555,14 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 ### Security Testing
 
 **Cryptographic Validation:**
+
 - Test vector verification for all supported ciphers
 - Key derivation parameter validation
 - Nonce uniqueness verification
 - AEAD tag validation
 
 **Attack Resistance Testing:**
+
 - Memory dump analysis for key material leakage
 - Timing attack resistance verification
 - Side-channel attack mitigation testing
@@ -528,12 +571,14 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 ### Performance Testing
 
 **Scalability Testing:**
+
 - Large vault performance (1000+ files, multi-GB sizes)
 - Concurrent access patterns
 - Memory usage profiling
 - Mount/unmount performance
 
 **Mobile Performance:**
+
 - Battery usage optimization verification
 - Memory constraint testing
 - Background processing limitations
@@ -542,12 +587,14 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 ### Build and Deployment Testing
 
 **Package Verification:**
+
 - Automated package creation and installation testing
 - Code signing verification
 - Icon integration validation
 - Cross-compilation verification
 
 **Distribution Testing:**
+
 - App store submission validation (iOS, Android)
 - Notarization verification (macOS)
 - Antivirus compatibility testing (Windows)
@@ -555,18 +602,20 @@ func TestFileHiding_WindowsImplementation(t *testing.T) {
 
 This comprehensive design provides a solid foundation for implementing the encrypted vault application with all requested features while maintaining security, performance, and cross-platform compatibility.
 
-
 ### Biometric Testing
-*   **Lifecycle**: Verify Save/Read/Delete operations via `test_biometrics_lifecycle`.
-*   **Stability**: Verify usage of `vault_get_id` on locked files.
-*   **Manual Scenarios**:
-    *   **Renaming**: Ensure renaming a `.vault` file does not break biometric unlock (verifies UUID binding).
-    *   **Revocation**: Ensure removing credentials from OS manager properly fails in UI.
+
+- **Lifecycle**: Verify Save/Read/Delete operations via `test_biometrics_lifecycle`.
+- **Stability**: Verify usage of `vault_get_id` on locked files.
+- **Manual Scenarios**:
+  - **Renaming**: Ensure renaming a `.vault` file does not break biometric unlock (verifies UUID binding).
+  - **Revocation**: Ensure removing credentials from OS manager properly fails in UI.
 
 ## Known Limitations
 
 ### Plausible Deniability Persistence
+
 Currently, hidden tables metadata (used for plausible deniability) is **not persisted** across vault sessions.
+
 - **Behavior**: Hidden tables and their contents exist/work perfectly during the session they are created in.
 - **Limitation**: Closing the vault loses the reference to these hidden tables. Ropening the vault will not show them.
 - **Reason**: Updating the vault header to store hidden table metadata changes the header size, which would shift file offsets and corrupt valid data in the current vault format.

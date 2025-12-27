@@ -92,6 +92,7 @@ dirlocker.log
 vault.log
 *_log*.txt
 tests_*.txt
+test_output*.txt
 
 # -----------------------------------------------------------------------------
 # Platform-Specific Files

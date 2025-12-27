@@ -63,7 +63,7 @@ graph TD
     subgraph "Rust Vault Core"
         Controller <-->|CGO| Core[🦀 Core Logic]
         FFI_Mobile <-->|FFI| Core
-        Core --> Crypto[🔒 Ring / ChaCha20]
+        Core --> Crypto[🔒 RustCrypto / ChaCha20]
         Core --> IO[💾 Disk I/O]
     end
 
@@ -149,7 +149,7 @@ We welcome security auditors and privacy advocates.
 <div align="center">
 
 **[License](LICENSE)** • **[Report Bug](https://github.com/aka-0x4C3DD/dirLocker/issues)**
-    
+
 <sub>
 
 Made with ❤️ and ☕ by **kiro** & **anti-gravity**

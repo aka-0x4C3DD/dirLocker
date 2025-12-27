@@ -59,12 +59,15 @@ make test
 
 When running tests on Windows, ensure your environment is correctly configured:
 
-1.  **Mounting Drivers**: The `TestMountIntegration` requires either **Dokany** or **WinFSP** to be installed. If neither is found, the test will skip securely.
-    - _Note_: The test runner verifies the drivers are present before attempting to mount.
-2.  **Cross-Compilation Variables**: **DO NOT** set `GOOS=linux` when running tests on Windows.
-    - Running `go test` with `GOOS=linux` on Windows will attempt to build and execute Linux binaries, resulting in `%1 is not a valid Win32 application` errors.
-    - Ensure `GOOS` is unset (empty) or set to `windows` in your terminal session before testing.
-    - _PowerShell_: `$env:GOOS=""`
+3.  **CLI Build Paths**: When building the CLI binary for testing (e.g., in `mount_integration_test.go`), `go build` must use the correct relative path to the main package.
+    - _Incorrect_: `./cmd/cli` (resolves relative to test file, potentially wrong)
+    - _Correct_: `../cmd/cli` (explicitly relative to the project root from the `tests/` directory)
+4.  **Test Recursion Prevention**: When testing mount functionality that invokes a helper process, ensure the helper process is explicitly built and defined.
+    - If `MountOptions.ExecutablePath` is left empty, the test might default to `os.Executable()`, causing the test binary to recursively call itself as the mount helper, leading to hangs or infinite loops.
+    - **Always** build a separate CLI binary and pass its path to `ExecutablePath`.
+5.  **Mount Helper Lifecycle**: The `mount-helper` command (subcommand of CLI) **must** block until it receives a cancellation signal (context done or unmount request).
+    - If `mount-helper` exits immediately after `fs.Mount()`, the mount point will vanish before the test can verify it.
+    - Ideally, implement a blocking wait (e.g., `<-ctx.Done()`) in the helper command.
 
 ### CI/CD Environment Notes
 
